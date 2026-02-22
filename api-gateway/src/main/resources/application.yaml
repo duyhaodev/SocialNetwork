@@ -1,0 +1,27 @@
+server:
+  port: 8888
+
+spring:
+  main:
+    web-application-type: reactive
+
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        - id: identity-service
+          uri: http://localhost:8080
+          predicates:
+            - Path=/identity/**
+        - id: profile-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/profile/users/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

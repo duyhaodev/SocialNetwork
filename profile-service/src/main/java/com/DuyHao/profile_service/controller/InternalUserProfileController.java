@@ -13,16 +13,11 @@ import lombok.experimental.FieldDefaults;
 @RestController
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class UserProfileController {
+public class InternalUserProfileController {
     UserProfileRepositoryService userProfileRepositoryService;
 
-    @PostMapping("/users")
+    @PostMapping("/internal/users")
     UserProfileResponse createProfile(@RequestBody ProfileCreationRequest request) {
         return userProfileRepositoryService.createProfile(request);
-    }
-
-    @GetMapping("/users/{profileId}")
-    UserProfileResponse getProfile(@PathVariable String profileId) {
-        return userProfileRepositoryService.getProfile(profileId);
     }
 }
