@@ -7,9 +7,11 @@ import com.DuyHao.identify_service.entity.User;
 import com.DuyHao.identify_service.enums.Role;
 import com.DuyHao.identify_service.exception.AppException;
 import com.DuyHao.identify_service.exception.ErrorCode;
+import com.DuyHao.identify_service.mapper.ProfileMapper;
 import com.DuyHao.identify_service.mapper.UserMapper;
 import com.DuyHao.identify_service.repository.RoleRepository;
 import com.DuyHao.identify_service.repository.UserRepository;
+import com.DuyHao.identify_service.repository.httpClient.ProfileClient;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -32,6 +34,8 @@ public class UserService {
     RoleRepository roleRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    ProfileClient profileClient;
+    ProfileMapper profileMapper;
 
     public UserResponse createUser(UserCreationRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -44,8 +48,14 @@ public class UserService {
         HashSet<String> roles = new HashSet<>();
         roles.add(Role.USER.name());
         //user.setRoles(roles);
+        user = userRepository.save(user);
 
-        return userMapper.toUserResponse(userRepository.save(user));
+        var profileRequest = profileMapper.toProfileCreationRequest(request);
+
+        profileRequest.setUserId(user.getId());
+        profileClient.createProfile(profileRequest);
+
+        return userMapper.toUserResponse(user);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

@@ -1,9 +1,9 @@
-package com.DuyHao.profile_service.dto.response;
-
-import java.time.LocalDate;
+package com.DuyHao.identify_service.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDate;
 
 @Data
 @Builder
