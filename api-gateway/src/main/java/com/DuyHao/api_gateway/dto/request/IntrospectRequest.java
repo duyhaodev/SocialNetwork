@@ -1,4 +1,4 @@
-package com.DuyHao.identify_service.dto.request;
+package com.DuyHao.api_gateway.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
