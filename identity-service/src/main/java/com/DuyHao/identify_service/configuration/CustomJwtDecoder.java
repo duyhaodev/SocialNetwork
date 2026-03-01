@@ -3,6 +3,7 @@ package com.DuyHao.identify_service.configuration;
 import com.DuyHao.identify_service.dto.request.IntrospectRequest;
 import com.DuyHao.identify_service.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.SignedJWT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -18,34 +19,20 @@ import java.util.Objects;
 
 @Component
 public class CustomJwtDecoder implements JwtDecoder {
-    @Value("${jwt.signerKey}")
-    private String SIGNER_KEY;
-
-    @Autowired
-    private AuthenticationService authenticationService;
-
-    private NimbusJwtDecoder nimbusjwtDecoder = null;
-
     @Override
     public Jwt decode(String token) throws JwtException {
         try {
-            var response = authenticationService.introspect(
-                    IntrospectRequest.builder().token(token).build()
+            SignedJWT signedJWT = SignedJWT.parse(token);
+
+            return new Jwt(token,
+                    signedJWT.getJWTClaimsSet().getIssueTime().toInstant(),
+                    signedJWT.getJWTClaimsSet().getExpirationTime().toInstant(),
+                    signedJWT.getHeader().toJSONObject(),
+                    signedJWT.getJWTClaimsSet().getClaims()
             );
 
-            if (!response.isValid()) throw new JwtException("Invalid token");
-        } catch (ParseException | JOSEException e) {
+        } catch (ParseException e) {
             throw new JwtException("Invalid token");
         }
-
-        if (Objects.isNull(nimbusjwtDecoder)) {
-            SecretKeySpec secretKey = new SecretKeySpec(SIGNER_KEY.getBytes(), "HmacSHA256");
-
-            nimbusjwtDecoder = NimbusJwtDecoder.withSecretKey(secretKey)
-                    .macAlgorithm(MacAlgorithm.HS512)
-                    .build();
-        }
-
-        return nimbusjwtDecoder.decode(token);
     }
 }

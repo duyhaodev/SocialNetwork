@@ -1,4 +1,4 @@
-package com.DuyHao.identify_service.exception;
+package com.DuyHao.profile_service.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;

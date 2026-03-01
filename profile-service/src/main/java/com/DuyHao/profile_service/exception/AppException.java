@@ -1,4 +1,6 @@
-package com.DuyHao.identify_service.exception;
+package com.DuyHao.profile_service.exception;
+
+import com.DuyHao.profile_service.exception.ErrorCode;
 
 public class AppException extends RuntimeException {
 

@@ -1,5 +1,8 @@
 package com.DuyHao.profile_service.service;
 
+import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.DuyHao.profile_service.dto.request.ProfileCreationRequest;
@@ -31,5 +34,12 @@ public class UserProfileRepositoryService {
                 userProfileRepository.findById(userId).orElseThrow(() -> new RuntimeException("Profile not found!"));
 
         return userProfileMapper.toUserProfileResponse(userProfile);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<UserProfileResponse> getAllProfiles() {
+        var profiles = userProfileRepository.findAll();
+
+        return profiles.stream().map(userProfileMapper::toUserProfileResponse).toList();
     }
 }
