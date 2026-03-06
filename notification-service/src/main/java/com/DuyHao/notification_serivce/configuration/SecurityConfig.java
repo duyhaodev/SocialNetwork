@@ -1,5 +1,7 @@
-package com.DuyHao.profile_service.configuration;
+package com.DuyHao.notification_serivce.configuration;
 
+import com.DuyHao.notification_serivce.configuration.CustomJwtDecoder;
+import com.DuyHao.notification_serivce.configuration.JwtAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

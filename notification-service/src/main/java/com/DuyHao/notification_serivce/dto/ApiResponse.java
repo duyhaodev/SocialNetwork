@@ -1,7 +1,6 @@
-package com.DuyHao.profile_service.dto;
+package com.DuyHao.notification_serivce.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

@@ -1,4 +1,4 @@
-package com.DuyHao.profile_service.exception;
+package com.DuyHao.notification_serivce.exception;
 
 public class AppException extends RuntimeException {
 

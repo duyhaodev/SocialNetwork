@@ -1,19 +1,16 @@
-package com.DuyHao.profile_service.configuration;
+package com.DuyHao.notification_serivce.configuration;
 
-import java.io.IOException;
-
+import com.DuyHao.notification_serivce.dto.ApiResponse;
+import com.DuyHao.notification_serivce.exception.ErrorCode;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
-
-import com.DuyHao.profile_service.dto.ApiResponse;
-import com.DuyHao.profile_service.exception.ErrorCode;
-
 import tools.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
 
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
