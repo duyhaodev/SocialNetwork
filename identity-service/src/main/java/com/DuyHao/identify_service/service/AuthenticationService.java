@@ -72,15 +72,15 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticated(AuthenticationRequest authenticationRequest) {
-        var user = userRepository.findByUsername(authenticationRequest.getUsername())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        var user = userRepository.findByEmail(authenticationRequest.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.WRONG_EMAIL_PASSWORD));
 
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
 
         if (!authenticated) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.WRONG_EMAIL_PASSWORD);
         }
 
         var token = generateToken(user);

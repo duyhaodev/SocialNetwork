@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -24,4 +25,12 @@ public class User {
 
     @ManyToMany
     Set<Role> roles;
+
+    String verification_code;
+
+    boolean enabled = false;
+
+    Integer verification_attempts = 0;
+
+    LocalDateTime otp_expiry_time;
 }

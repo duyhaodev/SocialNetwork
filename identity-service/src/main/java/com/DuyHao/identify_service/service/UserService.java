@@ -38,7 +38,10 @@ public class UserService {
     ProfileMapper profileMapper;
 
     public UserResponse createUser(UserCreationRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
+        String email = request.getEmail();
+        String derivedUserName = email.substring(0, email.indexOf("@"));
+
+        if (userRepository.existsByEmail(email) || userRepository.existsByUserName(derivedUserName)){
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
