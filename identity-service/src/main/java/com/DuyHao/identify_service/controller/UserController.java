@@ -32,6 +32,13 @@ public class UserController {
                 .build();
     }
 
+    @PostMapping("/verify")
+    ApiResponse<UserResponse> verifyUser(@RequestParam String email, @RequestParam String code) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.verifyUser(email, code))
+                .build();
+    }
+
     @GetMapping()
     ApiResponse<List<UserResponse>> getUsers() {
         return ApiResponse.<List<UserResponse>>builder()

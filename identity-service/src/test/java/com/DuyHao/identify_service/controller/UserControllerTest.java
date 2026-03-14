@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @SpringBootTest
@@ -48,27 +48,19 @@ public class UserControllerTest {
 
     private UserCreationRequest request;
     private UserResponse userResponse;
-    private LocalDate dob;
 
     @BeforeEach
     void initData(){
-        dob = LocalDate.of(2004, 1, 1);
-
         request = UserCreationRequest.builder()
-                .username("DuyHao1234")
-                .firstName("Hao")
-                .lastName("Duy")
                 .password("12345678")
-                .dob(dob)
                 .build();
 
         userResponse = UserResponse.builder()
-                .id("ff6555dc5b9")
-                .username("DuyHao1234")
-                .firstName("Hao")
-                .lastName("Duy")
-                .dob(dob)
+                .id("cf0b8d089ad1")
+                .username("hao")
+                .fullName("Duy Hao")
                 .build();
+
     }
 
     @Test

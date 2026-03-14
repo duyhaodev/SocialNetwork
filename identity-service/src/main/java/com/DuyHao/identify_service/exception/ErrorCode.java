@@ -17,7 +17,11 @@ public enum ErrorCode {
     INVALID_DOB(1008, "You must be {min} or older", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_BLANK(1009, "Email must not be blank", HttpStatus.BAD_REQUEST),
     EMAIL_INVALID(1010, "Email not valid", HttpStatus.BAD_REQUEST),
-    WRONG_EMAIL_PASSWORD(1022, "Wrong email or password. Please try again.", HttpStatus.FORBIDDEN)
+    WRONG_EMAIL_PASSWORD(1022, "Wrong email or password. Please try again.", HttpStatus.FORBIDDEN),
+    FULLNAME_NOT_BLANK(1008, "Full name must not be blank", HttpStatus.BAD_REQUEST),
+    MAX_OTP_ATTEMPTS(1020,"Max verification attempts reached. Please request a new code.", HttpStatus.TOO_MANY_REQUESTS),
+    OTP_EXPIRED(1019,"Verification code expired", HttpStatus.BAD_REQUEST),
+    INVALID_OTP_KEY(1018,"Invalid verification code", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
