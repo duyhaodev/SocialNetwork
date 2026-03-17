@@ -21,3 +21,4 @@ public class AuthenticationRequestInterceptor implements RequestInterceptor {
             template.header("Authorization", authHeader);
     }
 }
+

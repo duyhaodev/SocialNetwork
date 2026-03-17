@@ -10,3 +10,10 @@ spring:
     mongodb:
       uri: mongodb://root:root@localhost:27017/chat-service?authSource=admin
 
+app:
+  service:
+    profile: http://localhost:8081/profile
+  socket:
+    port: 8099
+    host: localhost
+

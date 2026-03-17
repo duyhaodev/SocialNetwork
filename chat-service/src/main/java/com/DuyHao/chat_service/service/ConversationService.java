@@ -1,0 +1,142 @@
+package com.DuyHao.chat_service.service;
+
+import com.DuyHao.chat_service.dto.request.ConversationRequest;
+import com.DuyHao.chat_service.dto.response.ConversationResponse;
+import com.DuyHao.chat_service.dto.response.UserProfileResponse;
+import com.DuyHao.chat_service.entity.Conversation;
+import com.DuyHao.chat_service.repository.ConversationRepository;
+import com.DuyHao.chat_service.repository.httpClient.ProfileClient;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class ConversationService {
+    ConversationRepository conversationRepository;
+    ProfileClient profileClient;
+
+    public ConversationResponse create(ConversationRequest request) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // Target user ID
+        String targetUserId = request.getParticipantIds().getFirst();
+
+        // 1-1 participants hash
+        List<String> ids = Arrays.asList(currentUserId, targetUserId);
+        Collections.sort(ids);
+        String hash = String.join("_", ids);
+
+        Optional<Conversation> existingConv = conversationRepository.findByParticipantsHash(hash);
+        if (existingConv.isPresent()) {
+            Conversation conv = existingConv.get();
+            boolean unread = conv.getParticipants().stream()
+                    .filter(p -> p.getUserId().equals(currentUserId))
+                    .findFirst()
+                    .map(Conversation.Participant::isUnread)
+                    .orElse(false);
+            return toConversationResponse(conv, currentUserId, unread);
+        }
+
+        // New conversation
+        Conversation.Participant p1 = Conversation.Participant.builder()
+                .userId(currentUserId)
+                .unread(false)
+                .isAdmin(true)
+                .build();
+
+        Conversation.Participant p2 = Conversation.Participant.builder()
+                .userId(targetUserId)
+                .unread(false)
+                .isAdmin(false)
+                .build();
+
+        Conversation conversation = Conversation.builder()
+                .type(request.getType() != null ? request.getType() : "DIRECT")
+                .participantsHash(hash)
+                .participants(List.of(p1, p2))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        conversation = conversationRepository.save(conversation);
+
+        return toConversationResponse(conversation, currentUserId, false);
+    }
+
+    public List<ConversationResponse> myConversations() {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        List<Conversation> conversations = conversationRepository.findAllByParticipantUserId(currentUserId);
+
+        return conversations.stream()
+                .map(conv -> {
+                    boolean unread = conv.getParticipants().stream()
+                            .filter(p -> p.getUserId().equals(currentUserId))
+                            .findFirst()
+                            .map(Conversation.Participant::isUnread)
+                            .orElse(false);
+                    return toConversationResponse(conv, currentUserId, unread);
+                })
+                .sorted((c1, c2) -> {
+                    LocalDateTime t1 = c1.getLastMessageTimestamp() != null ? c1.getLastMessageTimestamp() : c1.getCreatedAt();
+                    LocalDateTime t2 = c2.getLastMessageTimestamp() != null ? c2.getLastMessageTimestamp() : c2.getCreatedAt();
+                    return t2.compareTo(t1);
+                })
+                .collect(Collectors.toList());
+    }
+
+    public boolean markAsRead(String conversationId) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<Conversation> convOpt = conversationRepository.findById(conversationId);
+        if (convOpt.isPresent()) {
+            Conversation conv = convOpt.get();
+            conv.getParticipants().stream()
+                    .filter(p -> p.getUserId().equals(currentUserId))
+                    .findFirst()
+                    .ifPresent(p -> p.setUnread(false));
+            conversationRepository.save(conv);
+            return true;
+        }
+        return false;
+    }
+
+    private ConversationResponse toConversationResponse(Conversation conversation, String currentUserId, boolean unread) {
+        ConversationResponse response = ConversationResponse.builder()
+                .id(conversation.getId())
+                .type(conversation.getType())
+                .lastMessageContent(conversation.getLastMessageContent())
+                .lastMessageTimestamp(conversation.getLastMessageTimestamp())
+                .createdAt(conversation.getCreatedAt())
+                .unread(unread)
+                .build();
+
+        // Get partner info from profile-service
+        conversation.getParticipants().stream()
+                .filter(p -> !p.getUserId().equals(currentUserId))
+                .findFirst()
+                .ifPresent(partner -> {
+                    try {
+                        UserProfileResponse profile = profileClient.getProfile(partner.getUserId());
+                        if (profile != null) {
+                            response.setConversationName(profile.getFullName());
+                            // response.setConversationAvatar(profile.getAvatarUrl()); // Avatar missing in profile-service currently
+                            response.setPartnerId(profile.getId());
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to fetch profile for user {}: {}", partner.getUserId(), e.getMessage());
+                        response.setConversationName("Unknown User");
+                    }
+                });
+
+        return response;
+    }
+}
