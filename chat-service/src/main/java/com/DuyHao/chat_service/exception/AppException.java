@@ -1,4 +1,4 @@
-package com.DuyHao.profile_service.exception;
+package com.DuyHao.chat_service.exception;
 
 public class AppException extends RuntimeException {
 

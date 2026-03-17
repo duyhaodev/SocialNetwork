@@ -69,3 +69,8 @@ help.md
 
 # Environment Variables
 .env
+
+# Custom ignores
+GEMINI.md
+plan.txt
+Threads/
