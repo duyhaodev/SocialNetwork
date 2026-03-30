@@ -1,10 +1,10 @@
-package com.DuyHao.notification_serivce;
+package com.DuyHao.follow_service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class NotificationSerivceApplicationTests {
+class FollowServiceApplicationTests {
 
     @Test
     void contextLoads() {}

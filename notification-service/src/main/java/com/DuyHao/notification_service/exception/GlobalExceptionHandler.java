@@ -1,4 +1,4 @@
-package com.DuyHao.notification_serivce.exception;
+package com.DuyHao.notification_service.exception;
 
 import java.util.Map;
 import java.util.Objects;
@@ -11,14 +11,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import com.DuyHao.notification_serivce.dto.ApiResponse;
+import com.DuyHao.notification_service.dto.ApiResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
     private static final String MIN_ATRIBUTE = "min";
 
     @ExceptionHandler(value = Exception.class)

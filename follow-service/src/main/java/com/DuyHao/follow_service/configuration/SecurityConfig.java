@@ -1,4 +1,4 @@
-package com.DuyHao.notification_serivce.configuration;
+package com.DuyHao.follow_service.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-    private static final String[] PUBLIC_ENDPOINTS = {""};
+    private static final String[] PUBLIC_ENDPOINTS = {"/internal/users"};
 
     private final CustomJwtDecoder customJwtDecoder;
 

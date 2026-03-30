@@ -1,4 +1,4 @@
-package com.DuyHao.notification_serivce.exception;
+package com.DuyHao.follow_service.exception;
 
 import java.util.Map;
 import java.util.Objects;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import com.DuyHao.notification_serivce.dto.ApiResponse;
+import com.DuyHao.profile_service.dto.ApiResponse;
 
 import lombok.extern.slf4j.Slf4j;
 

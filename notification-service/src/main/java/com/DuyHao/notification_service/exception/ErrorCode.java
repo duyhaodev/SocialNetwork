@@ -1,4 +1,4 @@
-package com.DuyHao.notification_serivce.exception;
+package com.DuyHao.notification_service.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;

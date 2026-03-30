@@ -1,4 +1,4 @@
-package com.DuyHao.notification_serivce.configuration;
+package com.DuyHao.follow_service.configuration;
 
 import java.text.ParseException;
 

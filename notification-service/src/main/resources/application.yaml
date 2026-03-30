@@ -8,3 +8,9 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:root@localhost:27017/notification-service?authSource=admin
+#     port: 8083
+
+# spring:
+#     data:
+#     mongodb:
+#     uri: mongodb://localhost:27017/social_network

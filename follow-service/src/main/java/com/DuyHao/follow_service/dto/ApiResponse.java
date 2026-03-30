@@ -1,4 +1,4 @@
-package com.DuyHao.notification_serivce.dto;
+package com.DuyHao.follow_service.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.DuyHao</groupId>
-	<artifactId>notification-service</artifactId>
+	<artifactId>follow-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>notification-service</name>
-	<description>notification-service</description>
+	<name>follow-service</name>
+	<description>follow-service</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -41,7 +41,7 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-mongodb</artifactId>
+			<artifactId>spring-boot-starter-data-neo4j</artifactId>
 		</dependency>
 
 		<dependency>

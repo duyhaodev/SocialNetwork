@@ -1,4 +1,4 @@
-package com.DuyHao.notification_serivce.configuration;
+package com.DuyHao.follow_service.configuration;
 
 import java.io.IOException;
 
@@ -10,8 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
-import com.DuyHao.notification_serivce.dto.ApiResponse;
-import com.DuyHao.notification_serivce.exception.ErrorCode;
+import com.DuyHao.follow_service.dto.ApiResponse;
+import com.DuyHao.follow_service.exception.ErrorCode;
 
 import tools.jackson.databind.ObjectMapper;
 
