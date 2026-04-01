@@ -16,12 +16,12 @@ public class CustomJwtDecoder implements JwtDecoder {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
 
-            return new Jwt(token,
+            return new Jwt(
+                    token,
                     signedJWT.getJWTClaimsSet().getIssueTime().toInstant(),
                     signedJWT.getJWTClaimsSet().getExpirationTime().toInstant(),
                     signedJWT.getHeader().toJSONObject(),
-                    signedJWT.getJWTClaimsSet().getClaims()
-            );
+                    signedJWT.getJWTClaimsSet().getClaims());
 
         } catch (ParseException e) {
             throw new JwtException("Invalid token");
