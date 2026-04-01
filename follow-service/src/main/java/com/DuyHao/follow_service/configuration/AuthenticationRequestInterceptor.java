@@ -1,4 +1,4 @@
-package com.DuyHao.chat_service.configuration;
+package com.DuyHao.follow_service.configuration;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;

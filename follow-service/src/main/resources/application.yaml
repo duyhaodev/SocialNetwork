@@ -1,1 +1,10 @@
-spring.application.name=follow-service
+spring:
+  application:
+    name: follow-service
+  data:
+    mongodb:
+      uri: mongodb://root:root@localhost:27017/follow-service?authSource=admin
+server:
+  port: 8084
+  servlet:
+    context-path: /follow

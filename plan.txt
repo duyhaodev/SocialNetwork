@@ -45,3 +45,13 @@ LỘ TRÌNH THỰC HIỆN:
 3. Tách Post & Interaction (Core Data).
 4. Tách Chat & Notification (Realtime).
 5. Tách Media Service (Shared Logic).
+
+
+
+Gợi ý bổ sung (Dựa trên kiến trúc Microservices)
+  Thông thường, một Notification Service trong hệ thống mạng xã hội nên:
+   * Dùng Kafka hoặc RabbitMQ: Thay vì gọi trực tiếp (hiện tại NotificationService có hàm
+     createFollowNotification nhưng chưa thấy controller nào gọi), service này nên lắng nghe
+     các sự kiện (Events) từ các service khác (như follow-service, post-service) thông qua
+     Message Broker.
+   * Dependency đề xuất: spring-kafka hoặc spring-cloud-stream.

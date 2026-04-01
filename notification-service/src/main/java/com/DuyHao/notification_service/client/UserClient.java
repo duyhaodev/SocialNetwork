@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.DuyHao.notification_service.dto.UserResponse;
 
-@FeignClient(name = "user-service", url = "http://localhost:8081")
+@FeignClient(name = "profile-service", url = "http://localhost:8081/profile")
 public interface UserClient {
 
     @GetMapping("/internal/users/{id}")

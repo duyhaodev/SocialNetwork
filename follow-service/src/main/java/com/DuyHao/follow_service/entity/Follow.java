@@ -3,7 +3,9 @@ package com.DuyHao.follow_service.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -14,29 +16,17 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity
-@Table(name = "follows")
+@Document(collection = "follows")
 public class Follow {
     @Id
     String id;
 
-    @Column(name = "follower_id", nullable = false)
+    @Field("follower_id")
     String followerId;
 
-    @Column(name = "following_id", nullable = false)
+    @Field("following_id")
     String followingId;
 
-    @Column(name = "created_at")
+    @Field("created_at")
     LocalDateTime createdAt;
-
-    @PrePersist
-    public void prePersist() {
-        if (id == null || id.isBlank()) {
-            id = UUID.randomUUID().toString();
-        }
-
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 }
