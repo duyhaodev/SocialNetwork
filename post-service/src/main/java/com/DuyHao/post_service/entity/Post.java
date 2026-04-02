@@ -1,11 +1,10 @@
 package com.DuyHao.post_service.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Setter
 @Getter
@@ -14,10 +13,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "posts", indexes = {
-        @Index(name = "idx_user_created", columnList = "user_id, created_at"),
-        @Index(name = "idx_repost_of", columnList = "repost_of_id")
-})
+@Table(
+        name = "posts",
+        indexes = {
+            @Index(name = "idx_user_created", columnList = "user_id, created_at"),
+            @Index(name = "idx_repost_of", columnList = "repost_of_id")
+        })
 public class Post {
 
     @Id

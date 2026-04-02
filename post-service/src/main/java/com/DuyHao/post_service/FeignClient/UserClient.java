@@ -1,10 +1,9 @@
 package com.DuyHao.post_service.FeignClient;
 
 import com.DuyHao.post_service.dto.response.UserResponse;
+import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @FeignClient(name = "profile-service", url = "http://localhost:8081")
 public interface UserClient {

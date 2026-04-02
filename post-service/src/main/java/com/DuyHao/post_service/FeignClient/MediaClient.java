@@ -1,12 +1,11 @@
 package com.DuyHao.post_service.FeignClient;
 
 import com.DuyHao.post_service.dto.response.MediaResponse;
+import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
-@FeignClient(name = "media-service", url = "http://localhost:8082")
+@FeignClient(name = "media-service", url = "http://localhost:8086")
 public interface MediaClient {
 
     // Lấy tất cả media của một post
@@ -18,8 +17,5 @@ public interface MediaClient {
     void deleteMediaByPostId(@PathVariable String postId);
 
     @PutMapping("/internal/media/assign")
-    void assignMediaToPost(
-            @RequestParam("postId") String postId,
-            @RequestBody List<String> mediaIds
-    );
+    void assignMediaToPost(@RequestParam("postId") String postId, @RequestBody List<String> mediaIds);
 }

@@ -1,8 +1,7 @@
 package com.DuyHao.post_service.dto.request;
 
-import lombok.*;
-
 import java.util.List;
+import lombok.*;
 
 @Getter
 @Setter

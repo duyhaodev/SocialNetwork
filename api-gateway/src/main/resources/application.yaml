@@ -28,11 +28,11 @@ spring:
           predicates:
             - Path=/chat/**
         - id: post-service
-          uri: http://localhost:8084
+          uri: http://localhost:8085
           predicates:
             - Path=/posts/**,/feed/**,/profile/**
         - id: media-service
-          uri: http://localhost:8085
+          uri: http://localhost:8086
           predicates:
             - Path=/media/**
 

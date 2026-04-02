@@ -1,8 +1,8 @@
 package com.DuyHao.post_service.dto.response;
 
-import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.*;
 
 @Getter
 @Setter

@@ -25,4 +25,4 @@ cloudinary:
   api_secret: 2-mW8fvI56YGAWXz0XBFRdUEu-Q
 
 server:
-  port: 8082
+  port: 8086
