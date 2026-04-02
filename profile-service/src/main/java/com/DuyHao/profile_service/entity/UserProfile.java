@@ -26,6 +26,10 @@ public class UserProfile {
     @Property("userId")
     String userId;
 
+<<<<<<< HEAD
+=======
+    String username;
+>>>>>>> HiepKa
     String fullName;
     LocalDate dob;
     String city;

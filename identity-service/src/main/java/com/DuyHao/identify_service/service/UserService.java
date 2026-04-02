@@ -59,8 +59,16 @@ public class UserService {
 
         user = userRepository.save(user);
 
+<<<<<<< HEAD
         // Publish registration event asynchronously
         eventPublisher.publishEvent(new UserRegistrationEvent(user));
+=======
+        var profileRequest = profileMapper.toProfileCreationRequest(request);
+
+        profileRequest.setUserId(user.getId());
+        profileRequest.setUsername(user.getUsername());
+        profileClient.createProfile(profileRequest);
+>>>>>>> HiepKa
 
         return userMapper.toUserResponse(user);
     }

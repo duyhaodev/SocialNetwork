@@ -1,0 +1,62 @@
+# Realtime-Service (Socket-Service) Analysis
+
+## 1. Overview & Purpose
+The **Realtime-Service** (or Socket-Service) acts as a centralized gateway for all bidirectional, low-latency communication between the server and the clients (Web/Mobile). In a microservices environment, it solves the problem of "Stateless" business services needing to push data to "Stateful" client connections.
+
+## 2. Architecture & Communication Flow
+The service follows a **Pub/Sub (Publish/Subscribe)** pattern using a Message Broker (e.g., Redis or Kafka) as the glue between services.
+
+### High-Level Flow:
+1.  **Client** <---(WebSocket / Netty-SocketIO)---> **Realtime-Service**
+2.  **Realtime-Service** <---(Subscribes to)--- **Redis Channel** (e.g., `REALTIME_NOTI_CHANNEL`)
+3.  **Business Services (Chat, Follow, Noti)** ---(Publishes to)---> **Redis Channel**
+
+## 3. Detailed Operation Steps
+
+### Step 1: Handshake & Authentication (Stateful Connection)
+*   **Action:** Client initiates a WebSocket connection (usually via `/socket.io`).
+*   **Auth:** The service extracts a JWT from the connection URL or headers.
+*   **Mapping:** After validating the JWT, the service stores a mapping in local memory (ConcurrentHashMap): 
+    *   `UserId -> Set<SocketSessionId>`
+    *   *Note:* A single user can have multiple sessions (Desktop + Mobile).
+
+### Step 2: Global Event Listening
+*   The Realtime-Service subscribes to a specific Redis topic upon startup.
+*   It listens for any incoming messages that contain a `targetUserId` and a `payload`.
+
+### Step 3: Triggering from Business Services
+*   When **Follow-Service** records a new follower or **Chat-Service** saves a message:
+    1.  The business service completes its database transaction (Stateless).
+    2.  It sends a message to the Redis Channel instead of calling the Socket directly.
+    3.  Message Format: `{ "toUserId": "123", "type": "NOTIFICATION", "data": { ... } }`
+
+### Step 4: Routing & Emitting
+*   Realtime-Service receives the message from Redis.
+*   It looks up the `toUserId` in its local Mapping.
+*   **If found (User is Online):** It loops through all associated `SessionId`s and `emits` the event to the client.
+*   **If not found (User is Offline):** The message is safely ignored by the Socket-Service (the user will see it later from the Database when they log in).
+
+## 4. Key Logic & Scalability
+
+### Handling Multiple Instances (Scaling Out)
+*   If we run 3 instances of `Realtime-Service` behind a Load Balancer:
+    *   User A is connected to Instance 1.
+    *   User B is connected to Instance 2.
+*   When **Chat-Service** publishes a message for User B to Redis, **all 3 instances** of Realtime-Service will receive it.
+*   Instance 1 and 3 will see that User B is not connected to them and do nothing.
+*   Instance 2 will find User B in its memory and push the message.
+*   *Result:* Realtime communication works seamlessly across any number of server instances.
+
+### Online/Offline Status Management
+*   **On Connect:** Update a global Redis Key (e.g., `user:online:123 = true`) to inform other services that this user is reachable.
+*   **On Disconnect:** Clean up the local mapping. If the User has no more active sessions, remove the global Redis "Online" flag.
+
+### Security Best Practices
+*   **JWT Validation:** Every socket connection must be authenticated.
+*   **Origin Check:** Only allow connections from trusted domains (CORS).
+*   **Rate Limiting:** Prevent a single client from spamming the server with socket events.
+
+## 5. Summary of Benefits
+*   **Single Connection:** Clients only need to maintain one socket for the entire app.
+*   **Stateless Business Services:** Chat, Follow, and Notification services remain pure HTTP and easy to test.
+*   **Centralized Infrastructure:** Logic for scaling sockets and managing session state is isolated in one place.

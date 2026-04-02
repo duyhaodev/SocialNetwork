@@ -12,7 +12,14 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserProfileResponse {
     String id;
+<<<<<<< HEAD
     String fullName;
+=======
+    String userId;
+    String username;
+    String firstName;
+    String lastName;
+>>>>>>> HiepKa
     LocalDate dob;
     String city;
 }

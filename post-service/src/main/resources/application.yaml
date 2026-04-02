@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: post-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/POST
+    username: admin123
+    password: admin123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8083
