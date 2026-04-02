@@ -1,6 +1,6 @@
 package com.DuyHao.chat_service.controller;
 
-import com.DuyHao.chat_service.dto.request.ApiResponse;
+import com.DuyHao.chat_service.dto.ApiResponse;
 import com.DuyHao.chat_service.dto.request.MessageRequest;
 import com.DuyHao.chat_service.dto.response.MessageResponse;
 import com.DuyHao.chat_service.service.MessageService;

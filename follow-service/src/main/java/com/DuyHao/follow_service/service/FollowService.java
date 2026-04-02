@@ -1,7 +1,9 @@
 package com.DuyHao.follow_service.service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.DuyHao.follow_service.client.NotificationClient;
 import com.DuyHao.follow_service.client.UserClient;
@@ -13,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class FollowService {
 
     private final FollowRepository followRepo;
@@ -24,11 +25,15 @@ public class FollowService {
 
         if (followerId.equals(followingId)) throw new RuntimeException("Cannot follow yourself");
 
-        if (followRepo.existsByFollowerAndFollowing(followerId, followingId))
+        if (followRepo.existsByFollowerIdAndFollowingId(followerId, followingId))
             throw new RuntimeException("Already following");
 
-        Follow follow =
-                Follow.builder().followerId(followerId).followingId(followingId).build();
+        Follow follow = Follow.builder()
+                .id(UUID.randomUUID().toString())
+                .followerId(followerId)
+                .followingId(followingId)
+                .createdAt(LocalDateTime.now())
+                .build();
 
         followRepo.save(follow);
 
@@ -48,7 +53,7 @@ public class FollowService {
 
     public FollowResponse unfollowUser(String followerId, String followingId) {
 
-        if (!followRepo.existsByFollowerAndFollowing(followerId, followingId))
+        if (!followRepo.existsByFollowerIdAndFollowingId(followerId, followingId))
             throw new RuntimeException("Not following");
 
         followRepo.deleteByFollowerIdAndFollowingId(followerId, followingId);
@@ -64,6 +69,6 @@ public class FollowService {
     }
 
     public boolean isFollowing(String followerId, String followingId) {
-        return followRepo.existsByFollowerAndFollowing(followerId, followingId);
+        return followRepo.existsByFollowerIdAndFollowingId(followerId, followingId);
     }
 }

@@ -12,8 +12,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 
 import com.DuyHao.notification_service.dto.ApiResponse;
 import com.DuyHao.notification_service.exception.ErrorCode;
-
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
