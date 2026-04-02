@@ -31,8 +31,20 @@ public class UserProfileRepositoryService {
 
     public UserProfileResponse getProfile(String userId) {
         UserProfile userProfile =
-                userProfileRepository.findById(userId).orElseThrow(() -> new RuntimeException("Profile not found!"));
+                userProfileRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Profile not found!"));
 
+        return userProfileMapper.toUserProfileResponse(userProfile);
+    }
+
+    public List<UserProfileResponse> getUsers(List<String> userIds) {
+        var profiles = userProfileRepository.findAllByUserIdIn(userIds);
+        return profiles.stream().map(userProfileMapper::toUserProfileResponse).toList();
+    }
+
+    public UserProfileResponse getByUsername(String username) {
+        UserProfile userProfile = userProfileRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
         return userProfileMapper.toUserProfileResponse(userProfile);
     }
 

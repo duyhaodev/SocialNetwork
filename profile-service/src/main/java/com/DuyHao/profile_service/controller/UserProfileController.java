@@ -18,9 +18,14 @@ import lombok.experimental.FieldDefaults;
 public class UserProfileController {
     UserProfileRepositoryService userProfileRepositoryService;
 
-    @GetMapping("/users/{profileId}")
+    @GetMapping("/users/id/{profileId}")
     UserProfileResponse getProfile(@PathVariable String profileId) {
         return userProfileRepositoryService.getProfile(profileId);
+    }
+
+    @GetMapping("/users/{username}")
+    UserProfileResponse getProfileByUsername(@PathVariable String username) {
+        return userProfileRepositoryService.getByUsername(username);
     }
 
     @GetMapping("/users")
@@ -28,5 +33,11 @@ public class UserProfileController {
         return ApiResponse.<List<UserProfileResponse>>builder()
                 .result(userProfileRepositoryService.getAllProfiles())
                 .build();
+    }
+
+    // // Lấy thông tin nhiều người dùng cùng lúc
+    @PostMapping("/users/batch")
+    public List<UserProfileResponse> getUsers(@RequestBody List<String> userIds) {
+        return userProfileRepositoryService.getUsers(userIds);
     }
 }

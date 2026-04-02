@@ -1,0 +1,23 @@
+package com.DuyHao.interaction_service.FeignClient;
+
+import com.DuyHao.interaction_service.dto.response.UserResponse;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+
+@FeignClient(name = "user-service")
+public interface UserClient {
+
+    @GetMapping("/internal/users/{id}")
+    UserResponse getUser(@PathVariable String id);
+
+    @GetMapping("/internal/users/username/{username}")
+    UserResponse getUserByUsername(@PathVariable String username);
+
+    @PostMapping("/internal/users/batch")
+    List<UserResponse> getUsers(@RequestBody List<String> ids);
+}

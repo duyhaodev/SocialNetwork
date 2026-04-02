@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: media-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/MEDIA
+    username: admin123
+    password: admin123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+
+cloudinary:
+  cloud_name: dqdivgrkz
+  api_key: 528958256867871
+  api_secret: 2-mW8fvI56YGAWXz0XBFRdUEu-Q
+
+server:
+  port: 8082
