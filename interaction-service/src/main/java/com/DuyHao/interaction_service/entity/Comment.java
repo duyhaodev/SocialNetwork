@@ -30,6 +30,7 @@ public class Comment {
     @Column(name = "post_id", nullable = false)
     String postId;
 
+    @Column(columnDefinition = "TEXT")
     String content;
 
     @Column(name = "parent_id")
@@ -38,12 +39,10 @@ public class Comment {
     @Column(name = "created_at")
     LocalDateTime createdAt;
 
-    @ElementCollection
-    @CollectionTable(name = "comment_media_ids", joinColumns = @JoinColumn(name = "comment_id"))
-    @Column(name = "media_id")
-    @Builder.Default
-    List<String> mediaIds = new ArrayList<>();
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
 
+    // 🔥 Giữ nguyên logic như bên Post của Hào
     @PrePersist
     public void prePersist() {
         if (id == null || id.isBlank()) {
@@ -54,8 +53,8 @@ public class Comment {
         }
     }
 
-    public void addMediaId(String mediaId) {
-        if (mediaIds == null) mediaIds = new ArrayList<>();
-        mediaIds.add(mediaId);
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

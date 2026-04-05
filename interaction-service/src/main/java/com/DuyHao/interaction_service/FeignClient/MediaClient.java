@@ -7,15 +7,19 @@ import org.springframework.web.bind.annotation.*;
 
 import com.DuyHao.interaction_service.dto.response.MediaResponse;
 
-@FeignClient(name = "media-service")
+@FeignClient(name = "media-service", url = "${app.service.media}")
 public interface MediaClient {
 
-    @GetMapping("/internal/media/{id}")
-    MediaResponse getMediaById(@PathVariable String id);
+    // Lấy tất cả media của một comment
+    @GetMapping("/internal/media/comment/{commentId}")
+    List<MediaResponse> getMediaByCommentId(@PathVariable("commentId") String commentId);
 
-    @PostMapping("/internal/media/batch")
-    List<MediaResponse> getMediaByIds(@RequestBody List<String> ids);
+    // Xóa tất cả media liên quan đến một comment
+    @DeleteMapping("/internal/media/comment/{commentId}")
+    void deleteMediaByCommentId(@PathVariable("commentId") String commentId);
 
-    @DeleteMapping("/internal/media/{id}")
-    void deleteMedia(@PathVariable String id);
+    // Gán media cho comment sau khi comment được tạo thành công
+    @PutMapping("/internal/media/assign/comment")
+    void assignMediaToComment(@RequestParam("commentId") String commentId, @RequestBody List<String> mediaIds);
+
 }

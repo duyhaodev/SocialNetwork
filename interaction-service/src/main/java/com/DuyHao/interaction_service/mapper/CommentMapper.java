@@ -1,39 +1,36 @@
 package com.DuyHao.interaction_service.mapper;
 
 import java.util.List;
-
-import org.springframework.stereotype.Component;
-
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import com.DuyHao.interaction_service.dto.response.CommentResponse;
 import com.DuyHao.interaction_service.dto.response.UserResponse;
 import com.DuyHao.interaction_service.entity.Comment;
 
-@Component
-public class CommentMapper {
+@Mapper(componentModel = "spring")
+public interface CommentMapper {
 
-    public CommentResponse toResponse(
-            Comment comment, UserResponse user, List<String> mediaUrls, long likeCount, boolean liked) {
-        return CommentResponse.builder()
-                .id(comment.getId())
+    @Mapping(target = "id", source = "comment.id")
+    @Mapping(target = "content", source = "comment.content")
+    @Mapping(target = "postId", source = "comment.postId")
+    @Mapping(target = "parentId", source = "comment.parentId")
+    @Mapping(target = "createdAt", source = "comment.createdAt")
 
-                // user
-                .userId(user != null ? user.getId() : null)
-                .username(user != null ? user.getUserName() : null)
-                .fullName(user != null ? user.getFullName() : null)
-                .avatarUrl(user != null ? user.getAvatarUrl() : null)
+    // Map User Info
+    @Mapping(target = "userId", source = "user.userId")
+    @Mapping(target = "username", source = "user.username")
+    @Mapping(target = "fullName", source = "user.fullName")
+    @Mapping(target = "avatarUrl", source = "user.avatarUrl")
 
-                // comment
-                .postId(comment.getPostId())
-                .content(comment.getContent())
-                .parentId(comment.getParentId())
-                .createdAt(comment.getCreatedAt())
-
-                // interaction
-                .likeCount(likeCount)
-                .likedByCurrentUser(liked)
-
-                // media
-                .mediaUrls(mediaUrls)
-                .build();
-    }
+    // Map Interactions & Media
+    @Mapping(target = "mediaUrls", source = "mediaUrls")
+    @Mapping(target = "likeCount", source = "likeCount")
+    @Mapping(target = "likedByCurrentUser", source = "liked")
+    CommentResponse toResponse(
+            Comment comment,
+            UserResponse user,
+            List<String> mediaUrls,
+            long likeCount,
+            boolean liked
+    );
 }

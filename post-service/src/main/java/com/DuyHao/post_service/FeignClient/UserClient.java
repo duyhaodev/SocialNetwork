@@ -5,15 +5,15 @@ import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-@FeignClient(name = "profile-service", url = "http://localhost:8081")
+@FeignClient(name = "profile-service", url = "${app.service.profile}")
 public interface UserClient {
 
-    @GetMapping("/profile/users/id/{id}")
+    @GetMapping("/internal/users/id/{id}")
     UserResponse getUser(@PathVariable String id);
 
-    @GetMapping("/profile/users/{username}")
+    @GetMapping("/internal/users/{username}")
     UserResponse getUserByUsername(@PathVariable String username);
 
-    @PostMapping("/profile/users/batch")
+    @PostMapping("/internal/users/batch")
     List<UserResponse> getUsers(@RequestBody List<String> ids);
 }

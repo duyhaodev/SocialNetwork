@@ -88,6 +88,17 @@ public class MediaService {
         }
         mediaRepository.saveAll(mediaList);
     }
+    // Gán media cho comment
+    @Transactional
+    public void assignMediaToComment(String commentId, List<String> mediaIds) {
+        if (mediaIds == null || mediaIds.isEmpty()) return;
+
+        List<Media> mediaList = mediaRepository.findAllByIdIn(mediaIds);
+        for (Media media : mediaList) {
+            media.setCommentId(commentId);
+        }
+        mediaRepository.saveAll(mediaList);
+    }
 
     // ==================== GET MEDIA ====================
     public List<MediaResponse> getByPostId(String postId) {

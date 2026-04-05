@@ -10,6 +10,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -19,5 +21,21 @@ public class InternalUserProfileController {
     @PostMapping("/internal/users")
     UserProfileResponse createProfile(@RequestBody ProfileCreationRequest request) {
         return userProfileRepositoryService.createProfile(request);
+    }
+
+    @GetMapping("/internal/users/id/{profileId}")
+    UserProfileResponse getProfile(@PathVariable String profileId) {
+        return userProfileRepositoryService.getProfile(profileId);
+    }
+
+    @GetMapping("/internal/users/{username}")
+    UserProfileResponse getProfileByUsername(@PathVariable String username) {
+        return userProfileRepositoryService.getByUsername(username);
+    }
+
+    // Lấy thông tin nhiều người dùng cùng lúc
+    @PostMapping("/internal/users/batch")
+    public List<UserProfileResponse> getUsers(@RequestBody List<String> userIds) {
+        return userProfileRepositoryService.getUsers(userIds);
     }
 }

@@ -17,24 +17,25 @@ public class PostResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // user info
+    // User info
     private String userId;
     private String username;
     private String fullName;
     private String avatarUrl;
 
-    // media
+    // Media
     private List<String> mediaUrls;
-    private List<String> mediaIds;
-    // interaction
+
+    // Interaction
     private Long commentCount;
     private Long likeCount;
     private Long repostCount;
 
+    // Trạng thái của User hiện tại
     private Boolean likedByCurrentUser;
     private Boolean repostedByCurrentUser;
 
-    // repost info
+    // Repost info
     private String repostOfId;
     private String originalUserId;
     private String originalUsername;

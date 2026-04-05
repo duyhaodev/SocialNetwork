@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.DuyHao.interaction_service.FeignClient.CommentClient;
 import com.DuyHao.interaction_service.FeignClient.PostClient;
 import com.DuyHao.interaction_service.dto.response.LikeResponse;
 import com.DuyHao.interaction_service.entity.Like;
@@ -19,71 +18,61 @@ public class LikeService {
 
     private final LikeRepository likeRepository;
     private final PostClient postClient;
-    private final CommentClient commentClient;
-    private final NotificationService notificationService;
+    private final CommentService commentService;
+    // private final NotificationService notificationService;
 
-    // ================= LIKE POST =================
     @Transactional
     public LikeResponse togglePostLike(String postId, String userId) {
+        try {
+            var post = postClient.getPost(postId);
+            if (post == null) throw new RuntimeException("Post not found");
 
-        // 🔥 gọi post-service thay vì DB
-        var post = postClient.getPost(postId);
+            boolean alreadyLiked = likeRepository.existsByUserIdAndPostId(userId, postId);
 
-        boolean alreadyLiked = likeRepository.existsByUserIdAndPostId(userId, postId);
-
-        if (alreadyLiked) {
-            likeRepository.deleteByUserIdAndPostId(userId, postId);
-        } else {
-            Like like = Like.builder()
-                    .userId(userId)
-                    .postId(postId)
-                    .commentId(null)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            likeRepository.save(like);
-
-            // notification
-            if (!post.getUserId().equals(userId)) {
-                notificationService.createLikePostNotification(post.getUserId(), userId, postId);
+            if (alreadyLiked) {
+                likeRepository.deleteByUserIdAndPostId(userId, postId);
+            } else {
+                Like like = Like.builder()
+                        .userId(userId)
+                        .postId(postId)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                likeRepository.save(like);
             }
+
+            long count = likeRepository.countByPostId(postId);
+            return LikeResponse.builder().liked(!alreadyLiked).likeCount(count).build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi Like Post: " + e.getMessage());
         }
-
-        long count = likeRepository.countByPostId(postId);
-
-        return LikeResponse.builder().liked(!alreadyLiked).likeCount(count).build();
     }
 
-    // ================= LIKE COMMENT =================
     @Transactional
     public LikeResponse toggleCommentLike(String commentId, String userId) {
+        try {
+            var comment = commentService.getCommentById(commentId);
+            if (comment == null) throw new RuntimeException("Comment not found");
 
-        // 🔥 gọi comment-service
-        var comment = commentClient.getComment(commentId);
+            boolean alreadyLiked = likeRepository.existsByUserIdAndCommentId(userId, commentId);
 
-        boolean alreadyLiked = likeRepository.existsByUserIdAndCommentId(userId, commentId);
-
-        if (alreadyLiked) {
-            likeRepository.deleteByUserIdAndCommentId(userId, commentId);
-        } else {
-            Like like = Like.builder()
-                    .userId(userId)
-                    .postId(comment.getPostId())
-                    .commentId(commentId)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            likeRepository.save(like);
-
-            // notification
-            if (!comment.getUserId().equals(userId)) {
-                notificationService.createLikeCommentNotification(
-                        comment.getUserId(), userId, commentId, comment.getPostId());
+            if (alreadyLiked) {
+                likeRepository.deleteByUserIdAndCommentId(userId, commentId);
+            } else {
+                Like like = Like.builder()
+                        .userId(userId)
+                        .postId(comment.getPostId())
+                        .commentId(commentId)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                likeRepository.save(like);
             }
+
+            long count = likeRepository.countByCommentId(commentId);
+            return LikeResponse.builder().liked(!alreadyLiked).likeCount(count).build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi Like Comment: " + e.getMessage());
         }
-
-        long count = likeRepository.countByCommentId(commentId);
-
-        return LikeResponse.builder().liked(!alreadyLiked).likeCount(count).build();
     }
 }
