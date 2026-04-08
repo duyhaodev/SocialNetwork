@@ -2,15 +2,17 @@ import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Image as ImageIcon, Heart, X, Smile } from "lucide-react";
-import EmojiPicker from "emoji-picker-react";
+import { Image as ImageIcon, Heart, X } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { ImageViewer } from "@/components/ImageViewer/ImageViewer.jsx";
 import { fetchCommentsByPost, createComment as createCommentThunk, selectCommentsByPostId, selectCommentsLoadingByPostId, selectCommentsErrorByPostId, selectCommentSubmittingByPostId, selectCommentsPageByPostId, selectCommentsHasMoreByPostId, } from "@/store/commentsSlice";
-import { toggleCommentLike } from "@/store/commentsSlice";
+import { toggleCommentLike, deleteComment } from "@/store/commentsSlice";
 import {formatTimeAgo} from "../../utils/dateUtils.js"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "../ui/dropdown-menu";
+import { Trash2 } from "lucide-react";
+import CommentForm from "./CommentForm";
 
 const PAGE_SIZE = 10;
 export function PostComments({ postId, onProfileClick, onCommentCreated }) {
@@ -20,6 +22,8 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
   const profile = useSelector((s) => s.user.profile) ?? {};
   const fullName = profile.fullName ?? "Bạn";
   const avatarUrl = profile.avatarUrl ?? null;
+  const currentUserId = profile?.id || profile?._id;
+
 
   // COMMENTS từ Redux
   const comments = useSelector((state) => selectCommentsByPostId(state, postId));
@@ -30,10 +34,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
   const hasMoreComments = useSelector((state) => selectCommentsHasMoreByPostId(state, postId));
 
   // LOCAL UI STATE
-  const [commentContent, setCommentContent] = useState("");
-  const [commentFiles, setCommentFiles] = useState([]);
-  const [emojiOpen, setEmojiOpen] = useState(false);
-  const emojiRef = useRef(null);
+  const [replyTo, setReplyTo] = useState(null); 
   const loadMoreRef = useRef(null);
   const loadDelayRef = useRef(null); // delay trước khi load thêm
 
@@ -59,30 +60,35 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
     setViewerOpen(true);
   };
 
-  // cleanup preview khi unmount
-  useEffect(() => {
-    return () => {
-      commentFiles.forEach((m) => {
-        if (m.preview) URL.revokeObjectURL(m.preview);
-      });
-    };
-  }, []);
+  // Tạo comment
+  const handleCreateComment = async (formData) => {
+  try {
+    await dispatch(
+      createCommentThunk({ postId, formData })
+    ).unwrap();
 
-  // đóng emoji khi click ra ngoài
-  useEffect(() => {
-    if (!emojiOpen) return;
-    const handleClickOutside = (e) => {
-      if (emojiRef.current && !emojiRef.current.contains(e.target)) {
-        setEmojiOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [emojiOpen]);
+    onCommentCreated?.();
+  } catch (err) {
+    toast.error(err?.message || "Không gửi được bình luận");
+    throw err;
+  }
+};
 
-  const handleEmojiSelect = (emojiData) => {
-    setCommentContent((prev) => prev + emojiData.emoji);
-  };
+  // Tạo reply
+const handleCreateReply = (parentId) => async (formData) => {
+  try {
+    formData.append("parentId", parentId);
+    await dispatch(
+      createCommentThunk({ postId, formData })
+    ).unwrap();
+
+    setReplyTo(null);
+  } catch (err) {
+    toast.error(err?.message || "Không gửi được reply");
+    throw err;
+  }
+};
+
 
   // ======== LOAD COMMENTS ========
   useEffect(() => {
@@ -153,88 +159,20 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
     toast.error(err?.message || "Không thể thích bình luận");
   }
 };
+  // ======== REPLY COMMENT ========
+  const handleOpenReply = (commentId) => {
+    setReplyTo(commentId);
+  };
 
-  // ======== CHỌN FILE + PREVIEW ========
-  const handleCommentFilesChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const newItems = [];
-    for (const file of files) {
-      if (!file) continue;
-      const type = file.type || "";
-      const isImage = type.startsWith("image/");
-      const isVideo = type.startsWith("video/");
-
-      if (!isImage && !isVideo) {
-        toast.error(`File "${file.name}" không phải hình hoặc video, bỏ qua.`);
-        continue;
+  // ======== DELETE COMMENT ========
+  const handleDeleteComment = async (commentId) => {
+      try {
+        await dispatch(deleteComment({ postId, commentId,})).unwrap();
+        toast.success("Đã xóa bình luận");
+      } catch (err) {
+        toast.error(err?.message || "Xóa bình luận thất bại");
       }
-      const previewUrl = URL.createObjectURL(file);
-      newItems.push({
-        file,
-        kind: isImage ? "image" : "video",
-        preview: previewUrl,
-      });
-    }
-
-    if (!newItems.length) return;
-    setCommentFiles((prev) => [...prev, ...newItems]);
-    if (e.target) e.target.value = "";
-  };
-
-  // XÓA 1 MEDIA TRONG PREVIEW
-  const handleRemoveOne = (index) => {
-    setCommentFiles((prev) => {
-      const clone = [...prev];
-      const removed = clone.splice(index, 1)[0];
-      if (removed?.preview) URL.revokeObjectURL(removed.preview);
-      return clone;
-    });
-  };
-
-  // GỠ TẤT CẢ MEDIA
-  const handleRemoveAll = () => {
-    commentFiles.forEach((m) => {
-      if (m.preview) URL.revokeObjectURL(m.preview);
-    });
-    setCommentFiles([]);
-  };
-
-  // ======== SUBMIT COMMENT ========
-  const handleSubmitComment = async (e) => {
-    e.preventDefault();
-
-    if (!commentContent.trim() && commentFiles.length === 0) {
-      toast.error("Bạn chưa nhập nội dung / chọn media");
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append("content", commentContent);
-      commentFiles.forEach((item) => {
-        formData.append("files", item.file);
-      });
-
-      await dispatch(createCommentThunk({ postId, formData })).unwrap();
-
-      setCommentContent("");
-
-      // clear preview
-      commentFiles.forEach((m) => {
-        if (m.preview) URL.revokeObjectURL(m.preview);
-      });
-      setCommentFiles([]);
-      setEmojiOpen(false);
-
-      if (typeof onCommentCreated === "function") {
-        onCommentCreated();
-      }
-    } catch (err) {
-      console.error("Lỗi gửi comment:", err);
-      toast.error(err?.message || "Không gửi được bình luận");
-    }
-  };
+    };
 
   // ===== DRAG-TO-SCROLL CHUNG =====
   const dragState = useRef({
@@ -304,153 +242,12 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
       </style>
 
       {/* FORM COMMENT */}
-      <div className="px-4 py-3 border-b">
-        <form onSubmit={handleSubmitComment} noValidate>
-          <div className="flex gap-3">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={avatarUrl} alt={fullName} />
-              <AvatarFallback>
-                {fullName?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-
-            <div className="flex-1">
-              <div className="border border-zinc-800 rounded-lg bg-transparent">
-                {/* Textarea + emoji */}
-                <div className="relative">
-                  <Textarea
-                    placeholder="Viết bình luận..."
-                    value={commentContent}
-                    onChange={(e) => setCommentContent(e.target.value)}
-                    className="w-full max-w-full min-h-[40px] text-sm border-0 bg-transparent 
-                               resize-none focus-visible:ring-0 placeholder:text-muted-foreground
-                               pr-10"
-                    style={{
-                      paddingRight: "2rem",
-                      wordBreak: "break-word",
-                      overflowWrap: "break-word",
-                    }}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setEmojiOpen((v) => !v)}
-                    className="absolute right-2 top-1.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <Smile className="w-5 h-5" />
-                  </button>
-
-                  {emojiOpen && (
-                    <div
-                      ref={emojiRef}
-                      className="absolute right-0 top-9 z-50 w-72 rounded-xl border border-border bg-[#111] shadow-lg"
-                    >
-                      <EmojiPicker
-                        theme="dark"
-                        width="100%"
-                        height={400}
-                        emojiStyle="native"
-                        searchDisabled
-                        previewConfig={{ showPreview: false }}
-                        onEmojiClick={handleEmojiSelect}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* MEDIA PREVIEW khi đang gõ */}
-                {commentFiles.length > 0 && (
-                  <div className="mt-2 px-3 pb-2 space-y-2">
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-xs text-muted-foreground">
-                        {commentFiles.length} media
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleRemoveAll}
-                        className="text-xs text-red-400 hover:underline"
-                      >
-                        Gỡ tất cả
-                      </button>
-                    </div>
-
-                    <div className="w-full max-w-full rounded-2xl border border-border/40 bg-black/20 overflow-hidden">
-                      <div
-                        className="media-scroll flex gap-3 overflow-x-auto px-3 py-3 cursor-grab"
-                        onMouseDown={handleDragStart}
-                        onMouseMove={handleDragMove}
-                        onDragStart={(e) => e.preventDefault()}
-                      >
-                        {commentFiles.map((m, idx) => (
-                          <div
-                            key={idx}
-                            className="relative group flex-shrink-0 max-w-[150px] aspect-[3/4] rounded-xl overflow-hidden"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveOne(idx)}
-                              className="absolute top-2 right-2 z-20 bg-black/60 hover:bg-black/80 rounded-full p-1"
-                              title="Gỡ media"
-                            >
-                              <X className="w-4 h-4 text-white" />
-                            </button>
-
-                            {m.kind === "video" ? (
-                              <video
-                                src={m.preview}
-                                preload="metadata"
-                                draggable={false}
-                                className="block w-full h-full object-cover"
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                              />
-                            ) : (
-                              <img
-                                src={m.preview}
-                                alt="preview"
-                                draggable={false}
-                                className="block w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between px-2 py-1 border-t border-zinc-800">
-                  <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                    <ImageIcon className="w-4 h-4" />
-                    <span>Thêm ảnh / video</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,video/*"
-                      className="hidden"
-                      onChange={handleCommentFilesChange}
-                    />
-                  </label>
-
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={
-                      submittingComment ||
-                      (!commentContent.trim() && commentFiles.length === 0)
-                    }
-                    className="h-7 px-4 text-[12px] rounded-full"
-                  >
-                    {submittingComment ? "Đang gửi..." : "Gửi"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
+      <CommentForm
+        avatarUrl={avatarUrl}
+        fullName={fullName}
+        submitting={submittingComment}
+        onSubmit={handleCreateComment}
+      />
 
       {/* DANH SÁCH COMMENT */}
       <div className="px-4 py-3">
@@ -468,7 +265,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
             {comments.map((c) => (
               <div
                 key={c.id}
-                className="flex gap-3 pb-4 border-b border-border"
+                className="group flex gap-3 pb-4 border-b border-border relative"
               >
                 <Avatar
                   className="w-10 h-10 cursor-pointer"
@@ -545,6 +342,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
                   )}
 
                   <div className="flex items-center gap-4 pt-2">
+                    {/* LIKE */}
                     <button
                       onClick={() => handleToggleLikeComment(c.id)}
                       className={`flex items-center gap-1 text-xs transition-colors ${
@@ -554,11 +352,74 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
                       <Heart className={`w-3 h-3 ${c.likedByCurrentUser ? "fill-red-500" : ""}`} />
                       <span className="ml-1">{c.likeCount ?? 0}</span>
                     </button>
+                    {/* REPLY */}
+                    <button
+                      onClick={() => handleOpenReply(c.id)}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Reply
+                    </button>
                   </div>
+                  {/* ===== REPLY BOX (CHÈN NGAY ĐÂY) ===== */}
+                  {replyTo === c.id && (
+                    <div className="mt-3 ml-10">
+                      <CommentForm
+  isReply={true}
+  avatarUrl={avatarUrl}
+  fullName={fullName}
+  placeholder={`Trả lời bình luận của ${c.fullName ?? "người dùng"}...`}
+  submitting={submittingComment}
+  onSubmit={handleCreateReply(c.id)}
+  onCancelReply={() => setReplyTo(null)}
+/>
+
+                    </div>
+                  )}
+
+                </div>
+                {/* MORE MENU BUTTON */}
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                      align="end"
+                      sideOffset={8}
+                      className="w-44 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] font-semibold p-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Ai cũng thấy */}
+                      <DropdownMenuItem
+                        className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
+                        onClick={() => handleCopyCommentLink(c.id)}
+                      >
+                        Copy link
+                      </DropdownMenuItem>
+
+                      {/* Chỉ chính chủ */}
+                      {c.userId === currentUserId && (
+                        <DropdownMenuItem
+                          className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
+                          onClick={() => handleDeleteComment(c.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                          <span className="text-red-500">Delete comment</span>
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}
-
             {/* LOAD MORE */}
             <div className="pt-3">
               {loadingComments && hasMoreComments && (

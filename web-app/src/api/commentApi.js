@@ -12,6 +12,9 @@ const commentApi = {
       transformRequest: (v) => v,
     });
   },
+  deleteComment(postId, commentId) {
+    return axiosClient.delete(`/posts/${postId}/comments/${commentId}`);
+  },
 };
 
 export default commentApi;
