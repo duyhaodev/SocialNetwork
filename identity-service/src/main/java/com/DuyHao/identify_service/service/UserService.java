@@ -47,7 +47,7 @@ public class UserService {
         String email = request.getEmail();
         String derivedUserName = email.substring(0, email.indexOf("@"));
 
-        if (userRepository.existsByEmail(email) || userRepository.existsByUsername(derivedUserName)){
+        if (userRepository.existsByEmail(email) || userRepository.existsByUsername(derivedUserName)) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
@@ -135,7 +135,7 @@ public class UserService {
         userMapper.updateUser(user, request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        var roles= roleRepository.findAllById(request.getRoles());
+        var roles = roleRepository.findAllById(request.getRoles());
 
         user.setRoles(new HashSet<>(roles));
 
@@ -146,7 +146,7 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
-    public UserResponse getMyInfo(){
+    public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String name = context.getAuthentication().getName();
 
