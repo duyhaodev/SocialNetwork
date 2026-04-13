@@ -15,20 +15,14 @@ public class LikeController {
 
     // Toggle Like cho Post
     @PostMapping("/posts/{postId}/likes/toggle")
-    public LikeResponse togglePostLike(
-            @PathVariable String postId,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+    public LikeResponse togglePostLike(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         return likeService.togglePostLike(postId, userId);
     }
 
     // Toggle Like cho Comment
     @PostMapping("/comments/{commentId}/likes/toggle")
-    public LikeResponse toggleCommentLike(
-            @PathVariable String commentId,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+    public LikeResponse toggleCommentLike(@PathVariable String commentId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         return likeService.toggleCommentLike(commentId, userId);
     }

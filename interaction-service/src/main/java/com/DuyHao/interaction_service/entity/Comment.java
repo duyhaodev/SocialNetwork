@@ -1,12 +1,8 @@
 package com.DuyHao.interaction_service.entity;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 import jakarta.persistence.*;
-
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

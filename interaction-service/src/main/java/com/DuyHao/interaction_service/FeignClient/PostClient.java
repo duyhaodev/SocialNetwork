@@ -1,11 +1,9 @@
 package com.DuyHao.interaction_service.FeignClient;
 
+import com.DuyHao.interaction_service.dto.response.PostResponse;
 import java.util.List;
-
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
-
-import com.DuyHao.interaction_service.dto.response.PostResponse;
 
 @FeignClient(name = "post-service", url = "${app.service.post}")
 public interface PostClient {

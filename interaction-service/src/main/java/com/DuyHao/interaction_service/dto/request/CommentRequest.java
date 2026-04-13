@@ -1,7 +1,6 @@
 package com.DuyHao.interaction_service.dto.request;
 
 import java.util.List;
-
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

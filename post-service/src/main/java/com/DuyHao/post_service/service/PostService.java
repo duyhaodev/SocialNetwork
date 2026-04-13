@@ -126,9 +126,7 @@ public class PostService {
     // Interaction Service gọi lấy bài viết
     public List<PostResponse> getPostsByIds(List<String> ids) {
         List<Post> posts = postRepository.findAllById(ids);
-        Set<String> userIds = posts.stream()
-                .map(Post::getUserId)
-                .collect(Collectors.toSet());
+        Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
 
         Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));

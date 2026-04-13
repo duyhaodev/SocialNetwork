@@ -1,16 +1,13 @@
 package com.DuyHao.interaction_service.service;
 
-import java.time.LocalDateTime;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.DuyHao.interaction_service.FeignClient.PostClient;
 import com.DuyHao.interaction_service.dto.response.RepostResponse;
 import com.DuyHao.interaction_service.entity.Repost;
 import com.DuyHao.interaction_service.repository.RepostRepository;
-
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +35,7 @@ public class RepostService {
                 repostRepository.save(repost);
                 /*
                 if (!post.getUserId().equals(userId)) {
-                    notificationService.createRepostNotification(post.getUserId(), userId, postId);
+                	notificationService.createRepostNotification(post.getUserId(), userId, postId);
                 }
                 */
             }

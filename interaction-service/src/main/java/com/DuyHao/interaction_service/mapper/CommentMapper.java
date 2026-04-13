@@ -1,11 +1,11 @@
 package com.DuyHao.interaction_service.mapper;
 
-import java.util.List;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import com.DuyHao.interaction_service.dto.response.CommentResponse;
 import com.DuyHao.interaction_service.dto.response.UserResponse;
 import com.DuyHao.interaction_service.entity.Comment;
+import java.util.List;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface CommentMapper {
@@ -27,10 +27,5 @@ public interface CommentMapper {
     @Mapping(target = "likeCount", source = "likeCount")
     @Mapping(target = "likedByCurrentUser", source = "liked")
     CommentResponse toResponse(
-            Comment comment,
-            UserResponse user,
-            List<String> mediaUrls,
-            long likeCount,
-            boolean liked
-    );
+            Comment comment, UserResponse user, List<String> mediaUrls, long likeCount, boolean liked);
 }

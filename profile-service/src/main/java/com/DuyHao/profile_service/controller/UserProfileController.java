@@ -31,5 +31,4 @@ public class UserProfileController {
                 .result(userProfileRepositoryService.getAllProfiles())
                 .build();
     }
-
 }

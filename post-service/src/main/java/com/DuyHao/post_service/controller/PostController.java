@@ -5,7 +5,6 @@ import com.DuyHao.post_service.dto.request.PostCreateRequest;
 import com.DuyHao.post_service.dto.response.PostResponse;
 import com.DuyHao.post_service.service.PostService;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,15 +18,12 @@ public class PostController {
 
     // ==================== CREATE POST ====================
     @PostMapping("/posts")
-    public ApiResponse<PostResponse> create(
-            @AuthenticationPrincipal Jwt jwt, @RequestBody PostCreateRequest request) {
+    public ApiResponse<PostResponse> create(@AuthenticationPrincipal Jwt jwt, @RequestBody PostCreateRequest request) {
         String userId = jwt.getSubject();
         PostResponse post =
                 postService.create(userId, request.getContent(), request.getRepostOfId(), request.getMediaIds());
 
-        return ApiResponse.<PostResponse>builder()
-                .result(post)
-                .build();
+        return ApiResponse.<PostResponse>builder().result(post).build();
     }
 
     // ==================== DELETE POST ====================
@@ -35,9 +31,7 @@ public class PostController {
     public ApiResponse<Void> deletePost(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         postService.deletePost(userId, postId);
-        return ApiResponse.<Void>builder()
-                .message("Post deleted successfully")
-                .build();
+        return ApiResponse.<Void>builder().message("Post deleted successfully").build();
     }
 
     // ==================== FEED ====================
@@ -48,9 +42,7 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size) {
         String userId = jwt.getSubject();
         List<PostResponse> feed = postService.getFeed(userId, page, size);
-        return ApiResponse.<List<PostResponse>>builder()
-                .result(feed)
-                .build();
+        return ApiResponse.<List<PostResponse>>builder().result(feed).build();
     }
 
     // ==================== PROFILE ====================
@@ -58,18 +50,14 @@ public class PostController {
     public ApiResponse<List<PostResponse>> getMyProfilePosts(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> posts = postService.getPostsByUserId(userId, userId);
-        return ApiResponse.<List<PostResponse>>builder()
-                .result(posts)
-                .build();
+        return ApiResponse.<List<PostResponse>>builder().result(posts).build();
     }
 
     @GetMapping("/posts/profile/reposts")
     public ApiResponse<List<PostResponse>> getMyReposts(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> reposts = postService.getRepostsByUserId(userId, userId);
-        return ApiResponse.<List<PostResponse>>builder()
-                .result(reposts)
-                .build();
+        return ApiResponse.<List<PostResponse>>builder().result(reposts).build();
     }
 
     @GetMapping("/posts/profile/{username}")
@@ -77,9 +65,7 @@ public class PostController {
             @PathVariable String username, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> posts = postService.getPostsByUsername(username, userId);
-        return ApiResponse.<List<PostResponse>>builder()
-                .result(posts)
-                .build();
+        return ApiResponse.<List<PostResponse>>builder().result(posts).build();
     }
 
     @GetMapping("/posts/profile/{username}/reposts")
@@ -87,9 +73,7 @@ public class PostController {
             @PathVariable String username, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> reposts = postService.getRepostsByUsername(username, userId);
-        return ApiResponse.<List<PostResponse>>builder()
-                .result(reposts)
-                .build();
+        return ApiResponse.<List<PostResponse>>builder().result(reposts).build();
     }
 
     // ==================== GET ONE POST ====================
@@ -97,9 +81,6 @@ public class PostController {
     public ApiResponse<PostResponse> getOne(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         PostResponse post = postService.getPostById(postId, userId);
-        return ApiResponse.<PostResponse>builder()
-                .result(post)
-                .build();
+        return ApiResponse.<PostResponse>builder().result(post).build();
     }
-
 }

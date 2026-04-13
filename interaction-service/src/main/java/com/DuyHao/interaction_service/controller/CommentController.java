@@ -1,17 +1,14 @@
 package com.DuyHao.interaction_service.controller;
 
-import java.util.List;
-
 import com.DuyHao.interaction_service.dto.ApiResponse;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
-
 import com.DuyHao.interaction_service.dto.request.CommentRequest;
 import com.DuyHao.interaction_service.dto.response.CommentResponse;
 import com.DuyHao.interaction_service.service.CommentService;
-
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/comments")
@@ -23,8 +20,7 @@ public class CommentController {
     // ================= CREATE =================
     @PostMapping
     public ApiResponse<CommentResponse> createComment(
-            @RequestBody CommentRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
+            @RequestBody CommentRequest request, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
 
         return ApiResponse.<CommentResponse>builder()
@@ -48,8 +44,7 @@ public class CommentController {
     // ================= GET REPLIES  =================
     @GetMapping("/{commentId}/replies")
     public ApiResponse<List<CommentResponse>> getReplies(
-            @PathVariable String commentId,
-            @AuthenticationPrincipal Jwt jwt) {
+            @PathVariable String commentId, @AuthenticationPrincipal Jwt jwt) {
 
         String currentUserId = (jwt != null) ? jwt.getSubject() : null;
         return ApiResponse.<List<CommentResponse>>builder()
@@ -59,9 +54,7 @@ public class CommentController {
 
     // ================= DELETE =================
     @DeleteMapping("/{commentId}")
-    public ApiResponse<Void> deleteComment(
-            @PathVariable String commentId,
-            @AuthenticationPrincipal Jwt jwt) {
+    public ApiResponse<Void> deleteComment(@PathVariable String commentId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         commentService.deleteComment(userId, commentId);
 
