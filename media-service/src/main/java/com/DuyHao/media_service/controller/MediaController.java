@@ -1,5 +1,6 @@
 package com.DuyHao.media_service.controller;
 
+import com.DuyHao.media_service.dto.ApiResponse;
 import com.DuyHao.media_service.dto.response.MediaResponse;
 import com.DuyHao.media_service.service.MediaService;
 import java.util.List;
@@ -24,27 +25,18 @@ public class MediaController {
         return mediaService.uploadMultiple(files, postId, commentId);
     }
 
-    // ==================== GET BY POST ====================
-    @GetMapping("/post/{postId}")
-    public List<MediaResponse> getByPostId(@PathVariable String postId) {
-        return mediaService.getByPostId(postId);
-    }
-
     // ==================== GET BY COMMENT ====================
     @GetMapping("/comment/{commentId}")
     public List<MediaResponse> getByCommentId(@PathVariable String commentId) {
         return mediaService.getByCommentId(commentId);
     }
 
-    // ==================== DELETE BY POST ====================
-    @DeleteMapping("/post/{postId}")
-    public void deleteByPostId(@PathVariable String postId) {
-        mediaService.deleteByPostId(postId);
-    }
-
     // ==================== DELETE BY COMMENT ====================
     @DeleteMapping("/comment/{commentId}")
-    public void deleteByCommentId(@PathVariable String commentId) {
+    public ApiResponse<Void> deleteByCommentId(@PathVariable("commentId") String commentId) {
         mediaService.deleteByCommentId(commentId);
+        return ApiResponse.<Void>builder()
+                .message("Deleted media of comment successfully")
+                .build();
     }
 }

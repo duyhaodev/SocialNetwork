@@ -123,36 +123,19 @@ public class PostService {
         return buildPostResponse(post, currentUserId, userMap);
     }
 
-    // ==================== REPOST ====================
-    public PostResponse repost(String currentUserId, String originalPostId) {
-        Post original =
-                postRepository.findById(originalPostId).orElseThrow(() -> new RuntimeException("Post not found"));
+    // Interaction Service gọi lấy bài viết
+    public List<PostResponse> getPostsByIds(List<String> ids) {
+        List<Post> posts = postRepository.findAllById(ids);
+        Set<String> userIds = posts.stream()
+                .map(Post::getUserId)
+                .collect(Collectors.toSet());
 
-        if (postRepository.existsByUserIdAndRepostOf_Id(currentUserId, originalPostId))
-            throw new RuntimeException("Already reposted");
+        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
-        Post repost = Post.builder()
-                .userId(currentUserId)
-                .content(original.getContent())
-                .scope(original.getScope())
-                .createdAt(LocalDateTime.now())
-                .repostOf(original)
-                .build();
-
-        Post saved = postRepository.save(repost);
-        Map<String, UserResponse> userMap = new HashMap<>();
-        userMap.put(currentUserId, userClient.getUser(currentUserId));
-        userMap.put(original.getUserId(), userClient.getUser(original.getUserId()));
-        return buildPostResponse(saved, currentUserId, userMap);
-    }
-
-    public String unrepost(String currentUserId, String originalPostId) {
-        Post repost = postRepository
-                .findByUserIdAndRepostOf_Id(currentUserId, originalPostId)
-                .orElseThrow(() -> new RuntimeException("You haven't reposted"));
-
-        postRepository.delete(repost);
-        return repost.getId();
+        return posts.stream()
+                .map(post -> buildPostResponse(post, null, userMap))
+                .toList();
     }
 
     // ==================== REPOST LIST ====================

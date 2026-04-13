@@ -1,5 +1,6 @@
 package com.DuyHao.interaction_service.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -10,7 +11,10 @@ import com.DuyHao.interaction_service.entity.Comment;
 
 public interface CommentRepository extends JpaRepository<Comment, String> {
 
-    Page<Comment> findByPostIdOrderByCreatedAtDesc(String postId, Pageable pageable);
+    // Lấy những comment gốc của bài Post
+    Page<Comment> findByPostIdAndParentIdIsNullOrderByCreatedAtDesc(String postId, Pageable pageable);
 
-    Optional<Comment> findByIdAndPostId(String id, String postId);
+    // Lấy tất cả reply của một comment cha (theo parentId)
+    List<Comment> findByParentIdOrderByCreatedAtAsc(String parentId);
+
 }

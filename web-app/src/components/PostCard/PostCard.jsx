@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import {formatTimeAgo} from "../../utils/dateUtils.js"
-
+import ConfirmDeleteModal from "../Modals/ConfirmDeleteModal";
+import { Trash2, Link } from "lucide-react";
 
 export function PostCard({ post, onProfileClick, onPostClick }) {
 
@@ -52,15 +53,9 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  // relative time inline 
-  const relative = useMemo(() => {
-    if (!createdAt) return "now";
-    const diff = (Date.now() - new Date(createdAt)) / 60000; // phút
-    if (diff < 1) return "now";
-    if (diff < 60) return `${Math.floor(diff)}m ago`;
-    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-    return `${Math.floor(diff / 1440)}d ago`;
-  }, [createdAt]);
+  // modal xóa bài viết
+  const [openDelete, setOpenDelete] = useState(false);
+
 
   // local UI state 
   const [isLiked, setIsLiked] = useState(post.liked ?? post.likedByCurrentUser ?? post.isLikedByCurrentUser ?? false);
@@ -149,18 +144,19 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
 };
 
   const handleDeletePost = async () => {
-    const id = post.id ?? post.postId;
-    if (!id) return;
+  const id = post.id ?? post.postId;
+  if (!id) return;
 
-    try {
-      await dispatch(deletePost(id)).unwrap();
-      toast.success("Post deleted");
-      setMoreMenuOpen(false);
-    } catch (err) {
-      console.error("Delete post failed:", err);
-      toast.error("Failed to delete post, please try again");
-    }
-  };
+  try {
+    await dispatch(deletePost(id)).unwrap();
+    toast.success("Post deleted");
+    setOpenDelete(false);  
+  } catch (err) {
+    console.error("Delete post failed:", err);
+    toast.error("Failed to delete post, please try again");
+  }
+};
+
 
   const formatNumber = (num) =>
     num >= 1_000_000
@@ -366,15 +362,20 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
                 <DropdownMenuContent
                   align="end"
                   sideOffset={8}
-                  className="w-44 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] font-semibold p-1"
+                  className="w-37 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] font-semibold p-1"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {canDelete && (
                     <DropdownMenuItem
                       className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
-                      onClick={handleDeletePost}
+                      onClick={() => {
+                      setOpenDelete(true);
+                      setMoreMenuOpen(false);
+                    }}
+
                     >
-                      <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <Trash2 className="w-4 h-4 text-red-500" />
                         <span className="text-red-500">Delete post</span>
                       </div>
                     </DropdownMenuItem>
@@ -386,7 +387,8 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
                       setMoreMenuOpen(false);
                     }}
                   >
-                    <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Link className="w-4 h-4 text-white" />
                       <span className="text-white">Copy link</span>
                     </div>
                   </DropdownMenuItem>
@@ -589,7 +591,7 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
               <DropdownMenuContent
                 align="end"
                 sideOffset={8}
-                className="w-44 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] font-semibold p-1"
+                className="w-40 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] font-semibold p-1"
                 onClick={(e) => e.stopPropagation()}
               >
                 <DropdownMenuItem
@@ -619,6 +621,12 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
         onClose={() => setViewerOpen(false)}
         mediaList={mediaList}
         index={viewerIndex}
+      />
+      {/* ===== CONFIRM DELETE MODAL ===== */}
+      <ConfirmDeleteModal
+        open={openDelete}
+        onClose={() => setOpenDelete(false)}
+        onConfirm={handleDeletePost}
       />
     </div>
   );

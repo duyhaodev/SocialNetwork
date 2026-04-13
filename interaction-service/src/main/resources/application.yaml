@@ -1,9 +1,9 @@
 spring:
   application:
-    name: post-service
+    name: interaction-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/POST
+    url: jdbc:postgresql://localhost:5432/INTERACTION
     username: admin123
     password: admin123
 
@@ -15,9 +15,10 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 server:
-  port: 8085
+  port: 8084
 
 app:
   service:
     profile: http://localhost:8081/profile
     media: http://localhost:8086
+    post: http://localhost:8085

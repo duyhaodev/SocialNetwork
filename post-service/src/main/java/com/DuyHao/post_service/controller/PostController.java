@@ -1,12 +1,12 @@
 package com.DuyHao.post_service.controller;
 
+import com.DuyHao.post_service.dto.ApiResponse;
 import com.DuyHao.post_service.dto.request.PostCreateRequest;
 import com.DuyHao.post_service.dto.response.PostResponse;
 import com.DuyHao.post_service.service.PostService;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -19,85 +19,87 @@ public class PostController {
 
     // ==================== CREATE POST ====================
     @PostMapping("/posts")
-    public ResponseEntity<PostResponse> create(
+    public ApiResponse<PostResponse> create(
             @AuthenticationPrincipal Jwt jwt, @RequestBody PostCreateRequest request) {
         String userId = jwt.getSubject();
         PostResponse post =
                 postService.create(userId, request.getContent(), request.getRepostOfId(), request.getMediaIds());
 
-        return ResponseEntity.ok(post);
+        return ApiResponse.<PostResponse>builder()
+                .result(post)
+                .build();
     }
 
     // ==================== DELETE POST ====================
     @DeleteMapping("/posts/{postId}")
-    public ResponseEntity<Void> deletePost(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
+    public ApiResponse<Void> deletePost(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         postService.deletePost(userId, postId);
-        return ResponseEntity.noContent().build();
+        return ApiResponse.<Void>builder()
+                .message("Post deleted successfully")
+                .build();
     }
 
     // ==================== FEED ====================
     @GetMapping("/feed")
-    public ResponseEntity<List<PostResponse>> feed(
+    public ApiResponse<List<PostResponse>> feed(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         String userId = jwt.getSubject();
         List<PostResponse> feed = postService.getFeed(userId, page, size);
-        return ResponseEntity.ok(feed);
+        return ApiResponse.<List<PostResponse>>builder()
+                .result(feed)
+                .build();
     }
 
     // ==================== PROFILE ====================
-    @GetMapping("/profile")
-    public ResponseEntity<List<PostResponse>> getMyProfilePosts(@AuthenticationPrincipal Jwt jwt) {
+    @GetMapping("/posts/profile")
+    public ApiResponse<List<PostResponse>> getMyProfilePosts(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> posts = postService.getPostsByUserId(userId, userId);
-        return ResponseEntity.ok(posts);
+        return ApiResponse.<List<PostResponse>>builder()
+                .result(posts)
+                .build();
     }
 
-    @GetMapping("/profile/reposts")
-    public ResponseEntity<List<PostResponse>> getMyReposts(@AuthenticationPrincipal Jwt jwt) {
+    @GetMapping("/posts/profile/reposts")
+    public ApiResponse<List<PostResponse>> getMyReposts(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> reposts = postService.getRepostsByUserId(userId, userId);
-        return ResponseEntity.ok(reposts);
+        return ApiResponse.<List<PostResponse>>builder()
+                .result(reposts)
+                .build();
     }
 
-    @GetMapping("/profile/{username}")
-    public ResponseEntity<List<PostResponse>> getUserProfilePosts(
+    @GetMapping("/posts/profile/{username}")
+    public ApiResponse<List<PostResponse>> getUserProfilePosts(
             @PathVariable String username, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> posts = postService.getPostsByUsername(username, userId);
-        return ResponseEntity.ok(posts);
+        return ApiResponse.<List<PostResponse>>builder()
+                .result(posts)
+                .build();
     }
 
-    @GetMapping("/profile/{username}/reposts")
-    public ResponseEntity<List<PostResponse>> getUserReposts(
+    @GetMapping("/posts/profile/{username}/reposts")
+    public ApiResponse<List<PostResponse>> getUserReposts(
             @PathVariable String username, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<PostResponse> reposts = postService.getRepostsByUsername(username, userId);
-        return ResponseEntity.ok(reposts);
+        return ApiResponse.<List<PostResponse>>builder()
+                .result(reposts)
+                .build();
     }
 
     // ==================== GET ONE POST ====================
     @GetMapping("/posts/{postId}")
-    public ResponseEntity<PostResponse> getOne(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
+    public ApiResponse<PostResponse> getOne(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         PostResponse post = postService.getPostById(postId, userId);
-        return ResponseEntity.ok(post);
+        return ApiResponse.<PostResponse>builder()
+                .result(post)
+                .build();
     }
 
-    // ==================== REPOST ====================
-    @PostMapping("/posts/{postId}/repost")
-    public ResponseEntity<PostResponse> repost(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getSubject();
-        PostResponse repost = postService.repost(userId, postId);
-        return ResponseEntity.ok(repost);
-    }
-
-    @DeleteMapping("/posts/{postId}/repost")
-    public ResponseEntity<Map<String, String>> unrepost(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getSubject();
-        String repostId = postService.unrepost(userId, postId);
-        return ResponseEntity.ok(Map.of("repostId", repostId));
-    }
 }

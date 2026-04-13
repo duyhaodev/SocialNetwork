@@ -18,39 +18,39 @@ public class RepostService {
 
     private final RepostRepository repostRepository;
     private final PostClient postClient;
-    private final NotificationService notificationService;
+    // private final NotificationService notificationService;
 
-    // ================= TOGGLE REPOST =================
     @Transactional
     public RepostResponse toggleRepost(String postId, String userId) {
+        try {
+            var post = postClient.getPost(postId);
+            if (post == null) throw new RuntimeException("Bài viết không tồn tại");
+            boolean alreadyReposted = repostRepository.existsByUserIdAndPostId(userId, postId);
+            if (alreadyReposted) {
+                repostRepository.deleteByUserIdAndPostId(userId, postId);
+            } else {
+                Repost repost = Repost.builder()
+                        .userId(userId)
+                        .postId(postId)
+                        .createdAt(LocalDateTime.now())
+                        .build();
 
-        // 🔥 check post tồn tại qua post-service
-        var post = postClient.getPost(postId);
+                repostRepository.save(repost);
+                /*
+                if (!post.getUserId().equals(userId)) {
+                    notificationService.createRepostNotification(post.getUserId(), userId, postId);
+                }
+                */
+            }
 
-        boolean alreadyReposted = repostRepository.existsByUserIdAndPostId(userId, postId);
-
-        if (alreadyReposted) {
-            repostRepository.deleteByUserIdAndPostId(userId, postId);
-        } else {
-            Repost repost = Repost.builder()
-                    .userId(userId)
-                    .postId(postId)
-                    .createdAt(LocalDateTime.now())
+            long count = repostRepository.countByPostId(postId);
+            return RepostResponse.builder()
+                    .reposted(!alreadyReposted)
+                    .repostCount(count)
                     .build();
 
-            repostRepository.save(repost);
-
-            // 🔥 notification
-            if (!post.getUserId().equals(userId)) {
-                notificationService.createRepostNotification(post.getUserId(), userId, postId);
-            }
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi xử lý tương tác: " + e.getMessage());
         }
-
-        long count = repostRepository.countByPostId(postId);
-
-        return RepostResponse.builder()
-                .reposted(!alreadyReposted)
-                .repostCount(count)
-                .build();
     }
 }

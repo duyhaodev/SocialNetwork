@@ -15,24 +15,19 @@ import lombok.experimental.FieldDefaults;
 public class CommentResponse {
 
     String id;
-
     // user info
     String userId;
     String username;
     String fullName;
     String avatarUrl;
-
     // comment info
     String postId;
     String content;
     String parentId;
-
     LocalDateTime createdAt;
-
     // interaction
     long likeCount;
     boolean likedByCurrentUser;
-
-    // media (lấy từ media-service)
+    // media
     List<String> mediaUrls;
 }

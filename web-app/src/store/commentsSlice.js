@@ -48,7 +48,20 @@ export const toggleCommentLike = createAsyncThunk(
   }
 );
 
-
+export const deleteComment = createAsyncThunk(
+  "comments/delete",
+  async ({ postId, commentId }, { rejectWithValue }) => {
+    try {
+      await commentApi.deleteComment(postId, commentId);
+      return { postId, commentId };
+    } catch (err) {
+      return rejectWithValue({
+        postId,
+        message: err?.message || "Delete comment failed",
+      });
+    }
+  }
+);
 
 const initialState = {
   byPostId: {},            // { [postId]: Comment[] }
@@ -150,6 +163,20 @@ const commentsSlice = createSlice({
         if (postId) {
           state.errorByPostId[postId] =
             action.payload?.message || "Toggle like comment failed";
+        }
+      })
+
+      // ===== deleteComment =====
+      .addCase(deleteComment.fulfilled, (state, action) => {
+        const { postId, commentId } = action.payload;
+        const list = state.byPostId[postId] || [];
+        state.byPostId[postId] = list.filter((c) => c.id !== commentId);
+      })
+      .addCase(deleteComment.rejected, (state, action) => {
+        const postId = action.payload?.postId;
+        if (postId) {
+          state.errorByPostId[postId] =
+            action.payload?.message || "Delete comment failed";
         }
       });
   },

@@ -2,18 +2,18 @@ import axios from "axios"
 import { getToken } from "./localStorageService";
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:8888',
-  //baseURL: 'https://109a273e8a9f.ngrok-free.app',
-  headers: {
-    'Content-Type': 'application/json',
-    //'ngrok-skip-browser-warning': 'true'
-  },
-  withCredentials: true
+    baseURL: 'http://localhost:8080',
+    //baseURL: 'https://109a273e8a9f.ngrok-free.app',
+    headers: {
+        'Content-Type': 'application/json',
+        //'ngrok-skip-browser-warning': 'true'
+    },
+    withCredentials: true
 });
 
 //Interceptors
 // Add a request interceptor
-axiosClient.interceptors.request.use(
+axiosClient.interceptors.request.use( 
   (config) => {
     const token = getToken();
     if (token) {
@@ -28,7 +28,7 @@ axiosClient.interceptors.request.use(
     return config;
   }, (error) => {
     return Promise.reject(error);
-  });
+});
 
 // Add a response interceptor
 axiosClient.interceptors.response.use(
@@ -39,7 +39,7 @@ axiosClient.interceptors.response.use(
 
     const isAuthEndpoint =
       url.includes("/auth/token") ||
-      url.includes("/users") ||
+      url.includes("/users") ||          
       url.includes("/auth/refresh");
 
     if (status === 401 && !isAuthEndpoint) {
@@ -50,7 +50,7 @@ axiosClient.interceptors.response.use(
     }
 
     if (error.response?.data) {
-      return Promise.reject(error.response.data);
+        return Promise.reject(error.response.data);
     }
 
     const message =

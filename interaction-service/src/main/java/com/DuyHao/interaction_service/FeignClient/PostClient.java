@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.*;
 
 import com.DuyHao.interaction_service.dto.response.PostResponse;
 
-@FeignClient(name = "post-service", url = "http://localhost:8080")
+@FeignClient(name = "post-service", url = "${app.service.post}")
 public interface PostClient {
 
-    // 🔥 lấy 1 post
+    // Lấy thông tin 1 bài viết
     @GetMapping("/internal/posts/{id}")
     PostResponse getPost(@PathVariable("id") String id);
 
-    // 🔥 batch posts (dùng sau này tối ưu)
+    // Lấy danh sách bài viết
     @GetMapping("/internal/posts")
-    List<PostResponse> getPosts(@RequestParam List<String> ids);
+    List<PostResponse> getPosts(@RequestParam("ids") List<String> ids);
 }

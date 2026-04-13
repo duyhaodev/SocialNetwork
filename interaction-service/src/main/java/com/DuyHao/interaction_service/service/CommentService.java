@@ -24,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class CommentService {
-
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
     private final CommentMapper commentMapper;
@@ -33,17 +32,11 @@ public class CommentService {
     private final MediaClient mediaClient;
 
     // ================= CREATE =================
+    @Transactional
     public CommentResponse create(String userId, CommentRequest request) {
-
-        // validate reply
         if (request.getParentId() != null) {
-            Comment parent = commentRepository
-                    .findById(request.getParentId())
+            commentRepository.findById(request.getParentId())
                     .orElseThrow(() -> new RuntimeException("Parent comment không tồn tại"));
-
-            if (!parent.getPostId().equals(request.getPostId())) {
-                throw new RuntimeException("Reply không hợp lệ");
-            }
         }
 
         Comment comment = Comment.builder()
@@ -52,69 +45,81 @@ public class CommentService {
                 .content(request.getContent())
                 .parentId(request.getParentId())
                 .createdAt(LocalDateTime.now())
-                .mediaIds(request.getMediaIds() != null ? request.getMediaIds() : new ArrayList<>())
                 .build();
 
         comment = commentRepository.save(comment);
 
-        // lấy user
-        UserResponse user = userClient.getUser(userId);
+        List<String> mediaUrls = new ArrayList<>();
+        if (request.getMediaIds() != null && !request.getMediaIds().isEmpty()) {
+            mediaClient.assignMediaToComment(comment.getId(), request.getMediaIds());
 
-        return commentMapper.toResponse(
-                comment, user, List.of(), // create chưa cần load media
-                0, false);
+            try {
+                mediaUrls = mediaClient.getMediaByCommentId(comment.getId()).stream()
+                        .map(MediaResponse::getMediaUrl)
+                        .toList();
+            } catch (Exception e) {
+                System.err.println("Lỗi lấy Media sau khi gán: " + e.getMessage());
+            }
+        }
+        UserResponse user = userClient.getUser(userId);
+        return commentMapper.toResponse(comment, user, mediaUrls, 0, false);
     }
 
-    // ================= GET COMMENTS =================
+    // ================= GET ROOT COMMENTS (Chỉ lấy comment gốc) =================
     public List<CommentResponse> getCommentsByPost(String postId, String currentUserId, int page, int size) {
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Comment> commentPage = commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
+        Page<Comment> commentPage = commentRepository.findByPostIdAndParentIdIsNullOrderByCreatedAtDesc(postId, pageable);
 
-        List<Comment> comments = commentPage.getContent();
+        return buildCommentResponses(commentPage.getContent(), currentUserId);
+    }
+    // ================= GET REPLIES (Lấy danh sách phản hồi) =================
+    public List<CommentResponse> getReplies(String parentId, String currentUserId) {
+        List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(parentId);
 
-        // 🔥 batch user (giống PostService)
+        return buildCommentResponses(replies, currentUserId);
+    }
+
+    // ================= HELPER  =================
+    private List<CommentResponse> buildCommentResponses(List<Comment> comments, String currentUserId) {
+        if (comments.isEmpty()) return Collections.emptyList();
+
         Set<String> userIds = comments.stream().map(Comment::getUserId).collect(Collectors.toSet());
-
         Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
-                .collect(Collectors.toMap(UserResponse::getId, u -> u));
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
-        return comments.stream()
-                .map(c -> {
-                    UserResponse user = userMap.get(c.getUserId());
+        return comments.stream().map(c -> {
+            UserResponse user = userMap.get(c.getUserId());
+            List<String> mediaUrls = new ArrayList<>();
+            try {
+                mediaUrls = mediaClient.getMediaByCommentId(c.getId()).stream()
+                        .map(MediaResponse::getMediaUrl)
+                        .toList();
+            } catch (Exception e) {
+                System.err.println("Lỗi gọi Media cho Comment " + c.getId());
+            }
+            long likeCount = likeRepository.countByCommentId(c.getId());
+            boolean liked = currentUserId != null && likeRepository.existsByUserIdAndCommentId(currentUserId, c.getId());
 
-                    // 🔥 media giống PostService
-                    List<String> mediaUrls = Optional.ofNullable(c.getMediaIds()).orElse(List.of()).stream()
-                            .map(mediaClient::getMediaById)
-                            .filter(Objects::nonNull)
-                            .map(MediaResponse::getMediaUrl)
-                            .toList();
+            return commentMapper.toResponse(c, user, mediaUrls, likeCount, liked);
+        }).toList();
+    }
 
-                    // interaction
-                    long likeCount = likeRepository.countByCommentId(c.getId());
-
-                    boolean liked = currentUserId != null
-                            && likeRepository.existsByUserIdAndCommentId(currentUserId, c.getId());
-
-                    return commentMapper.toResponse(c, user, mediaUrls, likeCount, liked);
-                })
-                .toList();
+    public Comment getCommentById(String id) {
+        return commentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Comment không tồn tại với ID: " + id));
     }
 
     // ================= DELETE =================
     @Transactional
     public void deleteComment(String currentUserId, String commentId) {
-
-        Comment comment =
-                commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
 
         if (!comment.getUserId().equals(currentUserId)) {
             throw new RuntimeException("Không có quyền xóa");
         }
 
-        // 🔥 xóa media qua media-service
-        Optional.ofNullable(comment.getMediaIds()).orElse(List.of()).forEach(mediaClient::deleteMedia);
-
+        mediaClient.deleteMediaByCommentId(commentId);
         commentRepository.delete(comment);
     }
 }

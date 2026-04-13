@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import com.DuyHao.interaction_service.dto.response.UserResponse;
 
-@FeignClient(name = "user-service")
+@FeignClient(name = "user-service", url = "${app.service.profile}")
 public interface UserClient {
 
-    @GetMapping("/internal/users/{id}")
+    @GetMapping("/internal/users/id/{id}")
     UserResponse getUser(@PathVariable String id);
 
     @GetMapping("/internal/users/username/{username}")
