@@ -74,8 +74,10 @@ public class ConversationService {
 
     public List<ConversationResponse> myConversations() {
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Debug - currentUserId: {}", currentUserId);
 
         List<Conversation> conversations = conversationRepository.findAllByParticipantUserId(currentUserId);
+        log.info("Debug - conversations for {}: {}", currentUserId, conversations);
 
         return conversations.stream()
                 .map(conv -> {
@@ -129,7 +131,7 @@ public class ConversationService {
                         if (profile != null) {
                             response.setConversationName(profile.getFullName());
                             // response.setConversationAvatar(profile.getAvatarUrl()); // Avatar missing in profile-service currently
-                            response.setPartnerId(profile.getId());
+                            response.setPartnerId(profile.getUserId());
                         }
                     } catch (Exception e) {
                         log.error("Failed to fetch profile for user {}: {}", partner.getUserId(), e.getMessage());

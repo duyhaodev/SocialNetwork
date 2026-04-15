@@ -67,7 +67,7 @@ export function ProfilePage() {
   const isOwnProfile = !cleanUsername || cleanUsername === profile.userName;
   const user = isOwnProfile
     ? {
-        id: profile.id,
+        userId: profile.userId,
         displayName: profile.fullName ?? "Unknown",
         username: profile.userName ?? "unknown",
         bio: profile.bio ?? "",
@@ -78,7 +78,7 @@ export function ProfilePage() {
       }
     : otherProfile
     ? {
-        id: otherProfile.id,
+        userId: otherProfile.userId,
         displayName: otherProfile.fullName ?? "Unknown",
         username: otherProfile.userName ?? "unknown",
         bio: otherProfile.bio ?? "",
@@ -93,7 +93,7 @@ export function ProfilePage() {
   useEffect(() => {
   if (isOwnProfile) {
     dispatch(fetchMyPosts());
-    dispatch(fetchMyReposts()); // ✅ thêm lại
+    dispatch(fetchMyReposts()); 
     return;
   }
 
@@ -102,14 +102,14 @@ export function ProfilePage() {
   (async () => {
     try {
       dispatch(fetchUserPosts({ username: cleanUsername }));
-      dispatch(fetchUserReposts({ username: cleanUsername })); // ✅ nếu muốn xem repost user khác
+      dispatch(fetchUserReposts({ username: cleanUsername })); 
 
       const userRes = await postApi.getUserByUsername(cleanUsername);
       const followingUser = userRes?.result;
       setOtherProfile(followingUser);
 
-      if (followingUser?.id) {
-        const followStatusRes = await followApi.checkFollowing(followingUser.id);
+      if (followingUser?.userId) {
+        const followStatusRes = await followApi.checkFollowing(followingUser.userId);
         setIsFollowing(!!followStatusRes?.isFollowingValue);
       }
     } catch (err) {
@@ -140,7 +140,7 @@ export function ProfilePage() {
 
   // Toggle Follow/Following
   const handleFollow = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.userId) return;
 
     // Tối ưu UI: cập nhật trạng thái ngay lập tức
     const newFollowingStatus = !isFollowing;
@@ -159,7 +159,7 @@ export function ProfilePage() {
 
     try {
       // Gọi API toggle
-      const res = await followApi.toggleFollow(user.id);
+      const res = await followApi.toggleFollow(user.userId);
       
       // Nếu API thành công, trạng thái UI đã đúng.
       // Nếu API thất bại, đảo ngược lại trạng thái UI/số lượng
@@ -179,9 +179,8 @@ export function ProfilePage() {
             followersCount: !newFollowingStatus ? count + 1 : count - 1
         };
       });
-      // TODO: Thêm toast/thông báo lỗi cho người dùng
     }
-  }, [isFollowing, user?.id]);
+  }, [isFollowing, user?.userId]);
 
   // Threads để render
   const postsToRender = isOwnProfile ? myPosts : otherPosts;
@@ -197,9 +196,9 @@ export function ProfilePage() {
   }
 
   // Mở bài viết trong PostDetailPage
-  const handleOpenPost = (id) => {
-    if (!id) return;
-    navigate(`/post/${id}`);
+  const handleOpenPost = (postId) => {
+    if (!postId) return;
+    navigate(`/post/${postId}`);
   };
   return (
     <div className="max-w-2xl mx-auto">

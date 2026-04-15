@@ -7,6 +7,7 @@ export const fetchConversations = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await messageApi.myConversations();
+      console.log("API returned from myConversations:", res);
       const data = res.data || res;
       if (data && data.code === 1000 && Array.isArray(data.result)) {
         // Map API data to UI model immediately

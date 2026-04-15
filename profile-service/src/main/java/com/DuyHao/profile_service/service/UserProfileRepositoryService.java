@@ -46,6 +46,7 @@ public class UserProfileRepositoryService {
     }
 
     public UserProfileResponse getProfile(String userId) {
+        log.info("UserId : {}", userId);
         UserProfile userProfile = userProfileRepository
                 .findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Profile not found!"));
@@ -70,5 +71,17 @@ public class UserProfileRepositoryService {
         var profiles = userProfileRepository.findAll();
 
         return profiles.stream().map(userProfileMapper::toUserProfileResponse).toList();
+    }
+
+    public List<UserProfileResponse> searchUsers(String keyword) {
+        var context = SecurityContextHolder.getContext();
+
+        String currentUserId = context.getAuthentication().getName();
+
+        var profiles = userProfileRepository.findByUsernameContainingIgnoreCase(keyword);
+        return profiles.stream()
+                .filter(userProfile -> !userProfile.getUserId().equals(currentUserId))
+                .map(userProfileMapper::toUserProfileResponse)
+                .toList();
     }
 }

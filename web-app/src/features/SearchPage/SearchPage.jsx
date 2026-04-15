@@ -134,10 +134,10 @@ export function SearchPage() {
                   items={users}
                   renderItem={(user) => (
                     <UserCard 
-                      key={user.id} 
+                      key={user.userId} 
                       user={user} 
                       onProfileClick={onProfileClick}
-                      currentUserId={currentUser?.id}
+                      currentUserId={currentUser?.userId}
                       authLoading={authLoading}
                     />
                   )}
@@ -169,10 +169,10 @@ export function SearchPage() {
               {users.length > 0 ? (
                 users.map((user) => (
                   <UserCard 
-                    key={user.id} 
+                    key={user.userId} 
                     user={user} 
                     onProfileClick={onProfileClick}
-                    currentUserId={currentUser?.id}
+                    currentUserId={currentUser?.userId}
                     authLoading={authLoading}
                   />
                 ))
@@ -247,15 +247,15 @@ function UserCard({ user, onProfileClick, currentUserId, authLoading }) {
   const [buttonLoading, setButtonLoading] = useState(false);
 
   // Unified ID check
-  const isCurrentUser = user.id === currentUserId;
+  const isCurrentUser = user.userId === currentUserId;
   
   // Fetch initial following status (only if not current user and auth loaded)
   useEffect(() => {
-    if (isCurrentUser || authLoading || !user.id) return;
+    if (isCurrentUser || authLoading || !user.userId) return;
 
     const checkStatus = async () => {
       try {
-        const res = await followApi.checkFollowing(user.id);
+        const res = await followApi.checkFollowing(user.userId);
         const followingStatus = res?.data?.isFollowingValue ?? res?.isFollowingValue ?? false;
         setIsFollowing(!!followingStatus); 
       } catch (err) {
@@ -264,14 +264,14 @@ function UserCard({ user, onProfileClick, currentUserId, authLoading }) {
     };
 
     checkStatus();
-  }, [user.id, isCurrentUser, authLoading]);
+  }, [user.userId, isCurrentUser, authLoading]);
 
   const handleToggleFollow = async () => {
     if (buttonLoading || isCurrentUser) return;
     setButtonLoading(true);
 
     try {
-      const res = await followApi.toggleFollow(user.id);
+      const res = await followApi.toggleFollow(user.userId);
       const newStatus = res?.data?.isFollowing ?? res?.isFollowing ?? !isFollowing;
       setIsFollowing(!!newStatus);
       toast.success(res?.data?.message ?? res?.message ?? (newStatus ? "Đã follow!" : "Đã unfollow!"));

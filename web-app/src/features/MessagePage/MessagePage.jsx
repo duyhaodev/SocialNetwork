@@ -66,7 +66,7 @@ export function MessagesPage({ onBack }) {
   const handleSelectSearchUser = async (user) => {
     // Optimistic temp conversation
     const tempConversation = {
-      id: `temp_${user.id}`,
+      id: `temp_${user.userId}`,
       user: {
         displayName: user.fullName || user.userName,
         avatar: user.avatarUrl,
@@ -79,7 +79,7 @@ export function MessagesPage({ onBack }) {
     setSelectedConversation(tempConversation);
 
     try {
-      const res = await messageApi.createConversations({ participantIDs: [user.id] });
+      const res = await messageApi.createConversations({ participantIDs: [user.userId] });
       const data = res.data || res;
 
       if (data && (data.code === 1000 || data.code === 200) && data.result) {

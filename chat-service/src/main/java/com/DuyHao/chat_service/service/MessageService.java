@@ -126,7 +126,7 @@ public class MessageService {
             UserProfileResponse profile = profileClient.getProfile(message.getSenderId());
             if (profile != null) {
                 response.setSender(MessageResponse.SenderInfo.builder()
-                        .id(profile.getId())
+                        .id(profile.getUserId())
                         .fullName(profile.getFullName())
                         .build());
             }

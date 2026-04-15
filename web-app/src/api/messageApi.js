@@ -2,13 +2,13 @@
 import axiosClient from "./axiosClient";
 
 export const messageApi = {
-    myConversations () {
-        const url = "conversations/my-conversations";
+    myConversations() {
+        const url = "chat/conversations/my-conversations";
         return axiosClient.get(url);
     },
 
-    createConversations ({ participantIDs }) {
-        const url = "conversations/create";
+    createConversations({ participantIDs }) {
+        const url = "chat/conversations/create";
 
         const payload = {
             participantIds: participantIDs,
@@ -18,15 +18,13 @@ export const messageApi = {
     },
 
     getMessages(conversationId) {
-        const url = "messages/my-conversations";
-        return axiosClient.get(url, {
-            params: { conversationId }
-        });
+        const url = `chat/messages/${conversationId}`;
+        return axiosClient.get(url);
     },
-    
+
     // Gửi tin nhắn mới
     sendMessage({ conversationId, content }) {
-        const url = "messages/create";
+        const url = "chat/messages/create";
         const payload = {
             conversationId,
             content
@@ -35,7 +33,7 @@ export const messageApi = {
     },
 
     markConversationAsRead(conversationId) {
-        const url = `conversations/mark-as-read/${conversationId}`;
+        const url = `chat/conversations/mark-as-read/${conversationId}`;
         return axiosClient.put(url);
     }
 }

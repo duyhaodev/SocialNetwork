@@ -49,7 +49,6 @@ export const fetchMyInfo = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await userApi.getMyInfo();
-      console.log("Kết quả backend trả về từ myInfo:", res);
       if (!res || res.code !== 1000) return rejectWithValue(res || "FETCH_MYINFO_FAILED");
       return res.result;
     } catch (e) {

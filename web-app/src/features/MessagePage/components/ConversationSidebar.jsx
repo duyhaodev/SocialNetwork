@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, ChevronLeft } from "lucide-react";
 import { Spinner } from "../../../components/ui/spinner";
 import { searchApi } from "../../../api/searchApi";
-import {formatTimeAgo} from "../../../utils/dateUtils"
+import { formatTimeAgo } from "../../../utils/dateUtils"
 import { UserAvatar } from "../../../components/ui/user-avatar";
 
 export function ConversationSidebar({
@@ -91,20 +91,20 @@ export function ConversationSidebar({
               ) : searchResults && searchResults.length > 0 ? (
                 searchResults.map((user) => (
                   <button
-                    key={user.id}
+                    key={user.userId}
                     onClick={() => handleSelectSearchResult(user)}
                     className="w-full text-left flex items-center gap-3 p-3 hover:bg-[#111111] transition-colors border-b border-[#0f0f0f]"
                   >
-                    <UserAvatar 
-                      user={{...user, avatar: user.avatarUrl}} 
+                    <UserAvatar
+                      user={{ ...user, id: user.userId, avatar: user.avatarUrl }}
                       avatarClassName="w-8 h-8"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">
-                        {user.fullName || user.userName}
+                        {user.fullName || user.username}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
-                        @{user.userName}
+                        @{user.username}
                       </div>
                     </div>
                   </button>
@@ -144,28 +144,27 @@ export function ConversationSidebar({
             // Helper to construct the standardized object for onSelect
             const normalizedConv = isApiConv
               ? {
-                  id,
-                  user: { displayName, avatar },
-                  lastMessage,
-                  unread: unread || false,
-                  timestamp: timestampRaw,
-                }
+                id,
+                user: { displayName, avatar },
+                lastMessage,
+                unread: unread || false,
+                timestamp: timestampRaw,
+              }
               : item;
 
             // Tìm đối tác chat (partnerId) để hiển thị status online
             // Trong conversation 1-1 đơn giản này, ta có thể lấy từ item.participantIds hoặc tương tự
             // Ở đây tôi giả định logic lấy ID đối phương:
-            const partnerId = item.partnerId || (item.user && item.user.id); 
+            const partnerId = item.partnerId || (item.user && item.user.userId);
 
             return (
               <div
                 key={id}
                 onClick={() => onSelectConversation(normalizedConv)}
-                className={`flex items-start gap-3 p-4 cursor-pointer transition-colors border-b border-[#1a1a1a] ${
-                  selectedId === id ? "bg-[#1a1a1a]" : "hover:bg-[#0f0f0f]"
-                }`}
+                className={`flex items-start gap-3 p-4 cursor-pointer transition-colors border-b border-[#1a1a1a] ${selectedId === id ? "bg-[#1a1a1a]" : "hover:bg-[#0f0f0f]"
+                  }`}
               >
-                <UserAvatar 
+                <UserAvatar
                   user={{
                     id: partnerId, // Cần ID để check online
                     avatar: avatar,

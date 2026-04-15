@@ -20,9 +20,6 @@ import lombok.experimental.FieldDefaults;
 @Node("user_profile")
 public class UserProfile {
     @Id
-    @GeneratedValue(generatorClass = UUIDStringGenerator.class)
-    String id;
-
     @Property("userId")
     String userId;
 

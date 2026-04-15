@@ -14,6 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Document(collection = "conversations")
 public class Conversation {
@@ -37,6 +38,7 @@ public class Conversation {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @ToString
     @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class Participant {
         String userId;
