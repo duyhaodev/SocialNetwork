@@ -31,4 +31,11 @@ public class UserProfileController {
                 .result(userProfileRepositoryService.getAllProfiles())
                 .build();
     }
+
+    @GetMapping("/myInfo")
+    ApiResponse<UserProfileResponse> getMyInfo() {
+        return ApiResponse.<UserProfileResponse>builder()
+                .result(userProfileRepositoryService.getMyInfo())
+                .build();
+    }
 }

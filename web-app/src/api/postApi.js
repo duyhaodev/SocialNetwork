@@ -3,24 +3,24 @@ import axiosClient from "./axiosClient";
 const postApi = {
   create(formData) {
     // GỬI MULTIPART — không set Content-Type, để browser tự set boundary
-    return axiosClient.post("/posts", formData, {
+    return axiosClient.post("/post/posts", formData, {
       transformRequest: (v) => v
     });
   },
   // Xóa bài viết
   deletePost(postId) {
-    return axiosClient.delete(`/posts/${postId}`);
+    return axiosClient.delete(`/post/posts/${postId}`);
   },
   getFeed({ page = 0, size = 20 } = {}) {
-    return axiosClient.get(`/feed?page=${page}&size=${size}`);
+    return axiosClient.get(`/post/feed?page=${page}&size=${size}`);
   },
   // lấy bài viết của mình
   getMyPosts() {
-    return axiosClient.get("/profile");
+    return axiosClient.get("/post/profile");
   },
   // lấy bài viết của user theo username
   getUserPosts(username) {
-    return axiosClient.get(`/profile/${username}`);
+    return axiosClient.get(`/post/profile/${username}`);
   },
   // lấy profile của user theo username
   getUserByUsername(username) {
@@ -28,7 +28,7 @@ const postApi = {
   },
   // lấy chi tiết bài viết theo id
   getPostById(postId) {
-  return axiosClient.get(`/posts/${postId}`);
+    return axiosClient.get(`/posts/${postId}`);
   },
   // Lấy danh sách reposts của mình
   getMyReposts() {
@@ -43,7 +43,7 @@ const postApi = {
     return axiosClient.post(`/posts/${postId}/repost`);
   },
   unrepost(postId) {
-  return axiosClient.delete(`/posts/${postId}/repost`);
+    return axiosClient.delete(`/posts/${postId}/repost`);
   },
 };
 

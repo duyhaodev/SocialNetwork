@@ -3,6 +3,7 @@ package com.DuyHao.profile_service.service;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.DuyHao.profile_service.dto.request.ProfileCreationRequest;
@@ -14,10 +15,12 @@ import com.DuyHao.profile_service.repository.UserProfileRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class UserProfileRepositoryService {
     UserProfileRepository userProfileRepository;
     UserProfileMapper userProfileMapper;
@@ -25,6 +28,19 @@ public class UserProfileRepositoryService {
     public UserProfileResponse createProfile(ProfileCreationRequest request) {
         UserProfile userProfile = userProfileMapper.toUserProfile(request);
         userProfile = userProfileRepository.save(userProfile);
+
+        return userProfileMapper.toUserProfileResponse(userProfile);
+    }
+
+    public UserProfileResponse getMyInfo() {
+        var context = SecurityContextHolder.getContext();
+        log.info(context.toString());
+        String userId = context.getAuthentication().getName();
+        log.info("UserId : {}", userId);
+
+        UserProfile userProfile = userProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Profile not found!"));
 
         return userProfileMapper.toUserProfileResponse(userProfile);
     }

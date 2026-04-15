@@ -417,10 +417,10 @@ export function FeedPage() {
           const mediaList = Array.isArray(post.mediaList)
             ? post.mediaList
             : post.media
-            ? Array.isArray(post.media)
-              ? post.media
-              : [post.media]
-            : [];
+              ? Array.isArray(post.media)
+                ? post.media
+                : [post.media]
+              : [];
 
           return (
             <PostCard

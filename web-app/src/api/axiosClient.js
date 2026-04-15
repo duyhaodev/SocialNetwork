@@ -2,7 +2,7 @@ import axios from "axios"
 import { getToken } from "./localStorageService";
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:8888',
     //baseURL: 'https://109a273e8a9f.ngrok-free.app',
     headers: {
         'Content-Type': 'application/json',

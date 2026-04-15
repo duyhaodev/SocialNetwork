@@ -22,7 +22,7 @@ export function Sidebar({ currentPage }) {
   const dispatch = useDispatch();
 
   const { profile, loading } = useSelector((state) => state.user);
-  const open = useSelector(selectComposerOpen);       
+  const open = useSelector(selectComposerOpen);
   const prefill = useSelector(selectComposerPrefill);
   const unreadNotifications = useSelector(selectUnreadCount);
 
@@ -62,10 +62,10 @@ export function Sidebar({ currentPage }) {
         </div>
       );
     }
-    
+
     const currentUser = {
       displayName: profile.fullName,
-      username: profile.userName,
+      username: profile.username,
       avatar: profile.avatarUrl || null
     }
 
@@ -79,8 +79,8 @@ export function Sidebar({ currentPage }) {
             <div className="flex items-center w-full p-3">
               <Avatar className="w-10 h-10 mr-3">
                 {currentUser.avatar ? (
-                  <AvatarImage 
-                    src={currentUser.avatar} 
+                  <AvatarImage
+                    src={currentUser.avatar}
                     alt={currentUser.displayName}
                     onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
                   />
@@ -98,18 +98,18 @@ export function Sidebar({ currentPage }) {
             </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          align="end" 
+        <DropdownMenuContent
+          align="end"
           className="w-56 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] p-1"
           sideOffset={8}
         >
-          <DropdownMenuItem 
-            onClick={() => navigate("/profile")} 
+          <DropdownMenuItem
+            onClick={() => navigate("/profile")}
             className="cursor-pointer text-white hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
           >
             Xem trang cá nhân
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={handleLogout}
             className="cursor-pointer text-red-500 hover:bg-[#2a2a2a] hover:text-red-500 focus:bg-[#2a2a2a] focus:text-red-500 rounded-md px-3 py-2"
           >
@@ -133,7 +133,7 @@ export function Sidebar({ currentPage }) {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
-            
+
             return (
               <Button
                 key={item.id}
@@ -157,7 +157,7 @@ export function Sidebar({ currentPage }) {
         <Button
           className="w-full mt-6 h-12"
           size="lg"
-          onClick={() => dispatch(openComposer({ text: "", files: [] }))} 
+          onClick={() => dispatch(openComposer({ text: "", files: [] }))}
         >
           <Edit className="w-5 h-5 mr-2" />
           New thread

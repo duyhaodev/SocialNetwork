@@ -49,9 +49,9 @@ export const fetchMyInfo = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await userApi.getMyInfo();
+      console.log("Kết quả backend trả về từ myInfo:", res);
       if (!res || res.code !== 1000) return rejectWithValue(res || "FETCH_MYINFO_FAILED");
-      // server trả về result; map ở đây tạm thời chỉ trả nguyên result
-        return res.result;
+      return res.result;
     } catch (e) {
       return rejectWithValue(e.response?.data || e.message || "FETCH_MYINFO_ERROR");
     }
@@ -76,98 +76,98 @@ export const logoutUser = createAsyncThunk(
   }
 )
 
-const userSlice = createSlice ({
-    name: "user",
-    initialState: {
-        token: null,
-        profile: null,
-        loading: false,
-        error: null,
-        isAuthenticated: false,
+const userSlice = createSlice({
+  name: "user",
+  initialState: {
+    token: null,
+    profile: null,
+    loading: false,
+    error: null,
+    isAuthenticated: false,
+  },
+
+  reducers: {
+    setProfile(state, action) {
+      state.profile = action.payload
     },
-
-    reducers: {
-        setProfile (state, action) {
-            state.profile = action.payload
-        },
-        logout (state) {
-            state.token = null;
-            state.profile = null;
-            state.isAuthenticated = false;
-            state.error = null;
-            localStorage.removeItem("token");
-        }
-    },
-    extraReducers: (builder) => {
-        builder
-        // login
-        .addCase (login.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase (login.fulfilled, (state, action) => {
-            state.loading = false;
-            state.token = action.payload.token;
-            state.isAuthenticated = true;
-        })
-        .addCase(login.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload || action.error?.message;
-            state.isAuthenticated = false;
-        })
-        
-        // verify Token
-        .addCase(verifyToken.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(verifyToken.fulfilled, (state, action) => {
-            state.loading = false;
-            state.token = action.payload.token;
-            state.isAuthenticated = true;
-        })
-        .addCase(verifyToken.rejected, (state, action) => {
-            state.loading = false;
-            state.token = null;
-            state.isAuthenticated = false;
-            state.error = action.payload || action.error?.message;
-        })
-
-        // fetch Myinfo
-        .addCase(fetchMyInfo.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(fetchMyInfo.fulfilled, (state, action) => {
-            state.loading = false;
-            state.profile = action.payload;
-        })
-        .addCase(fetchMyInfo.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload || action.error?.message;
-        })
-
-        // logout
-        .addCase(logoutUser.pending, (state) => {
-            state.loading = true;
-        })
-        .addCase(logoutUser.fulfilled, (state) => {
-            state.loading = false;
-            state.token = null;
-            state.profile = null;
-            state.isAuthenticated = false;
-            state.error = null;
-        })
-        .addCase(logoutUser.rejected, (state, action) => {
-            // Vẫn logout dù API lỗi
-            state.loading = false;
-            state.token = null;
-            state.profile = null;
-            state.isAuthenticated = false;
-            state.error = action.payload || action.error?.message;
-        });
+    logout(state) {
+      state.token = null;
+      state.profile = null;
+      state.isAuthenticated = false;
+      state.error = null;
+      localStorage.removeItem("token");
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      // login
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(login.fulfilled, (state, action) => {
+        state.loading = false;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error?.message;
+        state.isAuthenticated = false;
+      })
+
+      // verify Token
+      .addCase(verifyToken.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyToken.fulfilled, (state, action) => {
+        state.loading = false;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+      })
+      .addCase(verifyToken.rejected, (state, action) => {
+        state.loading = false;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = action.payload || action.error?.message;
+      })
+
+      // fetch Myinfo
+      .addCase(fetchMyInfo.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyInfo.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload;
+      })
+      .addCase(fetchMyInfo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error?.message;
+      })
+
+      // logout
+      .addCase(logoutUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.loading = false;
+        state.token = null;
+        state.profile = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        // Vẫn logout dù API lỗi
+        state.loading = false;
+        state.token = null;
+        state.profile = null;
+        state.isAuthenticated = false;
+        state.error = action.payload || action.error?.message;
+      });
+  }
 })
 
-export const { logout, setProfile} = userSlice.actions;
+export const { logout, setProfile } = userSlice.actions;
 export default userSlice.reducer;
