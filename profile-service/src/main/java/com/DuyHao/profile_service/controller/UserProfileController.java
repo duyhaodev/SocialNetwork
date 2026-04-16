@@ -26,7 +26,8 @@ public class UserProfileController {
     }
 
     @GetMapping("/users")
-    ApiResponse<List<UserProfileResponse>> searchUsers(@RequestParam(value = "keyword", required = false) String keyword) {
+    ApiResponse<List<UserProfileResponse>> searchUsers(
+            @RequestParam(value = "keyword", required = false) String keyword) {
         List<UserProfileResponse> result;
 
         if (keyword != null && !keyword.isEmpty()) {
@@ -34,9 +35,7 @@ public class UserProfileController {
         } else {
             result = userProfileRepositoryService.getAllProfiles();
         }
-        return ApiResponse.<List<UserProfileResponse>>builder()
-                .result(result)
-                .build();
+        return ApiResponse.<List<UserProfileResponse>>builder().result(result).build();
     }
 
     @GetMapping("/myInfo")

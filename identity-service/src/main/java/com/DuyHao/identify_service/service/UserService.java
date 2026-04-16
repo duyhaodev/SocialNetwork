@@ -61,11 +61,6 @@ public class UserService {
 
         // Publish registration event asynchronously
         eventPublisher.publishEvent(new UserRegistrationEvent(user));
-        var profileRequest = profileMapper.toProfileCreationRequest(request);
-
-        profileRequest.setUserId(user.getId());
-        profileRequest.setUsername(user.getUsername());
-        profileClient.createProfile(profileRequest);
 
         return userMapper.toUserResponse(user);
     }
@@ -103,6 +98,7 @@ public class UserService {
             // Create profile after successful verification
             var profileRequest = ProfileCreationRequest.builder()
                     .userId(savedUser.getId())
+                    .username(savedUser.getUsername())
                     .fullName(savedUser.getFullName())
                     .build();
 
