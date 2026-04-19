@@ -18,7 +18,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.user); // Re-connect on login
-  
+
   // We can track the current active conversation ID to auto-mark read
   // However, tracking it in Redux is better. Let's assume we handle "mark read" in the UI components 
   // or via a dedicated Redux state for "activeConversationId".
@@ -26,27 +26,27 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     const token = getToken();
-    
+
     // Only connect if we have a token (user logged in)
     if (!token) {
-        if (socket) {
-            socket.disconnect();
-            setSocket(null);
-        }
-        return;
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
+      return;
     }
 
     // If socket already exists and connected, don't recreate
     if (socket && socket.connected) return;
 
     // Initialize Socket
-    const newSocket = new io("http://localhost:8099", { //https://5799b748a3db.ngrok-free.app http://localhost:8099
-        query: { token },
-        transports: ['websocket'], // Force websocket for better performance
-        reconnection: true,
-        extraHeaders: {
-          "ngrok-skip-browser-warning": "true"
-        }
+    const newSocket = io("http://localhost:8089", {
+      query: { token },
+      transports: ['websocket'], // Force websocket for better performance
+      reconnection: true,
+      extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+      }
     });
 
     newSocket.on("connect", () => {
@@ -67,10 +67,10 @@ export const SocketProvider = ({ children }) => {
     });
 
     // Global Message Listener
-    newSocket.on("message", (messageStr) => {
+    newSocket.on("message", (message) => {
       try {
-        const message = JSON.parse(messageStr);
-        
+        // Data is already an object, no need to JSON.parse
+
         // Dispatch to Redux -> Updates MessagePage & Popup
         dispatch(receiveSocketMessage(message));
 
@@ -79,7 +79,7 @@ export const SocketProvider = ({ children }) => {
         const state = store.getState();
         const exists = state.chat.conversations.some(c => c.id === message.conversationId);
         if (!exists) {
-           dispatch(fetchConversations());
+          dispatch(fetchConversations());
         }
 
         // Play notification sound if message is incoming (not from me)
@@ -89,30 +89,28 @@ export const SocketProvider = ({ children }) => {
           audio.play().catch(e => console.warn("Audio play failed:", e));
         }
       } catch (error) {
-        console.error("Socket message parse error:", error);
+        console.error("Socket message handling error:", error);
       }
     });
 
     // Global Notification Listener
-    newSocket.on("new_notification", (dataStr) => {
+    newSocket.on("new_notification", (notification) => {
       try {
-        const notification = typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr;
-
         // Play notification sound
         const audio = new Audio(notificationSound);
         audio.play().catch(e => console.warn("Audio play failed:", e));
 
         // Dispatch to Redux
-        dispatch(receiveNotification(notification)); 
+        dispatch(receiveNotification(notification));
 
         // Display toast notification
         toast.info(notification.message, {
-          description: `from @${notification.user.username}`, // Optional: show who sent it
+          description: notification.user ? `@${notification.user.username}` : '',
           duration: 3000, // Show for 3 seconds
         });
 
       } catch (error) {
-        console.error("Socket notification parse error:", error);
+        console.error("Socket notification handling error:", error);
       }
     });
 

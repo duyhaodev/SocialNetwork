@@ -13,7 +13,7 @@ spring:
 app:
   service:
     profile: http://localhost:8081/profile
-  socket:
-    port: 8099
-    host: localhost
 
+rt-service:
+  redis:
+    channel: realtime-topic

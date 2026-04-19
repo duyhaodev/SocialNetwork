@@ -1,18 +1,14 @@
 package com.DuyHao.chat_service.service;
 
+import com.DuyHao.chat_service.dto.RealtimeMessage;
 import com.DuyHao.chat_service.dto.request.MessageRequest;
 import com.DuyHao.chat_service.dto.response.MessageResponse;
 import com.DuyHao.chat_service.dto.response.UserProfileResponse;
 import com.DuyHao.chat_service.entity.Conversation;
 import com.DuyHao.chat_service.entity.Message;
-import com.DuyHao.chat_service.entity.WebSocketSession;
 import com.DuyHao.chat_service.repository.ConversationRepository;
 import com.DuyHao.chat_service.repository.MessageRepository;
-import com.DuyHao.chat_service.repository.WebSocketSessionRepository;
 import com.DuyHao.chat_service.repository.httpClient.ProfileClient;
-import com.corundumstudio.socketio.SocketIOClient;
-import com.corundumstudio.socketio.SocketIOServer;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,10 +28,8 @@ import java.util.stream.Collectors;
 public class MessageService {
     MessageRepository messageRepository;
     ConversationRepository conversationRepository;
-    WebSocketSessionRepository webSocketSessionRepository;
     ProfileClient profileClient;
-    SocketIOServer socketIOServer;
-    ObjectMapper objectMapper;
+    RedisPublisherService redisPublisherService;
 
     public List<MessageResponse> getMessages(String conversationId) {
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -55,7 +48,6 @@ public class MessageService {
         List<Message> messages = messageRepository.findAllByConversationIdOrderByCreatedAtDesc(conversationId);
 
         // Fetch sender profiles for better display
-        // Note: For large history, this should be optimized with caching
         return messages.stream()
                 .map(msg -> toMessageResponse(msg, currentUserId))
                 .collect(Collectors.toList());
@@ -88,24 +80,18 @@ public class MessageService {
 
         MessageResponse response = toMessageResponse(message, currentUserId);
 
-        // Push to online participants
-        List<String> participantIds = conversation.getParticipants().stream()
-                .map(Conversation.Participant::getUserId)
-                .toList();
-
-        List<WebSocketSession> sessions = webSocketSessionRepository.findAllByUserIdIn(participantIds);
-
-        sessions.forEach(session -> {
-            try {
-                SocketIOClient client = socketIOServer.getClient(UUID.fromString(session.getSocketSessionId()));
-                if (client != null) {
-                    // Adjust isMe for the receiver
-                    response.setMe(session.getUserId().equals(currentUserId));
-                    client.sendEvent("message", objectMapper.writeValueAsString(response));
-                }
-            } catch (Exception e) {
-                log.error("Error pushing message to socket {}: {}", session.getSocketSessionId(), e.getMessage());
-            }
+        // Push to all participants via Redis Pub/Sub
+        conversation.getParticipants().forEach(participant -> {
+            // Adjust isMe for the receiver
+            response.setMe(participant.getUserId().equals(currentUserId));
+            
+            RealtimeMessage rtMessage = RealtimeMessage.builder()
+                    .toUserId(participant.getUserId())
+                    .type("message") // Event name used in Socket.IO
+                    .payload(response)
+                    .build();
+            
+            redisPublisherService.publish(rtMessage);
         });
 
         // Restore isMe for sender's response

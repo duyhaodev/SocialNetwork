@@ -1,0 +1,27 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: realtime-service
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Không dùng jwk-set-uri nữa vì ta dùng Symmetric Key
+          # jwk-set-uri: http://localhost:8080/identity/.well-known/jwks.json
+          issuer-uri: http://localhost:8080/identity
+
+jwt:
+  signerKey: "+s9LmnZRkJF7IYL9A2sorvokBzMgL0HvYJly5aU+C9qFNKxpNM7cmj1KzSSdAmZ7"
+
+rt-service:
+  socket:
+    port: 8089
+    host: localhost
+  redis:
+    channel: realtime-topic
