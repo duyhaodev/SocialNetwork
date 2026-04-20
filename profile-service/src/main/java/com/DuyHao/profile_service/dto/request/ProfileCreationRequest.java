@@ -18,4 +18,6 @@ public class ProfileCreationRequest {
     String lastName;
     LocalDate dob;
     String city;
+    String avatarUrl;
+    String bio;
 }
