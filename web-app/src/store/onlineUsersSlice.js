@@ -13,11 +13,11 @@ const onlineUsersSlice = createSlice({
     // Cập nhật trạng thái của 1 user (dùng cho sự kiện user_status_change)
     updateUserStatus: (state, action) => {
       const { userId, status } = action.payload;
-      if (status === "online") {
+      if (status && status.toUpperCase() === "ONLINE") {
         if (!state.onlineIds.includes(userId)) {
           state.onlineIds.push(userId);
         }
-      } else {
+      } else if (status && status.toUpperCase() === "OFFLINE") {
         state.onlineIds = state.onlineIds.filter((id) => id !== userId);
       }
     },
