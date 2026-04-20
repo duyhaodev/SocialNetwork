@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,9 @@ import java.util.stream.Collectors;
 public class ConversationService {
     ConversationRepository conversationRepository;
     ProfileClient profileClient;
+    StringRedisTemplate redisTemplate;
+
+    private static final String ONLINE_USERS_KEY = "user:online:set";
 
     public ConversationResponse create(ConversationRequest request) {
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -132,6 +136,10 @@ public class ConversationService {
                             response.setConversationName(profile.getFullName());
                             // response.setConversationAvatar(profile.getAvatarUrl()); // Avatar missing in profile-service currently
                             response.setPartnerId(profile.getUserId());
+
+                            // Check online status from Redis
+                            Boolean isOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, partner.getUserId());
+                            response.setOnline(Boolean.TRUE.equals(isOnline));
                         }
                     } catch (Exception e) {
                         log.error("Failed to fetch profile for user {}: {}", partner.getUserId(), e.getMessage());

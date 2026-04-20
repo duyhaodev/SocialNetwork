@@ -22,4 +22,5 @@ public class ConversationResponse {
     String conversationName;
     String conversationAvatar;
     String partnerId;
+    boolean isOnline;
 }
