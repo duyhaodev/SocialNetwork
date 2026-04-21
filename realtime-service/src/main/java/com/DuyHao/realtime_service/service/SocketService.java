@@ -40,6 +40,18 @@ public class SocketService {
     public void start() {
         server.addConnectListener(this::onConnect);
         server.addDisconnectListener(this::onDisconnect);
+
+        // Room management
+        server.addEventListener("join_room", String.class, (client, roomId, ackRequest) -> {
+            client.joinRoom(roomId);
+            log.info("Client {} joined room {}", client.getSessionId(), roomId);
+        });
+
+        server.addEventListener("leave_room", String.class, (client, roomId, ackRequest) -> {
+            client.leaveRoom(roomId);
+            log.info("Client {} left room {}", client.getSessionId(), roomId);
+        });
+
         server.start();
         log.info("Socket.IO server started at {}:{}", server.getConfiguration().getHostname(), server.getConfiguration().getPort());
     }
@@ -143,5 +155,10 @@ public class SocketService {
         } else {
             log.debug("User {} is offline, message not sent.", toUserId);
         }
+    }
+
+    public void sendToRoom(String roomId, String event, Object data) {
+        server.getRoomOperations(roomId).sendEvent(event, data);
+        log.info("Sent event '{}' to room: {}", event, roomId);
     }
 }

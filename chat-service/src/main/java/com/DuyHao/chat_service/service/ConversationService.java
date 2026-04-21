@@ -65,9 +65,45 @@ public class ConversationService {
                 .build();
 
         Conversation conversation = Conversation.builder()
-                .type(request.getType() != null ? request.getType() : "DIRECT")
+                .type("DIRECT")
                 .participantsHash(hash)
                 .participants(List.of(p1, p2))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        conversation = conversationRepository.save(conversation);
+
+        return toConversationResponse(conversation, currentUserId, false);
+    }
+
+    public ConversationResponse createGroup(ConversationRequest request) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        List<Conversation.Participant> participants = new ArrayList<>();
+        // Add creator as Admin
+        participants.add(Conversation.Participant.builder()
+                .userId(currentUserId)
+                .unread(false)
+                .isAdmin(true)
+                .build());
+
+        // Add others
+        if (request.getParticipantIds() != null) {
+            request.getParticipantIds().stream()
+                    .filter(id -> !id.equals(currentUserId))
+                    .forEach(id -> participants.add(Conversation.Participant.builder()
+                            .userId(id)
+                            .unread(false)
+                            .isAdmin(false)
+                            .build()));
+        }
+
+        Conversation conversation = Conversation.builder()
+                .type("GROUP")
+                .name(request.getName())
+                .avatarUrl(request.getAvatarUrl())
+                .createdBy(currentUserId)
+                .participants(participants)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -115,6 +151,63 @@ public class ConversationService {
         return false;
     }
 
+    public ConversationResponse addParticipants(String conversationId, List<String> userIds) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        if (!"GROUP".equals(conversation.getType())) {
+            throw new RuntimeException("Cannot add participants to a DIRECT conversation");
+        }
+
+        // Only participants can add others
+        boolean isParticipant = conversation.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+        if (!isParticipant) {
+            throw new RuntimeException("Access denied");
+        }
+
+        Set<String> existingUserIds = conversation.getParticipants().stream()
+                .map(Conversation.Participant::getUserId)
+                .collect(Collectors.toSet());
+
+        userIds.stream()
+                .filter(id -> !existingUserIds.contains(id))
+                .forEach(id -> conversation.getParticipants().add(Conversation.Participant.builder()
+                        .userId(id)
+                        .unread(true)
+                        .isAdmin(false)
+                        .build()));
+
+        conversationRepository.save(conversation);
+        return toConversationResponse(conversation, currentUserId, false);
+    }
+
+    public ConversationResponse removeParticipant(String conversationId, String userId) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        if (!"GROUP".equals(conversation.getType())) {
+            throw new RuntimeException("Cannot remove participants from a DIRECT conversation");
+        }
+
+        // Check if current user is admin OR if the user is removing themselves
+        boolean isAdmin = conversation.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId) && p.isAdmin());
+        
+        if (!isAdmin && !currentUserId.equals(userId)) {
+            throw new RuntimeException("No permission to remove this participant");
+        }
+
+        conversation.getParticipants().removeIf(p -> p.getUserId().equals(userId));
+
+        // If no participants left, maybe delete the conversation? For now just save.
+        conversationRepository.save(conversation);
+        
+        return toConversationResponse(conversation, currentUserId, false);
+    }
+
     private ConversationResponse toConversationResponse(Conversation conversation, String currentUserId, boolean unread) {
         ConversationResponse response = ConversationResponse.builder()
                 .id(conversation.getId())
@@ -125,27 +218,32 @@ public class ConversationService {
                 .unread(unread)
                 .build();
 
-        // Get partner info from profile-service
-        conversation.getParticipants().stream()
-                .filter(p -> !p.getUserId().equals(currentUserId))
-                .findFirst()
-                .ifPresent(partner -> {
-                    try {
-                        UserProfileResponse profile = profileClient.getProfile(partner.getUserId());
-                        if (profile != null) {
-                            response.setConversationName(profile.getFullName());
-                            // response.setConversationAvatar(profile.getAvatarUrl()); // Avatar missing in profile-service currently
-                            response.setPartnerId(profile.getUserId());
+        if ("GROUP".equals(conversation.getType())) {
+            response.setConversationName(conversation.getName());
+            response.setConversationAvatar(conversation.getAvatarUrl());
+        } else {
+            // Get partner info from profile-service
+            conversation.getParticipants().stream()
+                    .filter(p -> !p.getUserId().equals(currentUserId))
+                    .findFirst()
+                    .ifPresent(partner -> {
+                        try {
+                            UserProfileResponse profile = profileClient.getProfile(partner.getUserId());
+                            if (profile != null) {
+                                response.setConversationName(profile.getFullName());
+                                // response.setConversationAvatar(profile.getAvatarUrl()); // Avatar missing in profile-service currently
+                                response.setPartnerId(profile.getUserId());
 
-                            // Check online status from Redis
-                            Boolean isOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, partner.getUserId());
-                            response.setOnline(Boolean.TRUE.equals(isOnline));
+                                // Check online status from Redis
+                                Boolean isOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, partner.getUserId());
+                                response.setOnline(Boolean.TRUE.equals(isOnline));
+                            }
+                        } catch (Exception e) {
+                            log.error("Failed to fetch profile for user {}: {}", partner.getUserId(), e.getMessage());
+                            response.setConversationName("Unknown User");
                         }
-                    } catch (Exception e) {
-                        log.error("Failed to fetch profile for user {}: {}", partner.getUserId(), e.getMessage());
-                        response.setConversationName("Unknown User");
-                    }
-                });
+                    });
+        }
 
         return response;
     }

@@ -23,14 +23,23 @@ public class RedisMessageListener {
         try {
             log.info("Received message from Redis: {}", message);
             RealtimeMessage realtimeMessage = objectMapper.readValue(message, RealtimeMessage.class);
-            
-            // Push message tới user thông qua Socket.IO
-            socketService.sendMessage(
-                realtimeMessage.getToUserId(), 
-                realtimeMessage.getType(), 
-                realtimeMessage.getPayload()
-            );
-            
+
+            if (realtimeMessage.getToRoomId() != null) {
+                // Push message to room
+                socketService.sendToRoom(
+                        realtimeMessage.getToRoomId(),
+                        realtimeMessage.getType(),
+                        realtimeMessage.getPayload()
+                );
+            } else if (realtimeMessage.getToUserId() != null) {
+                // Push message to specific user
+                socketService.sendMessage(
+                        realtimeMessage.getToUserId(),
+                        realtimeMessage.getType(),
+                        realtimeMessage.getPayload()
+                );
+            }
+
         } catch (Exception e) {
             log.error("Error parsing Redis message: {}", message, e);
         }

@@ -25,6 +25,13 @@ public class ConversationController {
                 .build();
     }
 
+    @PostMapping("/group")
+    ApiResponse<ConversationResponse> createGroupConversation(@RequestBody ConversationRequest request) {
+        return ApiResponse.<ConversationResponse>builder()
+                .result(conversationService.createGroup(request))
+                .build();
+    }
+
     @GetMapping("/my-conversations")
     ApiResponse<List<ConversationResponse>> myConversations() {
         return ApiResponse.<List<ConversationResponse>>builder()
@@ -36,6 +43,24 @@ public class ConversationController {
     ApiResponse<Boolean> markAsRead(@PathVariable String conversationId) {
         return ApiResponse.<Boolean>builder()
                 .result(conversationService.markAsRead(conversationId))
+                .build();
+    }
+
+    @PostMapping("/{conversationId}/participants")
+    ApiResponse<ConversationResponse> addParticipants(
+            @PathVariable String conversationId,
+            @RequestBody List<String> userIds) {
+        return ApiResponse.<ConversationResponse>builder()
+                .result(conversationService.addParticipants(conversationId, userIds))
+                .build();
+    }
+
+    @DeleteMapping("/{conversationId}/participants/{userId}")
+    ApiResponse<ConversationResponse> removeParticipant(
+            @PathVariable String conversationId,
+            @PathVariable String userId) {
+        return ApiResponse.<ConversationResponse>builder()
+                .result(conversationService.removeParticipant(conversationId, userId))
                 .build();
     }
 }

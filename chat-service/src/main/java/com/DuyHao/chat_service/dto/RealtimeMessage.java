@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RealtimeMessage {
     String toUserId;
+    String toRoomId;
     String type;    // e.g., NOTIFICATION, CHAT, FOLLOW
     Object payload;
 }

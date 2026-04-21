@@ -1,20 +1,35 @@
 import { useEffect, useState, useRef } from "react";
-import { Phone, Video, Info, Smile, Mic, Image, Heart, Send } from "lucide-react";
+import { Phone, Video, Camera, Info, Smile, Mic, Image, Heart, Send } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { messageApi } from "../../../api/messageApi";
 import { Spinner } from "../../../components/ui/spinner";
 import { showUnderDevelopmentToast } from "../../../utils/commonUtils";
 
+import { searchApi } from "../../../api/searchApi";
+import { Search } from "lucide-react";
+import { UserAvatar } from "../../../components/ui/user-avatar";
+import { useSelector } from "react-redux";
+import { ConversationDetails } from "./ConversationDetails";
+
 export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage }) {
+  const { profile } = useSelector(state => state.user);
   const [messages, setMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const messagesEndRef = useRef(null);
 
-  // EMOJI STATE
+  // Helper to determine if a message is from me
+  const checkIsMe = (msg) => {
+    if (!profile || !msg) return false;
+    const senderId = msg.sender?.id || msg.senderId;
+    return senderId === profile.id || senderId === profile.userId;
+  };
+
+  // ... (rest of the component)
+
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const emojiRef = useRef(null);
-
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -28,13 +43,13 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
         if (prev.some((msg) => msg.id === incomingMessage.id)) return prev;
 
         const newMessage = {
-            ...incomingMessage,
-            isMe: Boolean(incomingMessage.me || incomingMessage.isMe) // Handle both potential field names
+          ...incomingMessage,
+          isMe: checkIsMe(incomingMessage)
         };
         return [...prev, newMessage];
       });
     }
-  }, [incomingMessage, conversation]);
+  }, [incomingMessage, conversation, profile]);
 
   // EMOJI: Close when clicking outside
   useEffect(() => {
@@ -70,7 +85,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
             .reverse()
             .map((m) => ({
               ...m,
-              isMe: Boolean(m.me || m.isMe),
+              isMe: checkIsMe(m),
             }));
           setMessages(sortedMsgs);
         } else {
@@ -85,7 +100,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
     };
 
     fetchMessages();
-  }, [conversation?.id]);
+  }, [conversation?.id, profile]);
 
   const handleEmojiClick = (emojiData) => {
     setMessageInput((prev) => prev + emojiData.emoji);
@@ -111,7 +126,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
         const newMsg = data.result;
         // Mark outgoing message as from me for UI rendering
         const normalized = { ...newMsg, isMe: true };
-        
+
         setMessages((prev) => {
           // Check if message already exists (e.g. added via socket already)
           if (prev.some(m => m.id === normalized.id)) {
@@ -132,7 +147,8 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
   };
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-row overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0">
       {/* Chat Header */}
       <div className="flex items-center justify-between p-4 border-b border-[#333]">
         <div className="flex items-center gap-3">
@@ -168,8 +184,8 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
             <button className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" onClick={showUnderDevelopmentToast}>
               <Video className="w-5 h-5" />
             </button>
-            <button className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" onClick={showUnderDevelopmentToast}>
-              <Info className="w-5 h-5" />
+            <button className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" onClick={() => setIsInfoOpen(!isInfoOpen)}>
+              <Info className={`w-5 h-5 ${isInfoOpen ? "text-[#0095f6]" : ""}`} />
             </button>
           </div>
         ) : null}
@@ -185,9 +201,8 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
           messages.map((msg) => (
             <div key={msg.id} className="space-y-1">
               <div
-                className={`flex ${
-                  msg.isMe ? "justify-end" : "justify-start"
-                }`}
+                className={`flex ${msg.isMe ? "justify-end" : "justify-start"
+                  }`}
               >
                 {!msg.isMe && (
                   <div className="mr-2 mt-1 flex-shrink-0">
@@ -211,12 +226,16 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                       ? new Date(msg.createdAt).toLocaleString()
                       : ""
                   }
-                  className={`max-w-md px-4 py-2 rounded-2xl break-words ${
-                    msg.isMe
+                  className={`max-w-md px-4 py-2 rounded-2xl break-words ${msg.isMe
                       ? "bg-[#0095f6] text-white"
                       : "bg-[#262626] text-white"
-                  }`}
+                    }`}
                 >
+                  {conversation?.type === "GROUP" && !msg.isMe && (
+                    <p className="text-[10px] font-bold text-gray-400 mb-1">
+                      {msg.sender?.fullName || "Unknown"}
+                    </p>
+                  )}
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 </div>
               </div>
@@ -276,7 +295,14 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
             </button>
           </div>
         </div>
+        </div>
       </div>
+      {isInfoOpen && (
+        <ConversationDetails 
+          conversation={conversation} 
+          onClose={() => setIsInfoOpen(false)} 
+        />
+      )}
     </div>
   );
 }

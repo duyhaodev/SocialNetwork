@@ -12,5 +12,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ConversationRequest {
     String type; // DIRECT, GROUP
+    String name;
+    String avatarUrl;
     List<String> participantIds;
 }

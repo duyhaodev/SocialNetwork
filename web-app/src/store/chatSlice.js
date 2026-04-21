@@ -58,20 +58,16 @@ const chatSlice = createSlice({
       );
 
       if (index !== -1) {
-        const isMe = message.me || message.isMe;
-        // Logic: If message is not from me, mark unread (unless currently viewed - handled by component/thunk logic later, 
-        // but for raw socket update, we set unread=true if not me. The UI opening the chat will trigger markRead)
-        
-        // Note: We don't know "selectedConversationId" perfectly here unless we track it in Redux. 
-        // Assuming we track it in Redux (optional) or let the UI dispatch markRead when viewing.
-        // For safety/simplicity: New msg from others = unread.
+        // Determine isMe by comparing sender ID with current user ID
+        const senderId = message.sender?.id || message.senderId;
+        const isMe = senderId === message.currentUserId;
         
         const existingConv = state.conversations[index];
         const updatedConv = {
           ...existingConv,
           lastMessage: message.content,
           timestamp: message.createdAt,
-          unread: !isMe || existingConv.unread,
+          unread: !isMe, // New message from others = unread
         };
 
         // Remove from current position and add to top

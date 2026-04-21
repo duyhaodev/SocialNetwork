@@ -71,19 +71,26 @@ export const SocketProvider = ({ children }) => {
       try {
         // Data is already an object, no need to JSON.parse
 
+        // Add currentUserId to message to help reducer determine isMe
+        const state = store.getState();
+        const currentUserId = state.user.profile?.id || state.user.profile?.userId;
+        const enrichedMessage = {
+            ...message,
+            currentUserId
+        };
+
         // Dispatch to Redux -> Updates MessagePage & Popup
-        dispatch(receiveSocketMessage(message));
+        dispatch(receiveSocketMessage(enrichedMessage));
 
         // Check if conversation exists in Redux Store
-        // If not, fetch conversations to sync (e.g. new conversation started by someone else)
-        const state = store.getState();
         const exists = state.chat.conversations.some(c => c.id === message.conversationId);
         if (!exists) {
           dispatch(fetchConversations());
         }
 
         // Play notification sound if message is incoming (not from me)
-        const isMe = message.me || message.isMe;
+        const senderId = message.sender?.id || message.senderId;
+        const isMe = senderId === currentUserId;
         if (!isMe) {
           const audio = new Audio(messageSound);
           audio.play().catch(e => console.warn("Audio play failed:", e));

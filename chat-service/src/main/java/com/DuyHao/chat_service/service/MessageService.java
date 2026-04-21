@@ -80,22 +80,15 @@ public class MessageService {
 
         MessageResponse response = toMessageResponse(message, currentUserId);
 
-        // Push to all participants via Redis Pub/Sub
-        conversation.getParticipants().forEach(participant -> {
-            // Adjust isMe for the receiver
-            response.setMe(participant.getUserId().equals(currentUserId));
-            
-            RealtimeMessage rtMessage = RealtimeMessage.builder()
-                    .toUserId(participant.getUserId())
-                    .type("message") // Event name used in Socket.IO
-                    .payload(response)
-                    .build();
-            
-            redisPublisherService.publish(rtMessage);
-        });
+        // Push to room via Redis Pub/Sub
+        RealtimeMessage rtMessage = RealtimeMessage.builder()
+                .toRoomId(conversation.getId())
+                .type("message") // Event name used in Socket.IO
+                .payload(response)
+                .build();
 
-        // Restore isMe for sender's response
-        response.setMe(true);
+        redisPublisherService.publish(rtMessage);
+
         return response;
     }
 

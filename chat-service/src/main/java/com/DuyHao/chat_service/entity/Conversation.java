@@ -23,6 +23,10 @@ public class Conversation {
 
     String type; // DIRECT, GROUP
 
+    String name;
+    String avatarUrl;
+    String createdBy;
+
     @Indexed(unique = true, sparse = true)
     String participantsHash; // Dùng cho chat 1-1: sort(userId1, userId2).join("_")
 

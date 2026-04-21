@@ -5,10 +5,12 @@ import { ConversationSidebar } from "./components/ConversationSidebar";
 import { ChatWindow } from "./components/ChatWindow";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchConversations, markConversationRead, receiveSocketMessage, addNewConversation } from "../../store/chatSlice";
+import { useSocket } from "../../context/SocketContext";
 
 
 export function MessagesPage({ onBack }) {
   const dispatch = useDispatch();
+  const socket = useSocket();
   const { conversations, loading: conversationsLoading, latestMessage } = useSelector(state => state.chat);
   
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -33,6 +35,17 @@ export function MessagesPage({ onBack }) {
         dispatch(fetchConversations());
     }
   }, [dispatch, conversations.length]);
+
+  // Auto-join rooms for all conversations to receive real-time updates
+  useEffect(() => {
+    if (socket && conversations.length > 0) {
+        conversations.forEach(conv => {
+            if (conv.id) {
+                socket.emit("join_room", conv.id);
+            }
+        });
+    }
+  }, [socket, conversations]);
 
   // Handle auto-select from state (e.g. click from popup)
   useEffect(() => {
@@ -108,6 +121,15 @@ export function MessagesPage({ onBack }) {
   };
 
   const handleConversationSelected = (conv) => {
+    // Check if it's a new conversation from API (has conversationName) and not in list
+    if (conv.id && !conversations.find(c => c.id === conv.id)) {
+        dispatch(addNewConversation({
+            ...conv,
+            lastMessage: conv.lastMessageContent || "",
+            timestamp: conv.lastMessageTimestamp || conv.createdAt,
+        }));
+    }
+
     // Standardize object structure if needed
     const adaptedConv = {
         ...conv,
@@ -118,6 +140,11 @@ export function MessagesPage({ onBack }) {
     };
     
     setSelectedConversation(adaptedConv);
+
+    // Join socket room
+    if (socket && conv.id) {
+        socket.emit("join_room", conv.id);
+    }
 
     if (conv.unread) {
       dispatch(markConversationRead(conv.id));
