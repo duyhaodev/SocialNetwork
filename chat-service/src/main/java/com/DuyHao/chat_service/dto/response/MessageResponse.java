@@ -1,9 +1,11 @@
 package com.DuyHao.chat_service.dto.response;
 
+import com.DuyHao.chat_service.entity.MediaInfo;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -14,6 +16,7 @@ public class MessageResponse {
     String id;
     String conversationId;
     String content;
+    List<MediaInfo> media;
     LocalDateTime createdAt;
     boolean isMe;
     SenderInfo sender;

@@ -31,6 +31,11 @@ public class MediaController {
         return mediaService.getByCommentId(commentId);
     }
 
+    @GetMapping("/conversation/{conversationId}")
+    public List<MediaResponse> getByConversationId(@PathVariable String conversationId) {
+        return mediaService.getByConversationId(conversationId);
+    }
+
     // ==================== DELETE BY COMMENT ====================
     @DeleteMapping("/comment/{commentId}")
     public ApiResponse<Void> deleteByCommentId(@PathVariable("commentId") String commentId) {

@@ -8,6 +8,7 @@ import com.DuyHao.chat_service.entity.Conversation;
 import com.DuyHao.chat_service.entity.Message;
 import com.DuyHao.chat_service.repository.ConversationRepository;
 import com.DuyHao.chat_service.repository.MessageRepository;
+import com.DuyHao.chat_service.repository.httpClient.MediaClient;
 import com.DuyHao.chat_service.repository.httpClient.ProfileClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
@@ -29,6 +30,7 @@ public class MessageService {
     MessageRepository messageRepository;
     ConversationRepository conversationRepository;
     ProfileClient profileClient;
+    MediaClient mediaClient;
     RedisPublisherService redisPublisherService;
 
     public List<MessageResponse> getMessages(String conversationId) {
@@ -60,7 +62,13 @@ public class MessageService {
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
 
         // Update conversation participants' unread status and last message
-        conversation.setLastMessageContent(request.getContent());
+        String lastMessageContent = request.getContent();
+        if ((lastMessageContent == null || lastMessageContent.isEmpty()) && request.getMedia() != null && !request.getMedia().isEmpty()) {
+            String type = request.getMedia().get(0).getType();
+            lastMessageContent = "image".equals(type) ? "[Hình ảnh]" : "[Video]";
+        }
+
+        conversation.setLastMessageContent(lastMessageContent);
         conversation.setLastMessageTimestamp(LocalDateTime.now());
         conversation.getParticipants().forEach(p -> {
             if (!p.getUserId().equals(currentUserId)) {
@@ -74,9 +82,25 @@ public class MessageService {
                 .conversationId(request.getConversationId())
                 .senderId(currentUserId)
                 .content(request.getContent())
+                .media(request.getMedia())
                 .createdAt(LocalDateTime.now())
                 .build();
         message = messageRepository.save(message);
+
+        // Assign media to conversation in media-service
+        if (request.getMedia() != null && !request.getMedia().isEmpty()) {
+            try {
+                List<String> mediaIds = request.getMedia().stream()
+                        .map(m -> m.getId())
+                        .filter(id -> id != null)
+                        .collect(Collectors.toList());
+                if (!mediaIds.isEmpty()) {
+                    mediaClient.assignMediaToConversation(request.getConversationId(), mediaIds);
+                }
+            } catch (Exception e) {
+                log.error("Failed to assign media to conversation: {}", e.getMessage());
+            }
+        }
 
         MessageResponse response = toMessageResponse(message, currentUserId);
 
@@ -97,6 +121,7 @@ public class MessageService {
                 .id(message.getId())
                 .conversationId(message.getConversationId())
                 .content(message.getContent())
+                .media(message.getMedia())
                 .createdAt(message.getCreatedAt())
                 .isMe(message.getSenderId().equals(currentUserId))
                 .build();

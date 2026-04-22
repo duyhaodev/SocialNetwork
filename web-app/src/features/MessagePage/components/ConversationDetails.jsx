@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { UserPlus, LogOut, Bell, Image as ImageIcon, Link as LinkIcon, FileText, Search, X } from "lucide-react";
+import { UserPlus, LogOut, Bell, Image as ImageIcon, Link as LinkIcon, FileText, Search, X, Video } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { UserAvatar } from "../../../components/ui/user-avatar";
 import { Spinner } from "../../../components/ui/spinner";
 import { searchApi } from "../../../api/searchApi";
 import { messageApi } from "../../../api/messageApi";
+import { mediaApi } from "../../../api/mediaApi";
 
 export function ConversationDetails({ conversation, onClose }) {
   // Add Member State
@@ -13,6 +14,29 @@ export function ConversationDetails({ conversation, onClose }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+
+  // Shared Media State
+  const [sharedMedia, setSharedMedia] = useState([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+
+  // Fetch shared media
+  useEffect(() => {
+    const fetchMedia = async () => {
+      if (!conversation?.id) return;
+      setMediaLoading(true);
+      try {
+        const res = await mediaApi.getConversationMedia(conversation.id);
+        const data = res.data?.result || res.data || res || [];
+        setSharedMedia(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch shared media:", err);
+      } finally {
+        setMediaLoading(false);
+      }
+    };
+
+    fetchMedia();
+  }, [conversation?.id]);
 
   // Search members
   useEffect(() => {
@@ -129,27 +153,41 @@ export function ConversationDetails({ conversation, onClose }) {
           </div>
         )}
 
-        {/* Shared Media Mockup */}
+        {/* Shared Media */}
         <div className="p-4 space-y-4">
           <div className="space-y-3">
-            <button className="w-full flex items-center justify-between group">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <ImageIcon className="w-5 h-5 text-gray-400" />
-                <span className="text-sm">Shared Media</span>
-              </div>
-              <span className="text-xs text-blue-500 hidden group-hover:block transition-all">See All</span>
-            </button>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="aspect-square bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                <span className="text-xs text-gray-600">Photo</span>
-              </div>
-              <div className="aspect-square bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                <span className="text-xs text-gray-600">Photo</span>
-              </div>
-              <div className="aspect-square bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                <span className="text-xs text-gray-600">Photo</span>
+                <span className="text-sm font-medium">Shared Media</span>
               </div>
             </div>
+            
+            {mediaLoading ? (
+              <div className="flex justify-center p-4">
+                <Spinner className="w-5 h-5 text-gray-500" />
+              </div>
+            ) : sharedMedia.length > 0 ? (
+              <div className="grid grid-cols-3 gap-2">
+                {sharedMedia.slice(0, 6).map((m, idx) => (
+                  <div 
+                    key={idx} 
+                    className="aspect-square bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#222] cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => window.open(m.mediaUrl, '_blank')}
+                  >
+                    {m.mediaType === 'image' ? (
+                      <img src={m.mediaUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-900">
+                        <Video className="w-4 h-4 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 text-center py-2">No media shared yet</p>
+            )}
           </div>
 
           <button className="w-full flex items-center gap-3 py-3 group">

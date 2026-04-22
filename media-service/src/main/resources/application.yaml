@@ -16,13 +16,13 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 200MB
-      max-request-size: 200MB
+      max-file-size: 20MB
+      max-request-size: 20MB
 
 cloudinary:
-  cloud_name: dqdivgrkz
-  api_key: 528958256867871
-  api_secret: 2-mW8fvI56YGAWXz0XBFRdUEu-Q
+  cloud_name: dfscz2c2l
+  api_key: 176445729432524
+  api_secret: mki6bPZ7weHEuJ3pRK4yHAEyEqg
 
 server:
   port: 8086

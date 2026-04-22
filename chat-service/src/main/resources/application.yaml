@@ -13,6 +13,7 @@ spring:
 app:
   service:
     profile: http://localhost:8081/profile
+    media: http://localhost:8086
 
 rt-service:
   redis:

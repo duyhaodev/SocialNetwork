@@ -9,6 +9,9 @@ public interface MediaRepository extends JpaRepository<Media, String> {
     List<Media> findByPostId(String postId);
 
     List<Media> findByCommentId(String commentId);
+
+    List<Media> findByConversationId(String conversationId);
+
     // Tìm danh sách media theo list ID
     List<Media> findAllByIdIn(List<String> ids);
 }

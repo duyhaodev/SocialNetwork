@@ -23,11 +23,12 @@ export const messageApi = {
     },
 
     // Gửi tin nhắn mới
-    sendMessage({ conversationId, content }) {
+    sendMessage({ conversationId, content, media }) {
         const url = "chat/messages/create";
         const payload = {
             conversationId,
-            content
+            content,
+            media // [{id, url, type}]
         };
         return axiosClient.post(url, payload);
     },

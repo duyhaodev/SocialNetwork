@@ -100,6 +100,17 @@ public class MediaService {
         mediaRepository.saveAll(mediaList);
     }
 
+    @Transactional
+    public void assignMediaToConversation(String conversationId, List<String> mediaIds) {
+        if (mediaIds == null || mediaIds.isEmpty()) return;
+
+        List<Media> mediaList = mediaRepository.findAllByIdIn(mediaIds);
+        for (Media media : mediaList) {
+            media.setConversationId(conversationId);
+        }
+        mediaRepository.saveAll(mediaList);
+    }
+
     // ==================== GET MEDIA ====================
     public List<MediaResponse> getByPostId(String postId) {
         return mediaMapper.toResponseList(mediaRepository.findByPostId(postId));
@@ -107,6 +118,10 @@ public class MediaService {
 
     public List<MediaResponse> getByCommentId(String commentId) {
         return mediaMapper.toResponseList(mediaRepository.findByCommentId(commentId));
+    }
+
+    public List<MediaResponse> getByConversationId(String conversationId) {
+        return mediaMapper.toResponseList(mediaRepository.findByConversationId(conversationId));
     }
 
     // ==================== DELETE MEDIA ====================

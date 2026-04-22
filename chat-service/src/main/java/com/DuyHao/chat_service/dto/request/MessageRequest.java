@@ -1,7 +1,10 @@
 package com.DuyHao.chat_service.dto.request;
 
+import com.DuyHao.chat_service.entity.MediaInfo;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -11,4 +14,5 @@ import lombok.experimental.FieldDefaults;
 public class MessageRequest {
     String conversationId;
     String content;
+    List<MediaInfo> media;
 }

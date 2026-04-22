@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,6 +25,7 @@ public class Message {
 
     String senderId;
     String content;
+    List<MediaInfo> media;
 
     LocalDateTime createdAt;
 }
