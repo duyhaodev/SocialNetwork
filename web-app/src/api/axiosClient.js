@@ -1,28 +1,26 @@
-import axios from "axios"
+import axios from "axios";
 import { getToken } from "./localStorageService";
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:8888',
-    //baseURL: 'https://109a273e8a9f.ngrok-free.app',
+    baseURL: 'http://localhost:8888', // Cổng của API Gateway
     headers: {
         'Content-Type': 'application/json',
-        //'ngrok-skip-browser-warning': 'true'
     },
     withCredentials: true
 });
 
-//Interceptors
-// Add a request interceptor
+// Request Interceptor
 axiosClient.interceptors.request.use( 
   (config) => {
     const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Nếu là POST /posts và đang gửi FormData → xoá Content-Type để browser tự set boundary
-    const isCreatePost = config.method === 'post' && (config.url || '').startsWith('/posts');
-    if (isCreatePost && config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
+
+    // Tinh chỉnh check multipart: 
+    // Nếu gửi FormData (thường dùng cho upload ảnh/video)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']; 
     }
 
     return config;
@@ -30,34 +28,39 @@ axiosClient.interceptors.request.use(
     return Promise.reject(error);
 });
 
-// Add a response interceptor
+// Response Interceptor
 axiosClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // Vì Backend bọc ApiResponse { code, result, message }
+    // Trả về response.data để ở ngoài lấy được object {result, message...}
+    return response.data;
+  },
   (error) => {
-    const status = error.response?.status;  //Lấy mã lỗi 400, 401, 403, 500...
-    const url = error.config?.url || "";  // Lấy URL của API bị lỗi (nếu có)
+    const status = error.response?.status;
+    const url = error.config?.url || "";
 
+    // Kiểm tra nếu không phải các endpoint login/register/refresh mà lỗi 401
     const isAuthEndpoint =
       url.includes("/auth/token") ||
-      url.includes("/users") ||          
+      url.includes("/users/registration") || // Sửa lại cho khớp route đăng ký của bạn
       url.includes("/auth/refresh");
 
     if (status === 401 && !isAuthEndpoint) {
-      // token invalid or expired -> clear and redirect to login
       localStorage.removeItem("token");
-      // Force reload to ensure app state (redux) resets; navigate to login
-      window.location.href = "/login";
+      // Tránh loop redirect nếu đang ở trang login sẵn rồi
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
 
+    // Trả về lỗi từ Server (ApiResponse) nếu có
     if (error.response?.data) {
         return Promise.reject(error.response.data);
     }
 
-    const message =
-      error.response?.data?.message || "Server error, please try again later!";
-    return Promise.reject(new Error(message));  // Ném lỗi ra ngoài dưới dạng `Error(message)`
+    const message = error.response?.data?.message || "Server error, please try again later!";
+    return Promise.reject(new Error(message));
   }
 );
-
 
 export default axiosClient;

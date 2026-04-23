@@ -15,4 +15,14 @@ public interface PostClient {
     // Lấy danh sách bài viết
     @GetMapping("/internal/posts")
     List<PostResponse> getPosts(@RequestParam("ids") List<String> ids);
+
+    // Gửi yêu cầu tạo bài repost lên Profile (Đã khớp với InternalPostController)
+    @PostMapping("/internal/posts/repost")
+    PostResponse createRepost(@RequestParam("userId") String userId,
+                              @RequestParam("originalPostId") String originalPostId);
+
+    // Gửi yêu cầu xóa bài repost khỏi Profile
+    @DeleteMapping("/internal/posts/repost")
+    String deleteRepost(@RequestParam("userId") String userId,
+                        @RequestParam("originalPostId") String originalPostId);
 }

@@ -126,7 +126,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
 
           {/* Full name */}
           <div className="space-y-1">
-            <label className="text-sm font-medium">Display Name</label>
+            <label className="text-sm font-medium">Full Name</label>
             <Input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}

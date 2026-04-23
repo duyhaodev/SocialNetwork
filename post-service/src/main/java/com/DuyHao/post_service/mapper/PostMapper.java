@@ -23,10 +23,14 @@ public class PostMapper {
                 .scope(post.getScope())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
+
+                // Thông tin người đăng bài
                 .userId(user.getUserId())
                 .username(user.getUsername())
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
+
+                // Media và Interaction
                 .mediaUrls(mediaUrls)
                 .likeCount(interaction != null ? interaction.getLikeCount() : 0L)
                 .commentCount(interaction != null ? interaction.getCommentCount() : 0L)
@@ -34,7 +38,9 @@ public class PostMapper {
                 .likedByCurrentUser(interaction != null && Boolean.TRUE.equals(interaction.getLikedByCurrentUser()))
                 .repostedByCurrentUser(
                         interaction != null && Boolean.TRUE.equals(interaction.getRepostedByCurrentUser()))
+
                 .repostOfId(post.getRepostOf() != null ? post.getRepostOf().getId() : null)
+                .originalContent(post.getRepostOf() != null ? post.getRepostOf().getContent() : null)
                 .originalUserId(originalUser != null ? originalUser.getUserId() : null)
                 .originalUsername(originalUser != null ? originalUser.getUsername() : null)
                 .originalFullName(originalUser != null ? originalUser.getFullName() : null)

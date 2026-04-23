@@ -9,6 +9,7 @@ import com.DuyHao.post_service.mapper.PostMapper;
 import com.DuyHao.post_service.repository.PostRepository;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -58,9 +59,11 @@ public class PostService {
 
         if (!post.getUserId().equals(currentUserId)) throw new RuntimeException("You do not have permission");
 
-        postRepository.deleteByRepostOf_Id(post.getId());
+        postRepository.deleteByRepostOfId(post.getId());
         postRepository.delete(post);
-        mediaClient.deleteMediaByPostId(postId);
+        CompletableFuture.runAsync(() ->
+                mediaClient.deleteMediaByPostId(postId)
+        );
     }
 
     // ==================== FEED ====================
@@ -136,6 +139,37 @@ public class PostService {
                 .toList();
     }
 
+    // ==================== REPOST ====================
+
+    @Transactional
+    public PostResponse createRepost(String userId, String originalPostId) {
+        Post original = postRepository.findById(originalPostId)
+                .orElseThrow(() -> new RuntimeException("Original post not found"));
+
+        //Tạo bài vỏ
+        Post repost = Post.builder()
+                .userId(userId)
+                .repostOf(original)
+                .content(null)
+                .scope(original.getScope())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Post saved = postRepository.save(repost);
+        return getPostById(saved.getId(), userId);
+    }
+
+    @Transactional
+    public String deleteRepost(String userId, String originalPostId) {
+        Optional<Post> repostPost = postRepository.findByUserIdAndRepostOfId(userId, originalPostId);
+        if (repostPost.isPresent()) {
+            String repostId = repostPost.get().getId();
+            postRepository.delete(repostPost.get());
+            return repostId;
+        }
+        return null;
+    }
+
     // ==================== REPOST LIST ====================
     public List<PostResponse> getRepostsByUserId(String userId, String currentUserId) {
         UserResponse user = userClient.getUser(userId);
@@ -176,65 +210,33 @@ public class PostService {
     }
 
     // ==================== HELPER ====================
-    //    private PostResponse buildPostResponse(Post post, String currentUserId, Map<String, UserResponse> userMap) {
-    //
-    //        UserResponse user = userMap.get(post.getUserId());
-    //        String originalId = post.getRepostOf() != null ? post.getRepostOf().getId() : post.getId();
-    //        UserResponse originalUser = post.getRepostOf() != null ? userMap.get(post.getRepostOf().getUserId()) :
-    // null;
-    //
-    //        InteractionResponse interaction = interactionClient.getInteraction(originalId, currentUserId);
-    //
-    //        // Lấy media URLs từ Media Service theo postId
-    //        List<String> mediaUrls = mediaClient.getMediaByPostId(post.getId())
-    //                .stream()
-    //                .map(MediaResponse::getMediaUrl)
-    //                .toList();
-    //
-    //        return postMapper.toResponse(post, user, mediaUrls, interaction, originalUser);
-    //    }
-
-    //    private PostResponse buildPostResponse(Post post, String currentUserId, Map<String, UserResponse> userMap) {
-    //        UserResponse user = userMap.get(post.getUserId());
-    //        UserResponse originalUser = post.getRepostOf() != null ? userMap.get(post.getRepostOf().getUserId()) :
-    // null;
-    //
-    //        // Tạo một đối tượng trống với các giá trị mặc định (0 like, 0 comment)
-    //        InteractionResponse interaction = InteractionResponse.builder()
-    //                .likeCount(0L)
-    //                .commentCount(0L)
-    //                .repostCount(0L)
-    //                .likedByCurrentUser(false)
-    //                .repostedByCurrentUser(false)
-    //                .build();
-    //
-    //        List<String> mediaUrls = new ArrayList<>();
-    //
-    //        return postMapper.toResponse(post, user, mediaUrls, interaction, originalUser);
-    //    }
 
     private PostResponse buildPostResponse(Post post, String currentUserId, Map<String, UserResponse> userMap) {
         UserResponse user = userMap.get(post.getUserId());
-        UserResponse originalUser =
-                post.getRepostOf() != null ? userMap.get(post.getRepostOf().getUserId()) : null;
-        String originalId = post.getRepostOf() != null ? post.getRepostOf().getId() : post.getId();
+        boolean isRepost = post.getRepostOf() != null;
+        UserResponse originalUser = isRepost ? userMap.get(post.getRepostOf().getUserId()) : null;
 
-        InteractionResponse interaction = InteractionResponse.builder()
-                .likeCount(0L)
-                .commentCount(0L)
-                .repostCount(0L)
-                .likedByCurrentUser(false)
-                .repostedByCurrentUser(false)
-                .build();
+        String targetIdForData = isRepost ? post.getRepostOf().getId() : post.getId();
+        InteractionResponse interaction;
+        try {
+            interaction = interactionClient.getInteraction(targetIdForData);
+        } catch (Exception e) {
+            interaction = InteractionResponse.builder()
+                    .likeCount(0L).commentCount(0L).repostCount(0L)
+                    .likedByCurrentUser(false).repostedByCurrentUser(false)
+                    .build();
+            System.err.println("Lỗi gọi Interaction Service: " + e.getMessage());
+        }
 
         List<String> mediaUrls = new ArrayList<>();
         try {
-            mediaUrls = mediaClient.getMediaByPostId(post.getId()).stream()
+            mediaUrls = mediaClient.getMediaByPostId(targetIdForData).stream()
                     .map(MediaResponse::getMediaUrl)
                     .toList();
         } catch (Exception e) {
-            System.err.println("Lỗi gọi Media Service cho Post " + post.getId() + ": " + e.getMessage());
+            System.err.println("Lỗi gọi Media Service: " + e.getMessage());
         }
+
         return postMapper.toResponse(post, user, mediaUrls, interaction, originalUser);
     }
 }

@@ -13,4 +13,6 @@ public interface CommentRepository extends JpaRepository<Comment, String> {
 
     // Lấy tất cả reply của một comment cha (theo parentId)
     List<Comment> findByParentIdOrderByCreatedAtAsc(String parentId);
+
+    long countByPostId(String postId);
 }

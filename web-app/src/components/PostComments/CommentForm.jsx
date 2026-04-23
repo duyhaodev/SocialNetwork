@@ -81,25 +81,30 @@ export default function CommentForm({
   /* ================= SUBMIT ================= */
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!commentContent.trim() && commentFiles.length === 0) {
-      toast.error("Vui lòng nhập nội dung bình luận");
-      return;
-    }
+  if (!commentContent.trim() && commentFiles.length === 0) {
+    toast.error("Vui lòng nhập nội dung bình luận");
+    return;
+  }
 
-    const formData = new FormData();
-    formData.append("content", commentContent);
+  // Chuyển mảng object files hiện tại thành mảng File thuần túy
+  const filesOnly = commentFiles.map(m => m.file);
 
-    commentFiles.forEach((m) => {
-      formData.append("files", m.file);
+  try {
+    // Gửi Object sạch lên cho cha xử lý upload
+    await onSubmit({
+      content: commentContent,
+      files: filesOnly
     });
 
-    await onSubmit(formData);
-
+    // Thành công thì reset
     setCommentContent("");
     handleRemoveAll();
-  };
+  } catch (error) {
+    // Lỗi thì giữ nguyên text cho người dùng sửa
+  }
+};
 
   /* ================= DRAG SCROLL PREVIEW ================= */
 

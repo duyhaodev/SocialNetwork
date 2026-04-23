@@ -22,4 +22,14 @@ public class InternalPostController {
     public List<PostResponse> getPosts(@RequestParam List<String> ids) {
         return postService.getPostsByIds(ids);
     }
+
+    @PostMapping("/repost")
+    public PostResponse createRepost(@RequestParam String userId, @RequestParam String originalPostId) {
+        return postService.createRepost(userId, originalPostId);
+    }
+
+    @DeleteMapping("/repost")
+    public String deleteRepost(@RequestParam String userId, @RequestParam String originalPostId) {
+        return postService.deleteRepost(userId, originalPostId);
+    }
 }

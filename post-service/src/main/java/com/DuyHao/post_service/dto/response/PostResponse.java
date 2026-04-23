@@ -34,6 +34,7 @@ public class PostResponse {
 
     // repost info
     private String repostOfId;
+    private String originalContent;
     private String originalUserId;
     private String originalUsername;
     private String originalFullName;

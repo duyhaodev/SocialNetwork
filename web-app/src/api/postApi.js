@@ -1,49 +1,79 @@
 import axiosClient from "./axiosClient";
 
 const postApi = {
-  create(formData) {
-    // GỬI MULTIPART — không set Content-Type, để browser tự set boundary
-    return axiosClient.post("/post/posts", formData, {
-      transformRequest: (v) => v
-    });
+  /**
+   * 1. TẠO BÀI VIẾT
+   * Backend dùng: @RequestBody PostCreateRequest (JSON)
+   * Payload: { content: string, repostOfId: string, mediaIds: string[] }
+   */
+  create(payload) {
+    return axiosClient.post("/post/posts", payload);
   },
-  // Xóa bài viết
+
+  /**
+   * 2. XÓA BÀI VIẾT
+   * Backend dùng: @DeleteMapping("/posts/{postId}")
+   */
   deletePost(postId) {
     return axiosClient.delete(`/post/posts/${postId}`);
   },
+
+  /**
+   * 3. LẤY BẢNG TIN (FEED)
+   * Backend dùng: @GetMapping("/feed")
+   */
   getFeed({ page = 0, size = 20 } = {}) {
-    return axiosClient.get(`/post/feed?page=${page}&size=${size}`);
+    return axiosClient.get("/post/feed", {
+      params: { page, size }
+    });
   },
-  // lấy bài viết của mình
+
+  /**
+   * 4. LẤY BÀI VIẾT CỦA MÌNH
+   * Backend dùng: @GetMapping("/posts/profile")
+   */
   getMyPosts() {
-    return axiosClient.get("/post/profile");
+    return axiosClient.get("/post/posts/profile");
   },
-  // lấy bài viết của user theo username
+
+  /**
+   * 5. LẤY BÀI VIẾT CỦA USER KHÁC
+   * Backend dùng: @GetMapping("/posts/profile/{username}")
+   */
   getUserPosts(username) {
-    return axiosClient.get(`/post/profile/${username}`);
+    return axiosClient.get(`/post/posts/profile/${username}`);
   },
-  // lấy profile của user theo username
-  getUserByUsername(username) {
-    return axiosClient.get(`/users/${username}`);
-  },
-  // lấy chi tiết bài viết theo id
+
+  /**
+   * 6. LẤY CHI TIẾT 1 BÀI VIẾT
+   * Backend dùng: @GetMapping("/posts/{postId}")
+   */
   getPostById(postId) {
-    return axiosClient.get(`/posts/${postId}`);
+    return axiosClient.get(`/post/posts/${postId}`);
   },
-  // Lấy danh sách reposts của mình
+
+  /**
+   * 7. LẤY DANH SÁCH REPOST CỦA MÌNH
+   * Backend dùng: @GetMapping("/posts/profile/reposts")
+   */
   getMyReposts() {
-    return axiosClient.get("/profile/reposts");
+    return axiosClient.get("/post/posts/profile/reposts");
   },
-  // Lấy danh sách reposts của user khác
+
+  /**
+   * 8. LẤY DANH SÁCH REPOST CỦA USER KHÁC
+   * Backend dùng: @GetMapping("/posts/profile/{username}/reposts")
+   */
   getUserReposts(username) {
-    return axiosClient.get(`/profile/${username}/reposts`);
+    return axiosClient.get(`/post/posts/profile/${username}/reposts`);
   },
-  // Đăng lại bài viết
-  repost(postId) {
-    return axiosClient.post(`/posts/${postId}/repost`);
-  },
-  unrepost(postId) {
-    return axiosClient.delete(`/posts/${postId}/repost`);
+
+  /**
+   * 9. LẤY THÔNG TIN USER QUA USERNAME
+   * (Thường endpoint này nằm ở Identity/Profile Service)
+   */
+  getUserByUsername(username) {
+    return axiosClient.get(`/profile/users/${username}`);
   },
 };
 
