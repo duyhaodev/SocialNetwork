@@ -35,6 +35,10 @@ spring:
           uri: http://localhost:8086
           predicates:
             - Path=/media/**
+        - id: ai-service
+          uri: http://localhost:8087
+          predicates:
+            - Path=/ai/**
 
 management:
   endpoints:
