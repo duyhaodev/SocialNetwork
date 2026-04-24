@@ -9,7 +9,7 @@ import json
 import os
 import random
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 import torch
 from torch.utils.data import Dataset

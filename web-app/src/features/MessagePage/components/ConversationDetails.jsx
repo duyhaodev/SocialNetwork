@@ -5,7 +5,7 @@ import { UserAvatar } from "../../../components/ui/user-avatar";
 import { Spinner } from "../../../components/ui/spinner";
 import { searchApi } from "../../../api/searchApi";
 import { messageApi } from "../../../api/messageApi";
-import { mediaApi } from "../../../api/mediaApi";
+import mediaApi from "../../../api/mediaApi";
 
 export function ConversationDetails({ conversation, onClose }) {
   // Add Member State
@@ -83,7 +83,7 @@ export function ConversationDetails({ conversation, onClose }) {
       const currentUserId = payload.sub;
 
       await messageApi.removeParticipant(conversation.id, currentUserId);
-      window.location.reload(); 
+      window.location.reload();
     } catch (err) {
       console.error("Failed to leave group:", err);
     }
@@ -136,14 +136,14 @@ export function ConversationDetails({ conversation, onClose }) {
         {/* Group Actions */}
         {isGroup && (
           <div className="p-2 border-b border-[#1a1a1a]">
-            <button 
+            <button
               onClick={() => setIsAddMemberOpen(true)}
               className="w-full flex items-center gap-3 p-3 hover:bg-[#1a1a1a] rounded-lg transition-colors text-sm"
             >
               <UserPlus className="w-5 h-5 text-gray-400" />
               <span>Add Member</span>
             </button>
-            <button 
+            <button
               onClick={handleLeaveGroup}
               className="w-full flex items-center gap-3 p-3 hover:bg-[#1a1a1a] rounded-lg transition-colors text-sm text-red-500"
             >
@@ -162,7 +162,7 @@ export function ConversationDetails({ conversation, onClose }) {
                 <span className="text-sm font-medium">Shared Media</span>
               </div>
             </div>
-            
+
             {mediaLoading ? (
               <div className="flex justify-center p-4">
                 <Spinner className="w-5 h-5 text-gray-500" />
@@ -170,8 +170,8 @@ export function ConversationDetails({ conversation, onClose }) {
             ) : sharedMedia.length > 0 ? (
               <div className="grid grid-cols-3 gap-2">
                 {sharedMedia.slice(0, 6).map((m, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className="aspect-square bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#222] cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => window.open(m.mediaUrl, '_blank')}
                   >
@@ -226,7 +226,7 @@ export function ConversationDetails({ conversation, onClose }) {
               ) : searchResults.map(user => (
                 <div key={user.userId} className="flex items-center justify-between p-2 hover:bg-[#1a1a1a] rounded-lg">
                   <div className="flex items-center gap-3">
-                    <UserAvatar user={{...user, id: user.userId, avatar: user.avatarUrl}} avatarClassName="w-8 h-8" />
+                    <UserAvatar user={{ ...user, id: user.userId, avatar: user.avatarUrl }} avatarClassName="w-8 h-8" />
                     <span className="text-sm">{user.fullName || user.username}</span>
                   </div>
                   <button

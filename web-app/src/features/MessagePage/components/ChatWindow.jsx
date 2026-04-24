@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Phone, Video, Camera, Info, Smile, Mic, Image, Heart, Send, X } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { messageApi } from "../../../api/messageApi";
-import { mediaApi } from "../../../api/mediaApi";
+import mediaApi from "../../../api/mediaApi";
 import { Spinner } from "../../../components/ui/spinner";
 import { showUnderDevelopmentToast } from "../../../utils/commonUtils";
 
@@ -154,13 +154,13 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
 
     try {
       setIsUploading(true);
-      
+
       let mediaData = [];
       if (selectedFiles.length > 0) {
         const uploadRes = await mediaApi.upload(selectedFiles.map(f => f.file));
         // media-service returns a raw List<MediaResponse> which axiosClient interceptor unwraps to an array
         const uploadData = Array.isArray(uploadRes) ? uploadRes : (uploadRes?.result || []);
-        
+
         mediaData = uploadData.map(m => ({
           id: m.id,
           url: m.mediaUrl,
@@ -229,34 +229,34 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
           </div>
           {conversation ? (
             <div className="flex items-center gap-2">
-              <button 
-                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" 
+              <button
+                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
                 onClick={() => {
-                    const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
-                    if (!partnerId) return;
-                    window.dispatchEvent(new CustomEvent("initiate_call", { 
-                        detail: { 
-                            calleeId: partnerId, 
-                            conversationId: conversation.id, 
-                            type: 'AUDIO' 
-                        } 
-                    }));
+                  const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
+                  if (!partnerId) return;
+                  window.dispatchEvent(new CustomEvent("initiate_call", {
+                    detail: {
+                      calleeId: partnerId,
+                      conversationId: conversation.id,
+                      type: 'AUDIO'
+                    }
+                  }));
                 }}
               >
                 <Phone className="w-5 h-5" />
               </button>
-              <button 
-                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" 
+              <button
+                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
                 onClick={() => {
-                    const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
-                    if (!partnerId) return;
-                    window.dispatchEvent(new CustomEvent("initiate_call", { 
-                        detail: { 
-                            calleeId: partnerId, 
-                            conversationId: conversation.id, 
-                            type: 'VIDEO' 
-                        } 
-                    }));
+                  const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
+                  if (!partnerId) return;
+                  window.dispatchEvent(new CustomEvent("initiate_call", {
+                    detail: {
+                      calleeId: partnerId,
+                      conversationId: conversation.id,
+                      type: 'VIDEO'
+                    }
+                  }));
                 }}
               >
                 <Video className="w-5 h-5" />
@@ -305,19 +305,19 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </div>
                     )}
-                    
+
                     {msg.media && msg.media.length > 0 && (
-                      <div 
+                      <div
                         className={`grid gap-2 ${msg.media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
                         title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
                       >
                         {msg.media.map((m, idx) => (
                           <div key={idx} className="rounded-2xl overflow-hidden border border-[#333]">
                             {m.type === 'image' ? (
-                              <img 
-                                src={m.url} 
-                                alt="" 
-                                className="max-w-64 h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity block" 
+                              <img
+                                src={m.url}
+                                alt=""
+                                className="max-w-64 h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity block"
                                 onClick={() => handleOpenViewer(msg.media, idx)}
                               />
                             ) : (
@@ -388,8 +388,8 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
               <button className="text-gray-400 hover:text-white transition-colors" onClick={() => fileInputRef.current?.click()}>
                 <Image className="w-5 h-5" />
               </button>
-              <button 
-                className={`text-gray-400 hover:text-white transition-colors ${isUploading ? 'opacity-50' : ''}`} 
+              <button
+                className={`text-gray-400 hover:text-white transition-colors ${isUploading ? 'opacity-50' : ''}`}
                 onClick={handleSendMessage} disabled={isUploading}
               >
                 {isUploading ? <Spinner className="w-5 h-5" /> : <Send className="w-5 h-5" />}
@@ -402,11 +402,11 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
         <ConversationDetails conversation={conversation} onClose={() => setIsInfoOpen(false)} />
       )}
 
-      <ImageViewer 
-        open={viewerOpen} 
-        onClose={() => setViewerOpen(false)} 
-        mediaList={viewerMediaList} 
-        index={viewerIndex} 
+      <ImageViewer
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        mediaList={viewerMediaList}
+        index={viewerIndex}
       />
     </div>
   );
