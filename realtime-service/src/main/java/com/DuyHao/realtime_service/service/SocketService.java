@@ -52,6 +52,34 @@ public class SocketService {
             log.info("Client {} left room {}", client.getSessionId(), roomId);
         });
 
+        // WebRTC Signaling
+        server.addEventListener("webrtc_offer", Map.class, (client, data, ackRequest) -> {
+            String toUserId = (String) data.get("toUserId");
+            Object offer = data.get("offer");
+            sendMessage(toUserId, "webrtc_offer", Map.of(
+                    "fromUserId", sessionUserMap.get(client.getSessionId()),
+                    "offer", offer
+            ));
+        });
+
+        server.addEventListener("webrtc_answer", Map.class, (client, data, ackRequest) -> {
+            String toUserId = (String) data.get("toUserId");
+            Object answer = data.get("answer");
+            sendMessage(toUserId, "webrtc_answer", Map.of(
+                    "fromUserId", sessionUserMap.get(client.getSessionId()),
+                    "answer", answer
+            ));
+        });
+
+        server.addEventListener("webrtc_ice_candidate", Map.class, (client, data, ackRequest) -> {
+            String toUserId = (String) data.get("toUserId");
+            Object candidate = data.get("candidate");
+            sendMessage(toUserId, "webrtc_ice_candidate", Map.of(
+                    "fromUserId", sessionUserMap.get(client.getSessionId()),
+                    "candidate", candidate
+            ));
+        });
+
         server.start();
         log.info("Socket.IO server started at {}:{}", server.getConfiguration().getHostname(), server.getConfiguration().getPort());
     }
@@ -117,6 +145,9 @@ public class SocketService {
                     
                     // 3. Broadcast cho mọi người biết user này đã offline hoàn toàn
                     broadcastUserStatus(userId, "OFFLINE");
+
+                    // Notify potential peers about disconnection
+                    server.getBroadcastOperations().sendEvent("peer_disconnected", Map.of("userId", userId));
                 }
             }
             log.info("Client disconnected: userId={}, sessionId={}", userId, sessionId);

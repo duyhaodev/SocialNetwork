@@ -19,6 +19,7 @@ import PublicRoute from "./components/PublicRoute.jsx";
 import { getToken } from "./api/localStorageService.js";
 import { VerifyAccountPage } from "./features/VerifyAccountPage/VerifyAccountPage.jsx";
 import { ForgotPasswordPage } from "./features/ForgotPasswordPage/ForgotPasswordPage.jsx";
+import { CallOverlay } from "./features/MessagePage/components/CallOverlay.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -50,6 +51,7 @@ export default function App() {
   return (
     <>
         <Toaster richColors position="top-right" />
+        <CallOverlay />
       <BrowserRouter>
         <Routes>
           {/* Public routes (Login, Register) - Redirect if authenticated */}

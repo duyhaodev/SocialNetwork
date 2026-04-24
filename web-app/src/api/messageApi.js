@@ -57,5 +57,31 @@ export const messageApi = {
     removeParticipant(conversationId, userId) {
         const url = `chat/conversations/${conversationId}/participants/${userId}`;
         return axiosClient.delete(url);
+    },
+
+    // Call APIs
+    initiateCall({ calleeId, conversationId, type }) {
+        const url = "chat/calls/initiate";
+        return axiosClient.post(url, { calleeId, conversationId, type });
+    },
+
+    acceptCall(callId) {
+        const url = `chat/calls/accept/${callId}`;
+        return axiosClient.post(url);
+    },
+
+    rejectCall(callId) {
+        const url = `chat/calls/reject/${callId}`;
+        return axiosClient.post(url);
+    },
+
+    cancelCall(callId) {
+        const url = `chat/calls/cancel/${callId}`;
+        return axiosClient.post(url);
+    },
+
+    endCall(callId) {
+        const url = `chat/calls/end/${callId}`;
+        return axiosClient.post(url);
     }
 }

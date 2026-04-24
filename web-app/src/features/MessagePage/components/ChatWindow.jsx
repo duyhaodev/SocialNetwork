@@ -229,10 +229,36 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
           </div>
           {conversation ? (
             <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" onClick={showUnderDevelopmentToast}>
+              <button 
+                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" 
+                onClick={() => {
+                    const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
+                    if (!partnerId) return;
+                    window.dispatchEvent(new CustomEvent("initiate_call", { 
+                        detail: { 
+                            calleeId: partnerId, 
+                            conversationId: conversation.id, 
+                            type: 'AUDIO' 
+                        } 
+                    }));
+                }}
+              >
                 <Phone className="w-5 h-5" />
               </button>
-              <button className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" onClick={showUnderDevelopmentToast}>
+              <button 
+                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" 
+                onClick={() => {
+                    const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
+                    if (!partnerId) return;
+                    window.dispatchEvent(new CustomEvent("initiate_call", { 
+                        detail: { 
+                            calleeId: partnerId, 
+                            conversationId: conversation.id, 
+                            type: 'VIDEO' 
+                        } 
+                    }));
+                }}
+              >
                 <Video className="w-5 h-5" />
               </button>
               <button className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" onClick={() => setIsInfoOpen(!isInfoOpen)}>
