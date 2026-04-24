@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Model files (large — download/train locally)
+saved_models/
+*.bin
+*.safetensors
+*.pt
+*.pth
+
+# Logs
+logs/
+*.log
+
+# Env
+.env
+
+# IDE
+.idea/
+.vscode/
