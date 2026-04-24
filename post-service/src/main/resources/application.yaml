@@ -23,3 +23,4 @@ app:
   service:
     profile: http://localhost:8081/profile
     media: http://localhost:8086
+    interaction: http://localhost:8087/interaction

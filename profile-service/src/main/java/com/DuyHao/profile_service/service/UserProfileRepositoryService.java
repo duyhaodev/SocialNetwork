@@ -27,6 +27,18 @@ public class UserProfileRepositoryService {
 
     public UserProfileResponse createProfile(ProfileCreationRequest request) {
         UserProfile userProfile = userProfileMapper.toUserProfile(request);
+        if (userProfile.getDob() == null) {
+            userProfile.setDob(java.time.LocalDate.of(1900, 1, 1));
+        }
+        if (userProfile.getCity() == null || userProfile.getCity().isEmpty()) {
+            userProfile.setCity("Chưa cập nhật");
+        }
+        if (userProfile.getAvatarUrl() == null || userProfile.getAvatarUrl().isEmpty()) {
+            userProfile.setAvatarUrl("https://res.cloudinary.com/dfscz2c2l/image/upload/q_auto/f_auto/v1776620937/Gemini_Generated_Image_y5h7uy5h7uy5h7uy_s6vvqx.png");
+        }
+        if (userProfile.getBio() == null) {
+            userProfile.setBio("");
+        }
         userProfile = userProfileRepository.save(userProfile);
 
         return userProfileMapper.toUserProfileResponse(userProfile);

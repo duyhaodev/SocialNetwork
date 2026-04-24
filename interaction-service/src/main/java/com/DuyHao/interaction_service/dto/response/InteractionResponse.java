@@ -7,11 +7,10 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RepostResponse {
-
-    boolean reposted;
+public class InteractionResponse {
+    long likeCount;
+    long commentCount;
     long repostCount;
-
-    PostResponse post;
-    String deletedRepostId;
+    boolean likedByCurrentUser;
+    boolean repostedByCurrentUser;
 }

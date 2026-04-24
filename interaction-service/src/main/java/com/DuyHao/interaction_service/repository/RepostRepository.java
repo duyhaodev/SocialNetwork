@@ -12,4 +12,6 @@ public interface RepostRepository extends JpaRepository<Repost, String> {
     void deleteByUserIdAndPostId(String userId, String postId);
 
     long countByPostId(String postId);
+
+    boolean existsByPostIdAndUserId(String postId, String userId);
 }

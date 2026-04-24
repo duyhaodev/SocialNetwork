@@ -18,6 +18,7 @@ import {
   selectPostsPage,
 } from "../../store/postsSlice";
 import { toast } from "sonner";
+import mediaApi from "../../api/mediaApi";
 
 export function FeedPage() {
   // REDUX
@@ -25,7 +26,7 @@ export function FeedPage() {
   const dispatch = useDispatch();
   const profile = useSelector((s) => s.user.profile) ?? {};
   const displayName = profile.fullName ?? "User";
-  const avatarUrl = profile.avatarUrl; // Let fallback handle missing URL
+  const avatarUrl = profile.avatarUrl;
 
   const posts = useSelector(selectPosts);
   const hasMore = useSelector(selectPostsHasMore);
@@ -35,25 +36,22 @@ export function FeedPage() {
 
   // LOCAL STATE
   const [newPost, setNewPost] = useState("");
-
-  // nhiều media: { file, kind: "image" | "video", preview }
   const [mediaFiles, setMediaFiles] = useState([]);
   const fileInputRef = useRef(null);
-
-  // Emoji picker
   const [showEmoji, setShowEmoji] = useState(false);
 
-  const loadMoreRef = useRef(null);
-  const loadDelayRef = useRef(null); // delay trước khi load thêm
+  // FIX: trạng thái posting ngay lập tức
+  const [isPosting, setIsPosting] = useState(false);
 
-  // FEED: LẤY DANH SÁCH BÀI VIẾT
+  const loadMoreRef = useRef(null);
+  const loadDelayRef = useRef(null);
+
   useEffect(() => {
     dispatch(fetchFeed({ page: 0, size: 20 }))
       .unwrap()
       .catch(() => toast.error("Failed to load feed"));
   }, [dispatch]);
 
-  // Auto load
   useEffect(() => {
     if (!hasMore) return;
     if (loading) return;
@@ -76,10 +74,7 @@ export function FeedPage() {
           loadDelayRef.current = null;
         }, 300);
       },
-      {
-        root: null,
-        threshold: 0.1,
-      }
+      { root: null, threshold: 0.1 }
     );
 
     observer.observe(el);
@@ -97,7 +92,6 @@ export function FeedPage() {
     navigate(`/profile/@${username}`);
   };
 
-  // ----- MEDIA: CHỌN & PREVIEW NHIỀU FILE -----
   const openFilePicker = useCallback(() => fileInputRef.current?.click(), []);
 
   const onFileChange = (e) => {
@@ -123,12 +117,10 @@ export function FeedPage() {
     }
 
     if (!newItems.length) {
-      // tất cả invalid => reset input
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setMediaFiles((prev) => [...prev, ...newItems]);
-    // cho lần sau chọn lại cùng file
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -149,7 +141,6 @@ export function FeedPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // cleanup preview khi component unmount
   useEffect(() => {
     return () => {
       mediaFiles.forEach((m) => {
@@ -158,7 +149,6 @@ export function FeedPage() {
     };
   }, []);
 
-  // ----- DRAG TO SCROLL PREVIEW (giống CreatePost) -----
   const mediaScrollRef = useRef(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
@@ -183,7 +173,7 @@ export function FeedPage() {
 
   const handleMediaMouseDown = (e) => {
     if (!mediaScrollRef.current) return;
-    if (e.button !== 0) return; // chỉ chuột trái
+    if (e.button !== 0) return;
 
     const el = mediaScrollRef.current;
     isDraggingRef.current = true;
@@ -203,29 +193,47 @@ export function FeedPage() {
     el.scrollLeft = scrollLeftRef.current - walk;
   };
 
-  // ----- TẠO POST -----
   const handleCreatePost = async () => {
     const content = (newPost || "").trim();
     if (!content && mediaFiles.length === 0) return;
 
-    const fd = new FormData();
-    if (content) fd.append("content", content);
-    mediaFiles.forEach((m) => {
-      // key "files" giống CreatePost + BE
-      fd.append("files", m.file);
-    });
+    setIsPosting(true); // FIX: khóa UI ngay lập tức
 
-    const action = await dispatch(createPost(fd));
-    if (createPost.fulfilled.match(action)) {
-      toast.success("Posted successfully");
-      setNewPost("");
-      handleRemoveAll();
-    } else {
-      toast.error(action.payload?.message || "Post failed");
+    try {
+      let mediaIds = [];
+
+      if (mediaFiles.length > 0) {
+        const fd = new FormData();
+        mediaFiles.forEach((m) => {
+          fd.append("files", m.file);
+        });
+
+        const uploadRes = await mediaApi.upload(fd);
+        const uploaded = uploadRes?.result || uploadRes || [];
+        mediaIds = uploaded.map((m) => m.id);
+      }
+
+      const payload = {
+        content,
+        mediaIds,
+      };
+
+      const action = await dispatch(createPost(payload));
+
+      if (createPost.fulfilled.match(action)) {
+        toast.success("Posted successfully");
+        setNewPost("");
+        handleRemoveAll();
+      } else {
+        toast.error(action.payload?.message || "Post failed");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Post failed");
+    } finally {
+      setIsPosting(false); // FIX: luôn reset
     }
   };
 
-  // Emoji chèn vào cuối nội dung
   const handleEmojiClick = (emojiData) => {
     setNewPost((prev) => prev + emojiData.emoji);
     setShowEmoji(false);
@@ -235,7 +243,6 @@ export function FeedPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Ẩn scrollbar cho preview media */}
       <style>
         {`
           .feed-media-scroll {
@@ -248,12 +255,10 @@ export function FeedPage() {
         `}
       </style>
 
-      {/* Header */}
       <div className="border-b border-border p-4 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <h2 className="text-xl font-semibold">Home</h2>
       </div>
 
-      {/* Create Post */}
       <div className="border-b border-border p-4">
         <div className="flex gap-3">
           <Avatar className="w-10 h-10 flex-shrink-0">
@@ -270,7 +275,6 @@ export function FeedPage() {
               maxLength={500}
             />
 
-            {/* Preview nhiều media nếu có */}
             {hasMedia && (
               <div className="mt-3 space-y-2">
                 <div className="flex justify-between items-center px-1">
@@ -303,7 +307,6 @@ export function FeedPage() {
                           type="button"
                           onClick={() => handleRemoveOne(idx)}
                           className="absolute top-2 right-2 z-20 bg-black/60 hover:bg-black/80 rounded-full p-1"
-                          title="Remove media"
                         >
                           <X className="w-4 h-4 text-white" />
                         </button>
@@ -330,7 +333,6 @@ export function FeedPage() {
               </div>
             )}
 
-            {/* Input file ẩn */}
             <input
               ref={fileInputRef}
               type="file"
@@ -342,7 +344,6 @@ export function FeedPage() {
 
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-4">
-                {/* Chọn media */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -353,7 +354,6 @@ export function FeedPage() {
                   <Image className="w-5 h-5" />
                 </Button>
 
-                {/* Emoji */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -377,7 +377,6 @@ export function FeedPage() {
                   </PopoverContent>
                 </Popover>
 
-                {/* Mention (chưa làm logic) */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -395,10 +394,10 @@ export function FeedPage() {
                 <Button
                   type="button"
                   onClick={handleCreatePost}
-                  disabled={creating || (!newPost.trim() && mediaFiles.length === 0)}
+                  disabled={creating || isPosting || (!newPost.trim() && mediaFiles.length === 0)}
                   size="sm"
                 >
-                  {creating ? "Posting..." : "Post"}
+                  {(creating || isPosting) ? "Posting..." : "Post"}
                 </Button>
               </div>
             </div>
@@ -406,7 +405,6 @@ export function FeedPage() {
         </div>
       </div>
 
-      {/* Posts Feed */}
       <div>
         {posts.map((post) => {
           const username = post.username ?? post.user?.username ?? "unknown";
@@ -414,13 +412,9 @@ export function FeedPage() {
           const avatarUrl = post.avatarUrl ?? post.user?.avatarUrl;
           const createdAt = post.createdAt ?? post.created_time ?? post.created_at;
 
-          const mediaList = Array.isArray(post.mediaList)
-            ? post.mediaList
-            : post.media
-              ? Array.isArray(post.media)
-                ? post.media
-                : [post.media]
-              : [];
+          const mediaList = Array.isArray(post.mediaUrls)
+            ? post.mediaUrls
+            : [];
 
           return (
             <PostCard
@@ -440,7 +434,6 @@ export function FeedPage() {
         })}
       </div>
 
-      {/* Load More (infinite scroll) */}
       <div className="p-4 text-center">
         {loading && hasMore && (
           <span className="text-muted-foreground text-sm">Loading...</span>

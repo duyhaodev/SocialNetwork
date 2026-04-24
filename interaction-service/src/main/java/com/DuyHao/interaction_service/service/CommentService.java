@@ -12,6 +12,7 @@ import com.DuyHao.interaction_service.repository.CommentRepository;
 import com.DuyHao.interaction_service.repository.LikeRepository;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -45,7 +46,7 @@ public class CommentService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        comment = commentRepository.save(comment);
+        comment = commentRepository.saveAndFlush(comment);
 
         List<String> mediaUrls = new ArrayList<>();
         if (request.getMediaIds() != null && !request.getMediaIds().isEmpty()) {
@@ -115,14 +116,19 @@ public class CommentService {
     // ================= DELETE =================
     @Transactional
     public void deleteComment(String currentUserId, String commentId) {
-        Comment comment =
-                commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
 
         if (!comment.getUserId().equals(currentUserId)) {
             throw new RuntimeException("Không có quyền xóa");
         }
-
-        mediaClient.deleteMediaByCommentId(commentId);
         commentRepository.delete(comment);
+        CompletableFuture.runAsync(() -> {
+            try {
+                mediaClient.deleteMediaByCommentId(commentId);
+            } catch (Exception e) {
+                System.err.println("Lỗi xóa media async cho comment: " + e.getMessage());
+            }
+        });
     }
 }

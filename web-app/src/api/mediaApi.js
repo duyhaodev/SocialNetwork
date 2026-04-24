@@ -1,5 +1,6 @@
 import axiosClient from "./axiosClient";
 
+<<<<<<< HEAD
 export const mediaApi = {
     upload(files) {
         const formData = new FormData();
@@ -18,3 +19,12 @@ export const mediaApi = {
         return axiosClient.get(`/media/conversation/${conversationId}`);
     }
 }
+=======
+const mediaApi = {
+  upload(formData) {
+    return axiosClient.post("/media/upload", formData);
+  },
+};
+
+export default mediaApi;
+>>>>>>> HiepKa

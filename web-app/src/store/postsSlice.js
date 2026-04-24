@@ -1,31 +1,35 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import postApi from "../api/postApi";
+import repostApi from "../api/repostApi";
 
-// Load feed
+// ==========================================
+// 1. ASYNC THUNKS (API CALLS)
+// ==========================================
+
+// Load bảng tin chính (Feed)
 export const fetchFeed = createAsyncThunk(
   "posts/fetchFeed",
   async ({ page = 0, size = 20 }, { rejectWithValue }) => {
     try {
-      const res = await postApi.getFeed({ page, size }); // res: PostResponse[] (axiosClient trả response.data)
-      const data = Array.isArray(res) ? res : [];
+      const res = await postApi.getFeed({ page, size });
+      // Lấy result từ ApiResponse { code, result, message }
+      const data = res?.result || [];
       return { page, size, data };
     } catch (err) {
-      return rejectWithValue(err?.message || "Load feed failed");
+      return rejectWithValue(err?.message || "Không thể tải bảng tin");
     }
   }
 );
 
-// Tạo bài viết
+// Tạo bài viết mới (Payload: { content, mediaIds, repostOfId })
 export const createPost = createAsyncThunk(
   "posts/create",
-  async (formData, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const res = await postApi.create(formData);
-      // axiosClient đã trả về response.data => res chính là PostResponse
-      return res; // (KHÔNG .data nữa)
+      const res = await postApi.create(payload);
+      return res.result; // Trả về PostResponse
     } catch (err) {
-      // interceptor đã ném new Error(message) => lấy err.message
-      return rejectWithValue({ message: err?.message || "Create post failed" });
+      return rejectWithValue({ message: err?.message || "Đăng bài thất bại" });
     }
   }
 );
@@ -38,60 +42,50 @@ export const deletePost = createAsyncThunk(
       await postApi.deletePost(postId);
       return { postId };
     } catch (err) {
-      return rejectWithValue(err?.message || "Delete post failed");
+      return rejectWithValue(err?.message || "Xóa bài thất bại");
     }
   }
 );
 
 // Repost bài viết
-export const repostPost = createAsyncThunk(
-  "posts/repost",
+export const toggleRepost = createAsyncThunk(
+  "posts/toggleRepost",
   async (postId, { rejectWithValue }) => {
     try {
-      const res = await postApi.repost(postId);
-      return res; // PostResponse (bài repost mới)
+      // Đổi postApi.repost thành repostApi.toggle
+      const res = await repostApi.toggle(postId); 
+      return res.result; 
     } catch (err) {
-      return rejectWithValue(err?.message || "Repost failed");
+      // Log lỗi ra đây để Hào nhìn thấy ở tab Console
+      console.error("Lỗi khi gọi API Repost:", err);
+      return rejectWithValue(err.response?.data?.message || "Thao tác thất bại");
     }
   }
 );
 
-// Unrepost bài viết
-export const unrepostPost = createAsyncThunk(
-  "posts/unrepost",
-  async (postId, { rejectWithValue }) => {
-    try {
-      const res = await postApi.unrepost(postId);
-      return { originalId: postId, repostId: res?.repostId };
-    } catch (err) {
-      return rejectWithValue(err?.message || "Remove repost failed");
-    }
-  }
-);
-
-// Lấy bài viết của user đăng nhập
+// Lấy bài viết của chính mình (Profile)
 export const fetchMyPosts = createAsyncThunk(
   "posts/fetchMyPosts",
   async (_, { rejectWithValue }) => {
     try {
       const res = await postApi.getMyPosts();
-      return res; // res = List<PostResponse>
+      return res.result || [];
     } catch (err) {
-      return rejectWithValue(err?.message || "Load my posts failed");
+      return rejectWithValue(err?.message || "Không thể tải bài viết của bạn");
     }
   }
 );
 
-// Lấy bài viết theo username (profile người khác)
+// Lấy bài viết của user khác
 export const fetchUserPosts = createAsyncThunk(
   "posts/fetchUserPosts",
   async ({ username }, { rejectWithValue }) => {
     try {
       const res = await postApi.getUserPosts(username);
-      const data = Array.isArray(res) ? res : [];
+      const data = res.result || [];
       return { username, data };
     } catch (err) {
-      return rejectWithValue(err?.message || "Load user posts failed");
+      return rejectWithValue(err?.message || "Không thể tải bài viết người dùng");
     }
   }
 );
@@ -102,10 +96,9 @@ export const fetchMyReposts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await postApi.getMyReposts();
-      const data = Array.isArray(res) ? res : [];
-      return data;
+      return res.result || [];
     } catch (err) {
-      return rejectWithValue(err?.message || "Load my reposts failed");
+      return rejectWithValue(err?.message || "Không thể tải bài chia sẻ");
     }
   }
 );
@@ -116,28 +109,30 @@ export const fetchUserReposts = createAsyncThunk(
   async ({ username }, { rejectWithValue }) => {
     try {
       const res = await postApi.getUserReposts(username);
-      const data = Array.isArray(res) ? res : [];
+      const data = res.result || [];
       return { username, data };
     } catch (err) {
-      return rejectWithValue(err?.message || "Load user reposts failed");
+      return rejectWithValue(err?.message || "Không thể tải bài chia sẻ");
     }
   }
 );
 
-// Lấy chi tiết bài viết theo ID
+// Lấy chi tiết 1 bài viết
 export const fetchPostById = createAsyncThunk(
   "posts/fetchPostById",
   async (postId, { rejectWithValue }) => {
     try {
       const res = await postApi.getPostById(postId);
-      return res; // PostResponse
+      return res.result;
     } catch (err) {
-      return rejectWithValue(err?.message || "Load post detail failed");
+      return rejectWithValue(err?.message || "Không tìm thấy bài viết");
     }
   }
 );
 
-
+// ==========================================
+// 2. SLICE CONFIGURATION
+// ==========================================
 
 const postsSlice = createSlice({
   name: "posts",
@@ -148,6 +143,8 @@ const postsSlice = createSlice({
     hasMore: true,
     loading: false,
     creating: false,
+    reposting: false,
+    unreposting: false,
     error: null,
 
     myPosts: [],
@@ -181,25 +178,20 @@ const postsSlice = createSlice({
       state.hasMore = true;
       state.error = null;
     },
+    // Đồng bộ trạng thái Like xuyên suốt các màn hình
     syncLikeByOriginalId(state, action) {
       const { originalId, liked, likeCount } = action.payload || {};
       if (!originalId) return;
 
       const apply = (p) => {
-        const pOriginalId = p?.repostOfId ?? p?.id;
+        // Kiểm tra xem bài hiện tại có phải là bài gốc hoặc là bài repost của bài gốc không
+        const pOriginalId = p?.repostOfId || p?.id;
         if (pOriginalId === originalId) {
           p.likeCount = likeCount;
-          if (typeof p.likedByCurrentUser === "boolean") {
-            p.likedByCurrentUser = liked;
-          } else if (typeof p.isLikedByCurrentUser === "boolean") {
-            p.isLikedByCurrentUser = liked;
-          } else if (typeof p.liked === "boolean") {
-            p.liked = liked;
-          } else {
-            p.likedByCurrentUser = liked;
-          }
+          p.likedByCurrentUser = liked;
         }
       };
+
       state.items.forEach(apply);
       state.myPosts.forEach(apply);
       state.userPosts.forEach(apply);
@@ -208,12 +200,10 @@ const postsSlice = createSlice({
       state.searchPosts.forEach(apply);
       if (state.postDetail) apply(state.postDetail);
     },
-
     setSearchPosts(state, action) {
       state.searchPosts = action.payload || [];
       state.searchPostsError = null;
     },
-
   },
   extraReducers: (builder) => {
     builder
@@ -224,227 +214,131 @@ const postsSlice = createSlice({
       })
       .addCase(fetchFeed.fulfilled, (state, action) => {
         const { page, size, data } = action.payload;
-        const sorted = data.slice().sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
         if (page === 0) {
-          state.items = sorted;
+          state.items = data;
         } else {
-          state.items = [...state.items, ...sorted];
+          state.items = [...state.items, ...data];
         }
         state.page = page + 1;
         state.loading = false;
-
-        // Nếu số lượng bài trả về ít hơn size yêu cầu, tức là đã hết bài
-        if (data.length < size) {
-          state.hasMore = false;
-        } else {
-          state.hasMore = true;
-        }
+        state.hasMore = data.length === size;
       })
       .addCase(fetchFeed.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Load feed failed";
+        state.error = action.payload;
       })
 
       // createPost
       .addCase(createPost.pending, (state) => {
         state.creating = true;
-        state.error = null;
       })
       .addCase(createPost.fulfilled, (state, action) => {
-        state.items = [action.payload, ...state.items]; // bài mới lên đầu
+        state.items = [action.payload, ...state.items];
         state.creating = false;
       })
       .addCase(createPost.rejected, (state, action) => {
         state.creating = false;
-        state.error = action.payload?.message || "Create post failed";
+        state.error = action.payload?.message;
       })
+
       // deletePost
       .addCase(deletePost.fulfilled, (state, action) => {
         const { postId } = action.payload;
-
-        const shouldRemove = (p) => p?.id === postId || p?.repostOfId === postId;
-
-        state.items = state.items.filter((p) => !shouldRemove(p));
-        state.myPosts = state.myPosts.filter((p) => !shouldRemove(p));
-        state.userPosts = state.userPosts.filter((p) => !shouldRemove(p));
-        state.myReposts = state.myReposts.filter((p) => !shouldRemove(p));
-        state.userReposts = state.userReposts.filter((p) => !shouldRemove(p));
-        state.searchPosts = state.searchPosts.filter((p) => !shouldRemove(p));
-
-        if (state.postDetail) {
-          const detailOriginalId = state.postDetail.repostOfId ?? state.postDetail.id;
-          if (state.postDetail.id === postId || detailOriginalId === postId) {
-            state.postDetail = null;
-          }
+        const filterFn = (p) => p.id !== postId && p.repostOfId !== postId;
+        
+        state.items = state.items.filter(filterFn);
+        state.myPosts = state.myPosts.filter(filterFn);
+        state.userPosts = state.userPosts.filter(filterFn);
+        state.myReposts = state.myReposts.filter(filterFn);
+        state.userReposts = state.userReposts.filter(filterFn);
+        
+        if (state.postDetail?.id === postId || state.postDetail?.repostOfId === postId) {
+          state.postDetail = null;
         }
       })
-      .addCase(deletePost.rejected, (state, action) => {
-        state.error = action.payload || "Delete post failed";
+
+      // repostPost
+      .addCase(toggleRepost.pending, (state) => { 
+        state.reposting = true; 
       })
+      .addCase(toggleRepost.fulfilled, (state, action) => {
+          state.reposting = false;
+          const result = action.payload; 
+          const originalPostId = action.meta.arg; // ID của bài mà User nhấn nút
 
+          // 1. Hàm cập nhật số lượng & trạng thái (Dùng cho Like/Repost đồng bộ)
+          const updateGlobalStats = (p) => {
+              // Logic: Nếu ID bài này là bài gốc, HOẶC nó là bài vỏ trỏ về bài gốc đó
+              const isTarget = p.id === originalPostId || 
+                               p.repostOfId === originalPostId ||
+                               (p.repostOfId && p.repostOfId === (action.payload.post?.repostOfId));
+              
+              if (isTarget) {
+                  p.repostedByCurrentUser = result.reposted;
+                  p.repostCount = result.repostCount;
+              }
+          };
 
-      // repostPost 
-      .addCase(repostPost.pending, (state) => {
-        state.reposting = true;
-        state.error = null;
-      })
-      .addCase(repostPost.fulfilled, (state, action) => {
-        state.reposting = false;
-        const newPost = action.payload;
-        state.items = [newPost, ...state.items];
-        const originalId = newPost.repostOfId;
-        if (!originalId) return;
+          // 2. Quét sạch tất cả các mảng để đồng bộ số lượng
+          [state.items, state.myPosts, state.userPosts, state.myReposts, state.userReposts, state.searchPosts]
+            .forEach(list => list.forEach(updateGlobalStats));
+            
+          if (state.postDetail) updateGlobalStats(state.postDetail);
 
-        const bumpIfSameOriginal = (p) => {
-          if (p.id === newPost.id) return; 
-          const pOriginalId = p.repostOfId ?? p.id;
-          if (pOriginalId === originalId) {
-            p.repostCount = (p.repostCount ?? 0) + 1;
-            if (typeof p.repostedByCurrentUser === "boolean") {
-              p.repostedByCurrentUser = true;
-            }
+          // 3. Xử lý Thêm/Xóa bài viết hiển thị (UI logic)
+          if (result.reposted && result.post) {
+              // Thêm bài mới vào đầu Feed và đầu danh sách Repost của tôi
+              state.items.unshift(result.post);
+              state.myReposts.unshift(result.post);
+          } else if (!result.reposted && result.deletedRepostId) {
+              // Hủy Repost: Xóa bài vỏ khỏi TẤT CẢ các danh sách hiển thị
+              const filterId = result.deletedRepostId;
+              const filterFn = (p) => p.id !== filterId;
+
+              state.items = state.items.filter(filterFn);
+              state.myPosts = state.myPosts.filter(filterFn);
+              state.userPosts = state.userPosts.filter(filterFn);
+              state.myReposts = state.myReposts.filter(filterFn);
+              state.userReposts = state.userReposts.filter(filterFn);
+              state.searchPosts = state.searchPosts.filter(filterFn);
           }
-        };
-
-        state.items.forEach(bumpIfSameOriginal);
-        if (state.postDetail) bumpIfSameOriginal(state.postDetail);
-        state.myPosts.forEach(bumpIfSameOriginal);
-        state.userPosts.forEach(bumpIfSameOriginal);
-        state.myReposts.forEach(bumpIfSameOriginal);
-        state.userReposts.forEach(bumpIfSameOriginal);
-        state.searchPosts.forEach(bumpIfSameOriginal);
-
       })
-      .addCase(repostPost.rejected, (state, action) => {
+      .addCase(toggleRepost.rejected, (state, action) => {
         state.reposting = false;
-        state.error = action.payload || "Repost failed";
+        state.error = action.payload;
       })
-
-      // unrepostPost
-      .addCase(unrepostPost.pending, (state) => {
-        state.unreposting = true;
-        state.error = null;
-      })
-      .addCase(unrepostPost.fulfilled, (state, action) => {
-        state.unreposting = false;
-        const { originalId, repostId } = action.payload || {};
-        if (!originalId) return;
-
-        const decIfSameOriginal = (p) => {
-          const pOriginalId = p.repostOfId ?? p.id;
-          if (pOriginalId === originalId) {
-            p.repostCount = Math.max(0, (p.repostCount ?? 0) - 1);
-            if (typeof p.repostedByCurrentUser === "boolean") {
-              p.repostedByCurrentUser = false;
-            }
-          }
-        };
-
-        state.items.forEach(decIfSameOriginal);
-        if (state.postDetail) decIfSameOriginal(state.postDetail);
-        state.myPosts.forEach(decIfSameOriginal);
-        state.userPosts.forEach(decIfSameOriginal);
-        state.myReposts.forEach(decIfSameOriginal);
-        state.userReposts.forEach(decIfSameOriginal);
-        state.searchPosts.forEach(decIfSameOriginal);
-
-        if (repostId) {
-          state.items = state.items.filter((p) => p.id !== repostId);
-          state.myReposts = state.myReposts.filter((p) => p.id !== repostId);
-          state.userReposts = state.userReposts.filter((p) => p.id !== repostId);
-          state.searchPosts = state.searchPosts.filter((p) => p.id !== repostId);
-        }
-      })
-      .addCase(unrepostPost.rejected, (state, action) => {
-        state.unreposting = false;
-        state.error = action.payload || "Remove repost failed";
-      })
-
 
       // fetchMyPosts
-      .addCase(fetchMyPosts.pending, (state) => {
-        state.loadingMyPosts = true;
-        state.myPostsError = null;
-      })
+      .addCase(fetchMyPosts.pending, (state) => { state.loadingMyPosts = true; })
       .addCase(fetchMyPosts.fulfilled, (state, action) => {
         state.loadingMyPosts = false;
-        state.myPosts = action.payload || [];
-      })
-      .addCase(fetchMyPosts.rejected, (state, action) => {
-        state.loadingMyPosts = false;
-        state.myPostsError = action.payload || "Load my posts failed";
+        state.myPosts = action.payload;
       })
 
       // fetchUserPosts
-      .addCase(fetchUserPosts.pending, (state) => {
-        state.loadingUserPosts = true;
-        state.userPostsError = null;
-      })
       .addCase(fetchUserPosts.fulfilled, (state, action) => {
         state.loadingUserPosts = false;
-        const { data } = action.payload;
-        // có thể sort theo createdAt nếu muốn giống feed
-        const sorted = data.slice().sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
-        state.userPosts = sorted;
-      })
-      .addCase(fetchUserPosts.rejected, (state, action) => {
-        state.loadingUserPosts = false;
-        state.userPostsError = action.payload || "Load user posts failed";
+        state.userPosts = action.payload.data;
       })
 
-      // ===== fetchMyReposts =====
-      .addCase(fetchMyReposts.pending, (state) => {
-        state.loadingMyReposts = true;
-        state.myRepostsError = null;
-      })
+      // fetchMyReposts
+      .addCase(fetchMyReposts.pending, (state) => { state.loadingMyReposts = true; })
       .addCase(fetchMyReposts.fulfilled, (state, action) => {
         state.loadingMyReposts = false;
-        const data = action.payload || [];
-        const sorted = data
-          .slice()
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        state.myReposts = sorted;
-      })
-      .addCase(fetchMyReposts.rejected, (state, action) => {
-        state.loadingMyReposts = false;
-        state.myRepostsError = action.payload || "Load my reposts failed";
+        state.myReposts = action.payload;
       })
 
-      // ===== fetchUserReposts =====
-      .addCase(fetchUserReposts.pending, (state) => {
-        state.loadingUserReposts = true;
-        state.userRepostsError = null;
-      })
+      // fetchUserReposts
+      .addCase(fetchUserReposts.pending, (state) => { state.loadingUserReposts = true; })
       .addCase(fetchUserReposts.fulfilled, (state, action) => {
         state.loadingUserReposts = false;
-        const { data } = action.payload;
-        const sorted = data
-          .slice()
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        state.userReposts = sorted;
-      })
-      .addCase(fetchUserReposts.rejected, (state, action) => {
-        state.loadingUserReposts = false;
-        state.userRepostsError = action.payload || "Load user reposts failed";
+        state.userReposts = action.payload.data;
       })
 
       // fetchPostById
-      .addCase(fetchPostById.pending, (state) => {
-        state.loadingPostDetail = true;
-        state.postDetailError = null;
-      })
       .addCase(fetchPostById.fulfilled, (state, action) => {
         state.loadingPostDetail = false;
-        state.postDetail = action.payload || null;
-      })
-      .addCase(fetchPostById.rejected, (state, action) => {
-        state.loadingPostDetail = false;
-        state.postDetail = null;
-        state.postDetailError = action.payload || "Load post detail failed";
+        state.postDetail = action.payload;
       });
   },
 });
@@ -452,7 +346,11 @@ const postsSlice = createSlice({
 export const { resetFeed, syncLikeByOriginalId, setSearchPosts } = postsSlice.actions;
 export default postsSlice.reducer;
 
-// Selectors
+// ==========================================
+// 3. SELECTORS (Sử dụng với useSelector)
+// ==========================================
+
+// Bảng tin chính (Feed)
 export const selectPosts = (state) => state.posts.items;
 export const selectPostsLoading = (state) => state.posts.loading;
 export const selectPostsCreating = (state) => state.posts.creating;
@@ -460,27 +358,36 @@ export const selectPostsHasMore = (state) => state.posts.hasMore;
 export const selectPostsPage = (state) => state.posts.page;
 export const selectPostsError = (state) => state.posts.error;
 
+// Bài viết của tôi (My Profile)
 export const selectMyPosts = (state) => state.posts.myPosts;
 export const selectMyPostsLoading = (state) => state.posts.loadingMyPosts;
 export const selectMyPostsError = (state) => state.posts.myPostsError;
 
+// Bài viết của người dùng khác (User Profile)
 export const selectUserPosts = (state) => state.posts.userPosts;
 export const selectUserPostsLoading = (state) => state.posts.loadingUserPosts;
 export const selectUserPostsError = (state) => state.posts.userPostsError;
 
+// Danh sách bài Repost của tôi
 export const selectMyReposts = (state) => state.posts.myReposts;
 export const selectMyRepostsLoading = (state) => state.posts.loadingMyReposts;
 export const selectMyRepostsError = (state) => state.posts.myRepostsError;
 
+// Danh sách bài Repost của người khác
 export const selectUserReposts = (state) => state.posts.userReposts;
 export const selectUserRepostsLoading = (state) => state.posts.loadingUserReposts;
 export const selectUserRepostsError = (state) => state.posts.userRepostsError;
 
+// Chi tiết bài viết
 export const selectPostDetail = (state) => state.posts.postDetail;
 export const selectPostDetailLoading = (state) => state.posts.loadingPostDetail;
 export const selectPostDetailError = (state) => state.posts.postDetailError;
 
+// Tìm kiếm bài viết
 export const selectSearchPosts = (state) => state.posts.searchPosts;
 export const selectSearchPostsLoading = (state) => state.posts.loadingSearchPosts;
 export const selectSearchPostsError = (state) => state.posts.searchPostsError;
 
+// Trạng thái Repost/Unrepost
+export const selectIsReposting = (state) => state.posts.reposting;
+export const selectIsUnreposting = (state) => state.posts.unreposting;

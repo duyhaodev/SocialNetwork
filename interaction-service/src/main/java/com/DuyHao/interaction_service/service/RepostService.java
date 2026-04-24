@@ -1,6 +1,7 @@
 package com.DuyHao.interaction_service.service;
 
 import com.DuyHao.interaction_service.FeignClient.PostClient;
+import com.DuyHao.interaction_service.dto.response.PostResponse; // Import ở đây nè!
 import com.DuyHao.interaction_service.dto.response.RepostResponse;
 import com.DuyHao.interaction_service.entity.Repost;
 import com.DuyHao.interaction_service.repository.RepostRepository;
@@ -15,35 +16,41 @@ public class RepostService {
 
     private final RepostRepository repostRepository;
     private final PostClient postClient;
-    // private final NotificationService notificationService;
 
     @Transactional
     public RepostResponse toggleRepost(String postId, String userId) {
         try {
-            var post = postClient.getPost(postId);
-            if (post == null) throw new RuntimeException("Bài viết không tồn tại");
+            var originalPost = postClient.getPost(postId);
+            if (originalPost == null) throw new RuntimeException("Bài viết không tồn tại");
+
             boolean alreadyReposted = repostRepository.existsByUserIdAndPostId(userId, postId);
+            PostResponse newRepostPost = null;
+            String deletedId = null;
+
             if (alreadyReposted) {
                 repostRepository.deleteByUserIdAndPostId(userId, postId);
+                deletedId = postClient.deleteRepost(userId, postId);
+
             } else {
                 Repost repost = Repost.builder()
                         .userId(userId)
                         .postId(postId)
                         .createdAt(LocalDateTime.now())
                         .build();
-
                 repostRepository.save(repost);
-                /*
-                if (!post.getUserId().equals(userId)) {
-                	notificationService.createRepostNotification(post.getUserId(), userId, postId);
-                }
-                */
+                newRepostPost = postClient.createRepost(userId, postId);
+            }
+            long count = repostRepository.countByPostId(postId);
+            if (newRepostPost != null) {
+                newRepostPost.setRepostCount(count);
+                newRepostPost.setRepostedByCurrentUser(true);
             }
 
-            long count = repostRepository.countByPostId(postId);
             return RepostResponse.builder()
                     .reposted(!alreadyReposted)
                     .repostCount(count)
+                    .post(newRepostPost)
+                    .deletedRepostId(deletedId)
                     .build();
 
         } catch (Exception e) {

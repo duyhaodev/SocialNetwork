@@ -2,18 +2,17 @@ import axiosClient from "./axiosClient";
 
 const commentApi = {
   getComments(postId, page = 0, size = 10) {
-    return axiosClient.get(`/posts/${postId}/comments`, {
+    return axiosClient.get(`/interaction/comments/post/${postId}`, {
       params: { page, size },
     });
   },
 
-  createComment(postId, formData) {
-    return axiosClient.post(`/posts/${postId}/comments`, formData, {
-      transformRequest: (v) => v,
-    });
+  createComment(data) {
+    return axiosClient.post(`/interaction/comments`, data);
   },
-  deleteComment(postId, commentId) {
-    return axiosClient.delete(`/posts/${postId}/comments/${commentId}`);
+
+  deleteComment(commentId) {
+    return axiosClient.delete(`/interaction/comments/${commentId}`);
   },
 };
 

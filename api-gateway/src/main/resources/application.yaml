@@ -28,9 +28,9 @@ spring:
           predicates:
             - Path=/chat/**
         - id: interaction-service
-          uri: http://localhost:8084
+          uri: http://localhost:8087
           predicates:
-            - Path=/comments/**
+            - Path=/interaction/**
         - id: post-service
           uri: http://localhost:8085
           predicates:

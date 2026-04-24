@@ -8,6 +8,7 @@ import { Image as ImageIcon, Smile, AtSign, X } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { toast } from "sonner";
 import { createPost, selectPostsCreating } from "../../store/postsSlice";
+import mediaApi from "../../api/mediaApi";
 
 export function CreatePost({ open, onOpenChange }) {
 
@@ -15,7 +16,7 @@ export function CreatePost({ open, onOpenChange }) {
   const dispatch = useDispatch();
   const profile = useSelector((s) => s.user.profile) ?? {};
   const displayName = profile.fullName ?? "Unknown";
-  const username = profile.userName ?? "unknown";
+  const username = profile.username ?? "unknown";
   const avatarUrl = profile.avatarUrl ?? null;
   const creating = useSelector(selectPostsCreating);
 
@@ -60,7 +61,7 @@ export function CreatePost({ open, onOpenChange }) {
         continue;
       }
 
-      const previewUrl = URL.createObjectURL(file); // URL tạm để preview
+      const previewUrl = URL.createObjectURL(file);
       newItems.push({
         file,
         kind: isImage ? "image" : "video",
@@ -100,26 +101,40 @@ export function CreatePost({ open, onOpenChange }) {
     const trimContent = (content || "").trim();
     if (!trimContent && mediaFiles.length === 0) return;
 
-    const fd = new FormData();
-    if (trimContent) fd.append("content", trimContent);
-    mediaFiles.forEach((m) => {
-      fd.append("files", m.file); // key phải trùng với BE
-    });
+    try {
+      let mediaIds = [];
 
-    const action = await dispatch(createPost(fd));
-    if (createPost.fulfilled.match(action)) {
+      if (mediaFiles.length > 0) {
+        const fd = new FormData();
+        mediaFiles.forEach((m) => {
+          fd.append("files", m.file);
+        });
+
+        const uploadRes = await mediaApi.upload(fd);
+        const uploaded = uploadRes?.result || uploadRes || [];
+        mediaIds = uploaded.map((m) => m.id);
+      }
+
+      const payload = {
+        content: trimContent,
+        mediaIds,
+      };
+
+      // 🔥 FIX QUAN TRỌNG: dùng unwrap để tránh stuck loading
+      await dispatch(createPost(payload)).unwrap();
+
       toast.success("Posted successfully!");
       setContent("");
       handleRemoveAll();
       setEmojiOpen(false);
       onOpenChange(false);
-    } else {
-      toast.error(action.payload?.message || "Post failed!");
+
+    } catch (err) {
+      toast.error(err?.message || "Post failed!");
     }
   };
 
   // EMOJI 
-  // đóng emoji khi click ra ngoài
   useEffect(() => {
     if (!emojiOpen) return;
 
@@ -133,13 +148,11 @@ export function CreatePost({ open, onOpenChange }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [emojiOpen]);
 
-  // chèn emoji vào content
   const handleEmojiClick = (emojiData) => {
     setContent((prev) => prev + emojiData.emoji);
   };
 
   // SCROLL: DRAG-TO-SCROLL
-  // kết thúc kéo
   useEffect(() => {
     const handleUp = () => {
       const el = mediaScrollRef.current;
@@ -157,10 +170,9 @@ export function CreatePost({ open, onOpenChange }) {
     };
   }, []);
 
-  // bắt đầu kéo
   const handleMediaMouseDown = (e) => {
     if (!mediaScrollRef.current) return;
-    if (e.button !== 0) return; // chỉ chuột trái
+    if (e.button !== 0) return;
 
     const el = mediaScrollRef.current;
     isDraggingRef.current = true;
@@ -170,7 +182,6 @@ export function CreatePost({ open, onOpenChange }) {
     scrollLeftRef.current = el.scrollLeft;
   };
 
-  // đang kéo
   const handleMediaMouseMove = (e) => {
     const el = mediaScrollRef.current;
     if (!isDraggingRef.current || !el) return;
@@ -180,8 +191,9 @@ export function CreatePost({ open, onOpenChange }) {
     const walk = x - startXRef.current;
     el.scrollLeft = scrollLeftRef.current - walk;
   };
+
   const hasMedia = mediaFiles.length > 0;
-  
+
   return (
     <Dialog open={open} onOpenChange={(v) => (!v ? onOpenChange(false) : onOpenChange(true))}>
       <DialogContent
@@ -204,7 +216,6 @@ export function CreatePost({ open, onOpenChange }) {
           Create new thread with content, emoji and control options
         </DialogDescription>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#2a2a2a]">
           <Button
             variant="ghost"
@@ -220,7 +231,6 @@ export function CreatePost({ open, onOpenChange }) {
           <div className="w-16"></div>
         </div>
 
-        {/* Content */}
         <div className="px-4 py-4">
           <div className="flex gap-3">
             <Avatar className="w-10 h-10 flex-shrink-0">
@@ -235,6 +245,7 @@ export function CreatePost({ open, onOpenChange }) {
                 {(displayName || "U").charAt(0)}
               </AvatarFallback>
             </Avatar>
+
             <div className="flex-1 min-w-0">
               <div className="mb-3">
                 <div className="mb-1">
@@ -252,9 +263,7 @@ export function CreatePost({ open, onOpenChange }) {
                 />
               </div>
 
-              {/* Tools */}
               <div className="mt-3 flex items-center gap-3 relative">
-                {/* Chọn ảnh/video */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -264,6 +273,7 @@ export function CreatePost({ open, onOpenChange }) {
                 >
                   <ImageIcon className="w-5 h-5" />
                 </Button>
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -273,7 +283,6 @@ export function CreatePost({ open, onOpenChange }) {
                   onChange={onFileChange}
                 />
 
-                {/* Mention */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -282,7 +291,6 @@ export function CreatePost({ open, onOpenChange }) {
                   <AtSign className="w-5 h-5" />
                 </Button>
 
-                {/* Emoji */}
                 <div className="relative" ref={emojiRef}>
                   <Button
                     type="button"
@@ -310,7 +318,6 @@ export function CreatePost({ open, onOpenChange }) {
                 </div>
               </div>
 
-              {/* Media preview */}
               {hasMedia && (
                 <div className="mt-3 space-y-2">
                   <div className="flex justify-between items-center px-1">
@@ -332,7 +339,7 @@ export function CreatePost({ open, onOpenChange }) {
                       className="media-scroll flex gap-3 overflow-x-auto px-3 py-3 cursor-grab"
                       onMouseDown={handleMediaMouseDown}
                       onMouseMove={handleMediaMouseMove}
-                      onDragStart={(e) => e.preventDefault()} // chặn native drag
+                      onDragStart={(e) => e.preventDefault()}
                     >
                       {mediaFiles.map((m, idx) => (
                         <div
@@ -343,7 +350,6 @@ export function CreatePost({ open, onOpenChange }) {
                             type="button"
                             onClick={() => handleRemoveOne(idx)}
                             className="absolute top-2 right-2 z-20 bg-black/60 hover:bg-black/80 rounded-full p-1"
-                            title="Remove media"
                           >
                             <X className="w-4 h-4 text-white" />
                           </button>
@@ -370,11 +376,11 @@ export function CreatePost({ open, onOpenChange }) {
                   </div>
                 </div>
               )}
+
             </div>
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-4 py-3 border-t border-[#2a2a2a] flex items-center justify-between">
           <span
             className={`text-sm ${
@@ -383,6 +389,7 @@ export function CreatePost({ open, onOpenChange }) {
           >
             {content.length}/500
           </span>
+
           <Button
             onClick={handleSubmit}
             disabled={creating || (!content.trim() && mediaFiles.length === 0)}
@@ -392,6 +399,7 @@ export function CreatePost({ open, onOpenChange }) {
             {creating ? "Posting..." : "Post"}
           </Button>
         </div>
+
       </DialogContent>
     </Dialog>
   );

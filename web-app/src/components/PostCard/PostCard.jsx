@@ -4,8 +4,9 @@ import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ImageViewer } from "../ImageViewer/ImageViewer.jsx";
 import likeApi from "@/api/likeApi";
+import repostApi from "@/api/repostApi";
 import { useSelector, useDispatch } from "react-redux";
-import { repostPost, unrepostPost, syncLikeByOriginalId, deletePost } from "@/store/postsSlice";
+import { toggleRepost , syncLikeByOriginalId, deletePost } from "@/store/postsSlice";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -20,7 +21,7 @@ import { Trash2, Link } from "lucide-react";
 export function PostCard({ post, onProfileClick, onPostClick }) {
 
   const dispatch = useDispatch();
-  const currentUserId = useSelector((s) => s.user?.profile?.id);
+  const currentUserId = useSelector((s) => s.user?.profile?.userId);
   // ====== THÔNG TIN CƠ BẢN (người repost) ======
   const baseUsername = post.username ?? post.user?.username ?? "unknown";
   const baseFullName = post.fullName ?? post.user?.fullName ?? "Unknown";
@@ -46,7 +47,14 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
   const reposterName = baseFullName || baseUsername || "Unknown";
 
   // list media
-  const mediaList = Array.isArray(post.mediaList) ? post.mediaList : [];
+  const mediaList = Array.isArray(post.mediaUrls)
+    ? post.mediaUrls.map((url, idx) => ({
+        id: idx,
+        mediaUrl: url,
+        mediaType: url?.includes(".mp4") ? "video" : "image",
+      }))
+    : [];
+
   const mediaCount = mediaList.length;
 
   // click mở fullscreen
@@ -63,6 +71,7 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
   const [liking, setLiking] = useState(false);
   const [isReposted, setIsReposted] = useState(post.repostedByCurrentUser ?? false);
   const [reposts, setReposts] = useState(post.repostCount ?? 0);
+  const [reposting, setReposting] = useState(false);
   const [repostMenuOpen, setRepostMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
@@ -111,36 +120,36 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
   }
 };
 
-  useEffect(() => {
-  setIsReposted(post.repostedByCurrentUser ?? false);
-  }, [post.repostedByCurrentUser]);
-
-  useEffect(() => {
+useEffect(() => {
+    setIsReposted(post.repostedByCurrentUser ?? false);
     setReposts(post.repostCount ?? 0);
-  }, [post.repostCount]);
+  }, [post.repostedByCurrentUser, post.repostCount]);
 
   const handleRepostAction = async () => {
-  const id = originalPostId;
-  if (!id) return;
-
-  try {
-    if (isReposted) {
-      await dispatch(unrepostPost(id)).unwrap();
-      toast.success("Post unreposted");
-    } else {
-      await dispatch(repostPost(id)).unwrap();
-      toast.success("Post reposted");
-    }
+    if (reposting) return;
+    const id = originalPostId;
+    if (!id) return;
+    const prevReposted = isReposted;
+    const prevReposts = reposts;
+    setIsReposted(!prevReposted);
+    setReposts(!prevReposted ? prevReposts + 1 : Math.max(0, prevReposts - 1));
     setRepostMenuOpen(false);
-  } catch (err) {
-    console.error(isReposted ? "Unrepost failed:" : "Repost failed:", err);
 
-    toast.error(
-      isReposted
-        ? "Unrepost failed, please try again"
-        : "Repost failed, please try again"
-    );
-  }
+    try {
+        const result = await dispatch(toggleRepost(id)).unwrap();
+        setIsReposted(result.reposted);
+        setReposts(result.repostCount);
+
+        toast.success(result.reposted ? "Post reposted" : "Repost removed");
+
+    } catch (err) {
+        console.error("Repost action failed:", err);
+        toast.error(err || "Failed to process repost");
+        
+        // 5. Rollback nếu lỗi
+        setIsReposted(prevReposted);
+        setReposts(prevReposts);
+    }
 };
 
   const handleDeletePost = async () => {
@@ -410,9 +419,7 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
                   // ======= 1 MEDIA =======
                   (() => {
                     const m = mediaList[0];
-                    const url = /^https?:\/\//i.test(m.mediaUrl)
-                      ? m.mediaUrl
-                      : `${import.meta.env.VITE_BACKEND_URL || ""}${m.mediaUrl}`;
+                    const url = m.mediaUrl;
 
                     if (m.mediaType === "video") {
                       return (

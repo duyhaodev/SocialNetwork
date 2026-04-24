@@ -40,7 +40,7 @@ public class MediaService {
 
             Map<String, Object> uploadResult = cloudinary
                     .uploader()
-                    .upload(file.getBytes(), ObjectUtils.asMap("folder", folder, "resource_type", "auto"));
+                    .upload(file.getBytes(), ObjectUtils.asMap("folder", folder, "resource_type", "auto", "transformation", "q_auto,f_auto"));
 
             Media media = Media.builder()
                     .mediaUrl((String) uploadResult.get("secure_url"))
@@ -134,6 +134,7 @@ public class MediaService {
                     .uploader()
                     .destroy(media.getMediaPublicId(), ObjectUtils.asMap("resource_type", media.getMediaType()));
             mediaRepository.delete(media);
+            System.out.println("[MEDIA DELETE] SUCCESS: " + media.getMediaPublicId());
         } catch (Exception e) {
             System.err.println("Delete media failed: " + media.getMediaPublicId());
         }

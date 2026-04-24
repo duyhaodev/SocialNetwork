@@ -13,6 +13,7 @@ import {formatTimeAgo} from "../../utils/dateUtils.js"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "../ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
 import CommentForm from "./CommentForm";
+import mediaApi from "../../api/mediaApi";
 
 const PAGE_SIZE = 10;
 export function PostComments({ postId, onProfileClick, onCommentCreated }) {
@@ -51,43 +52,87 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
   const [viewerIndex, setViewerIndex] = useState(0);
   const [viewerMediaList, setViewerMediaList] = useState([]);
   const openViewerForComment = (comment, index) => {
-    const list = (comment.mediaList || []).map((m) => ({
-      ...m,
-      mediaUrl: buildMediaUrl(m.mediaUrl),
+    const list = (comment.mediaUrls || []).map((url) => ({
+      mediaUrl: buildMediaUrl(url),
+      mediaType: url.toLowerCase().endsWith(".mp4") ? "video" : "image"
     }));
     setViewerMediaList(list);
     setViewerIndex(index);
     setViewerOpen(true);
   };
 
-  // Tạo comment
-  const handleCreateComment = async (formData) => {
-  try {
-    await dispatch(
-      createCommentThunk({ postId, formData })
-    ).unwrap();
+  // 1. Tạo comment chính
+  const handleCreateComment = async (data) => {
+    try {
+      let idsToSubmit = []; 
 
-    onCommentCreated?.();
-  } catch (err) {
-    toast.error(err?.message || "Không gửi được bình luận");
-    throw err;
-  }
-};
+      // Chỉ thực hiện upload nếu có files
+      if (data.files && data.files.length > 0) {
+        const fd = new FormData();
+        data.files.forEach((f) => fd.append("files", f));
 
-  // Tạo reply
-const handleCreateReply = (parentId) => async (formData) => {
-  try {
-    formData.append("parentId", parentId);
-    await dispatch(
-      createCommentThunk({ postId, formData })
-    ).unwrap();
+        const uploadRes = await mediaApi.upload(fd);
+        
+        // Bóc tách mảng: ưu tiên .result, sau đó đến .data.result, cuối cùng là chính nó
+        const uploaded = uploadRes?.result || uploadRes?.data?.result || (Array.isArray(uploadRes) ? uploadRes : []);
+        
+        // Lấy ID (chấp nhận cả trường id hoặc fileId)
+        idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
+        console.log("✅ IDs bóc được cho Comment:", idsToSubmit);
+      }
 
-    setReplyTo(null);
-  } catch (err) {
-    toast.error(err?.message || "Không gửi được reply");
-    throw err;
-  }
-};
+      const payload = {
+        postId: postId, // Đảm bảo postId này tồn tại
+        content: data.content,
+        parentId: null,
+        mediaIds: idsToSubmit 
+      };
+
+      console.log("🚀 Gửi Comment Payload:", payload);
+      await dispatch(createCommentThunk(payload)).unwrap();
+
+      // Refresh lại danh sách
+      dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
+      onCommentCreated?.();
+    } catch (err) {
+      console.error("Lỗi tạo comment:", err);
+      toast.error(err?.message || "Không gửi được bình luận");
+    }
+  };
+
+  // 2. Tạo reply
+  const handleCreateReply = (parentId) => async (data) => {
+    try {
+      let idsToSubmit = []; 
+
+      if (data.files && data.files.length > 0) {
+        const fd = new FormData();
+        data.files.forEach((f) => fd.append("files", f));
+        
+        const uploadRes = await mediaApi.upload(fd);
+        const uploaded = uploadRes?.result || uploadRes?.data?.result || (Array.isArray(uploadRes) ? uploadRes : []);
+        
+        idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
+        console.log("✅ IDs bóc được cho Reply:", idsToSubmit);
+      }
+
+      const payload = {
+        postId: postId,
+        content: data.content,
+        parentId: parentId,
+        mediaIds: idsToSubmit // ĐỒNG BỘ: Dùng mediaIds thay vì mediaUrls
+      };
+
+      console.log("🚀 Gửi Reply Payload:", payload);
+      await dispatch(createCommentThunk(payload)).unwrap();
+
+      dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
+      setReplyTo(null);
+    } catch (err) {
+      console.error("Lỗi tạo reply:", err);
+      toast.error(err?.message || "Không gửi được phản hồi");
+    }
+  };
 
 
   // ======== LOAD COMMENTS ========
@@ -112,7 +157,6 @@ const handleCreateReply = (parentId) => async (formData) => {
         if (!entry.isIntersecting) return;
         if (loadingComments || !hasMoreComments || commentsError) return;
 
-        // nếu đang chờ load rồi thì không set thêm
         if (loadDelayRef.current) return;
 
         loadDelayRef.current = setTimeout(() => {
@@ -143,7 +187,6 @@ const handleCreateReply = (parentId) => async (formData) => {
     };
   }, [postId, hasMoreComments, loadingComments, commentsPage, dispatch, commentsError]);
 
-  // Hiện toast khi lỗi load comment
   useEffect(() => {
     if (commentsError) {
       toast.error(commentsError);
@@ -181,10 +224,10 @@ const handleCreateReply = (parentId) => async (formData) => {
     startX: 0,
     scrollLeft: 0,
   });
-  const hasDraggedRef = useRef(false); // phân biệt kéo vs click
+  const hasDraggedRef = useRef(false);
 
   const handleDragStart = (e) => {
-    if (e.button !== 0) return; // chỉ chuột trái
+    if (e.button !== 0) return;
     const el = e.currentTarget;
     dragState.current = {
       isDragging: true,
@@ -228,7 +271,6 @@ const handleCreateReply = (parentId) => async (formData) => {
 
   return (
     <>
-      {/* Ẩn scrollbar */}
       <style>
         {`
           .media-scroll {
@@ -241,7 +283,6 @@ const handleCreateReply = (parentId) => async (formData) => {
         `}
       </style>
 
-      {/* FORM COMMENT */}
       <CommentForm
         avatarUrl={avatarUrl}
         fullName={fullName}
@@ -249,9 +290,7 @@ const handleCreateReply = (parentId) => async (formData) => {
         onSubmit={handleCreateComment}
       />
 
-      {/* DANH SÁCH COMMENT */}
       <div className="px-4 py-3">
-        {/* loading lần đầu (chưa có comment nào) */}
         {!comments.length && loadingComments ? (
           <div className="flex justify-center py-4">
             <Spinner />
@@ -269,7 +308,7 @@ const handleCreateReply = (parentId) => async (formData) => {
               >
                 <Avatar
                   className="w-10 h-10 cursor-pointer"
-                  onClick={() => onProfileClick?.(c.userName)}
+                  onClick={() => onProfileClick?.(c.username)}
                 >
                   <AvatarImage src={c.avatarUrl} alt={c.fullName} />
                   <AvatarFallback>
@@ -281,12 +320,12 @@ const handleCreateReply = (parentId) => async (formData) => {
                   <div className="flex items-baseline gap-2">
                     <span
                       className="font-semibold text-sm cursor-pointer hover:underline"
-                      onClick={() => onProfileClick?.(c.userName)}
+                      onClick={() => onProfileClick?.(c.username)}
                     >
                       {c.fullName}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      @{c.userName}
+                      @{c.username}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       · {formatTimeAgo(c.createdAt)}
@@ -297,7 +336,7 @@ const handleCreateReply = (parentId) => async (formData) => {
                     {c.content}
                   </div>
 
-                  {c.mediaList?.length > 0 && (
+                  {c.mediaUrls?.length > 0 && (
                     <div className="mt-2 w-full max-w-full overflow-hidden rounded-2xl">
                       <div
                         className="media-scroll flex gap-3 overflow-x-auto px-3 py-3 cursor-grab flex-nowrap"
@@ -305,13 +344,13 @@ const handleCreateReply = (parentId) => async (formData) => {
                         onMouseMove={handleDragMove}
                         onDragStart={(e) => e.preventDefault()}
                       >
-                        {c.mediaList.map((m, idx) => {
-                          const url = buildMediaUrl(m.mediaUrl);
-                          const isVideo = m.mediaType === "video";
+                        {c.mediaUrls.map((mUrl, idx) => {
+                          const url = buildMediaUrl(mUrl);
+                          const isVideo = mUrl.toLowerCase().endsWith(".mp4");
 
                           return (
                             <div
-                              key={m.id ?? idx}
+                              key={idx}
                               className="relative flex-shrink-0 max-w-[170px] aspect-[3/4] rounded-xl overflow-hidden bg-black/40"
                               onClick={() => {
                                 if (hasDraggedRef.current) return;
@@ -342,7 +381,6 @@ const handleCreateReply = (parentId) => async (formData) => {
                   )}
 
                   <div className="flex items-center gap-4 pt-2">
-                    {/* LIKE */}
                     <button
                       onClick={() => handleToggleLikeComment(c.id)}
                       className={`flex items-center gap-1 text-xs transition-colors ${
@@ -352,7 +390,6 @@ const handleCreateReply = (parentId) => async (formData) => {
                       <Heart className={`w-3 h-3 ${c.likedByCurrentUser ? "fill-red-500" : ""}`} />
                       <span className="ml-1">{c.likeCount ?? 0}</span>
                     </button>
-                    {/* REPLY */}
                     <button
                       onClick={() => handleOpenReply(c.id)}
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -360,24 +397,22 @@ const handleCreateReply = (parentId) => async (formData) => {
                       Reply
                     </button>
                   </div>
-                  {/* ===== REPLY BOX (CHÈN NGAY ĐÂY) ===== */}
+                  
                   {replyTo === c.id && (
                     <div className="mt-3 ml-10">
                       <CommentForm
-  isReply={true}
-  avatarUrl={avatarUrl}
-  fullName={fullName}
-  placeholder={`Trả lời bình luận của ${c.fullName ?? "người dùng"}...`}
-  submitting={submittingComment}
-  onSubmit={handleCreateReply(c.id)}
-  onCancelReply={() => setReplyTo(null)}
-/>
-
+                        isReply={true}
+                        avatarUrl={avatarUrl}
+                        fullName={fullName}
+                        placeholder={`Trả lời bình luận của ${c.fullName ?? "người dùng"}...`}
+                        submitting={submittingComment}
+                        onSubmit={handleCreateReply(c.id)}
+                        onCancelReply={() => setReplyTo(null)}
+                      />
                     </div>
                   )}
 
                 </div>
-                {/* MORE MENU BUTTON */}
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -397,16 +432,18 @@ const handleCreateReply = (parentId) => async (formData) => {
                       className="w-44 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] font-semibold p-1"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {/* Ai cũng thấy */}
                       <DropdownMenuItem
                         className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
-                        onClick={() => handleCopyCommentLink(c.id)}
+                        onClick={() => {
+                          const link = `${window.location.origin}/post/${postId}/comment/${c.id}`;
+                          navigator.clipboard.writeText(link);
+                          toast.success("Đã sao chép liên kết bình luận");
+                        }}
                       >
                         Copy link
                       </DropdownMenuItem>
 
-                      {/* Chỉ chính chủ */}
-                      {c.userId === currentUserId && (
+                      {(c.userId === currentUserId || c.username === profile.username) && (
                         <DropdownMenuItem
                           className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
                           onClick={() => handleDeleteComment(c.id)}
@@ -420,7 +457,6 @@ const handleCreateReply = (parentId) => async (formData) => {
                 </div>
               </div>
             ))}
-            {/* LOAD MORE */}
             <div className="pt-3">
               {loadingComments && hasMoreComments && (
                 <div className="flex justify-center py-2">
@@ -433,14 +469,13 @@ const handleCreateReply = (parentId) => async (formData) => {
         )}
       </div>
 
-      {/* ImageViewer cho media trong comment */}
       <ImageViewer
         open={viewerOpen}
         onClose={() => setViewerOpen(false)}
         mediaList={viewerMediaList}
         index={viewerIndex}
       />
-    </>
+  </>
   );
 }
 

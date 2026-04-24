@@ -25,4 +25,6 @@ public class UserProfile {
     String fullName;
     LocalDate dob;
     String city;
+    String avatarUrl;
+    String bio;
 }
