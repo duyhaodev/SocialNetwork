@@ -1,8 +1,7 @@
 package com.DuyHao.api_gateway.service;
 
-import com.DuyHao.api_gateway.dto.ApiResponse;
 import com.DuyHao.api_gateway.dto.request.IntrospectRequest;
-import com.DuyHao.api_gateway.dto.response.IntrospectResponse;
+import com.DuyHao.api_gateway.dto.response.IntrospectApiResponse;
 import com.DuyHao.api_gateway.repository.IdentityClient;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,7 @@ import reactor.core.publisher.Mono;
 public class IdentityService {
     IdentityClient identityClient;
 
-    public Mono<ApiResponse<IntrospectResponse>> introspect(String token) {
+    public Mono<IntrospectApiResponse> introspect(String token) {
         return identityClient.introspect(IntrospectRequest.builder().token(token).build());
     }
 }

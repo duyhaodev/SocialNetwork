@@ -55,11 +55,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         log.debug("token:{}", token);
 
         return identityService.introspect(token).flatMap(introspectResponse -> {
-            if (introspectResponse.getResult().isValid())
+            if (introspectResponse.getResult() != null && introspectResponse.getResult().isValid())
                 return chain.filter(exchange);
             else
                 return unauthenticated(exchange.getResponse());
-        }).onErrorResume(throwable -> unauthenticated(exchange.getResponse()));
+        }).onErrorResume(throwable -> {
+            log.error("Introspect error: {}", throwable.getMessage());
+            return unauthenticated(exchange.getResponse());
+        });
     }
 
     @Override

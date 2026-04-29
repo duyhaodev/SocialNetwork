@@ -102,7 +102,11 @@ public class UserService {
                     .fullName(savedUser.getFullName())
                     .build();
 
-            profileClient.createProfile(profileRequest);
+            try {
+                profileClient.createProfile(profileRequest);
+            } catch (Exception e) {
+                log.error("Failed to create profile for user {}: {}", savedUser.getId(), e.getMessage());
+            }
 
             return userMapper.toUserResponse(savedUser);
         } else {

@@ -5,9 +5,9 @@ server:
 
 spring:
   datasource:
-    url: "jdbc:mysql://localhost:3306/identity_service"
+    url: "jdbc:mysql://localhost:3306/identity_service?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
     username: root
-    password: 123456
+    password: nthuytram
     driverClassName: "com.mysql.jdbc.Driver"
   jpa:
     hibernate:

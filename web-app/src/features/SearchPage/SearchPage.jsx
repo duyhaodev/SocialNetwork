@@ -38,16 +38,14 @@ export function SearchPage() {
       try {
         const res = await searchApi.search(searchQuery);
 
-        const data = res.data || res; 
-        if (data.code === 200 && data.result) {
+        const data = res.data || res;
+        if (data.result) {
           const rawPosts = data.result.posts || [];
           const normalizedPosts = rawPosts.map(p => ({
             ...p,
-            mediaList: typeof p.mediaList === "string" 
-              ? JSON.parse(p.mediaList)
-              : (p.mediaList || [])
+            mediaList: p.mediaUrls || p.mediaList || []
           }));
-          
+
           setPosts(normalizedPosts);
           setUsers(data.result.users || []);
         } else {
@@ -55,7 +53,7 @@ export function SearchPage() {
           setPosts([]);
         }
       } catch (err) {
-        console.error("❌ Search error:", err);
+        console.error("Search error:", err);
         setUsers([]);
         setPosts([]);
       } finally {
@@ -294,7 +292,7 @@ function UserCard({ user, onProfileClick, currentUserId, authLoading }) {
       <div className="flex items-start gap-3">
         <button
           className="p-0 h-auto rounded-full"
-          onClick={() => onProfileClick?.(user.userName)}
+          onClick={() => onProfileClick?.(user.username || user.userName)}
           title={user.fullName}
         >
           <Avatar className="w-10 h-10">
@@ -309,7 +307,7 @@ function UserCard({ user, onProfileClick, currentUserId, authLoading }) {
               variant="ghost"
               size="sm"
               className="p-0 h-auto hover:underline"
-              onClick={() => onProfileClick?.(user.userName)}
+              onClick={() => onProfileClick?.(user.username || user.userName)}
             >
               <span className="font-medium">{user.fullName}</span>
             </Button>
@@ -318,7 +316,7 @@ function UserCard({ user, onProfileClick, currentUserId, authLoading }) {
             )}
           </div>
           <p className="text-sm text-muted-foreground mb-2">
-            @{user.userName}
+            @{user.username || user.userName}
           </p>
           {user.bio && <p className="text-sm mb-2 line-clamp-2">{user.bio}</p>}
           {user.followers !== undefined && (

@@ -15,6 +15,4 @@ public interface UserProfileRepository extends Neo4jRepository<UserProfile, Stri
     List<UserProfile> findAllByUserIdIn(List<String> userIds);
 
     Optional<UserProfile> findByUserId(String userId);
-
-    List<UserProfile> findByUsernameContainingIgnoreCase(String keyword);
 }

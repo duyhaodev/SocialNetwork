@@ -23,6 +23,14 @@ public class InternalPostController {
         return postService.getPostsByIds(ids);
     }
 
+    @GetMapping("/search")
+    public List<PostResponse> searchPosts(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return postService.searchPosts(keyword, null, page, size);
+    }
+
     @PostMapping("/repost")
     public PostResponse createRepost(@RequestParam String userId, @RequestParam String originalPostId) {
         return postService.createRepost(userId, originalPostId);

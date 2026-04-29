@@ -76,6 +76,18 @@ public class PostController {
         return ApiResponse.<List<PostResponse>>builder().result(reposts).build();
     }
 
+    // ==================== SEARCH ====================
+    @GetMapping("/posts/search")
+    public ApiResponse<List<PostResponse>> searchPosts(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        List<PostResponse> posts = postService.searchPosts(keyword, userId, page, size);
+        return ApiResponse.<List<PostResponse>>builder().result(posts).build();
+    }
+
     // ==================== GET ONE POST ====================
     @GetMapping("/posts/{postId}")
     public ApiResponse<PostResponse> getOne(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {

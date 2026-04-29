@@ -7,6 +7,7 @@ import com.DuyHao.post_service.dto.response.*;
 import com.DuyHao.post_service.entity.Post;
 import com.DuyHao.post_service.mapper.PostMapper;
 import com.DuyHao.post_service.repository.PostRepository;
+import com.DuyHao.post_service.util.TextNormalizer;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -207,6 +208,30 @@ public class PostService {
         return reposts.stream()
                 .map(post -> buildPostResponse(post, currentUserId, userMap))
                 .toList();
+    }
+
+    // ==================== SEARCH ====================
+    public List<PostResponse> searchPosts(String keyword, String currentUserId, int page, int size) {
+        String normalizedKeyword = TextNormalizer.normalize(keyword);
+
+        // Fetch recent posts then filter in-memory for accent-insensitive matching
+        List<Post> allRecent = postRepository.findAllOriginalPosts(PageRequest.of(0, 1000));
+        List<Post> matched = allRecent.stream()
+                .filter(p -> p.getContent() != null
+                        && TextNormalizer.normalize(p.getContent()).contains(normalizedKeyword))
+                .skip((long) page * size)
+                .limit(size)
+                .toList();
+
+        if (matched.isEmpty()) return List.of();
+
+        Set<String> userIds = matched.stream().map(Post::getUserId).collect(Collectors.toSet());
+        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        return matched.stream()
+                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .collect(Collectors.toList());
     }
 
     // ==================== HELPER ====================

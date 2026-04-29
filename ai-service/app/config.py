@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "AI Status Suggestion Service"
     APP_VERSION: str = "1.0.0"
     HOST: str = "0.0.0.0"
-    PORT: int = 8090
+    PORT: int = 8089
     DEBUG: bool = False
 
     # Model

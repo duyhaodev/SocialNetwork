@@ -38,4 +38,10 @@ public class InternalUserProfileController {
     public List<UserProfileResponse> getUsers(@RequestBody List<String> userIds) {
         return userProfileRepositoryService.getUsers(userIds);
     }
+
+    @GetMapping("/internal/users/search")
+    public List<UserProfileResponse> searchUsers(@RequestParam("keyword") String keyword) {
+        var profiles = userProfileRepositoryService.searchUsersInternal(keyword);
+        return profiles;
+    }
 }

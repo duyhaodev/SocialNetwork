@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: search-service
+
+server:
+  port: 8090
+  servlet:
+    context-path: /search
+
+app:
+  service:
+    profile: http://localhost:8081/profile
+    post: http://localhost:8085/post
