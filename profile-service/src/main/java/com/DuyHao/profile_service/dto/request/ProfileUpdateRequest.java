@@ -11,14 +11,12 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ProfileCreationRequest {
-    String userId;
+public class ProfileUpdateRequest {
     String fullName;
-    String username;
 
     @JsonFormat(pattern = "dd-MM-yyyy")
     LocalDate dob;
     String city;
-    String avatarUrl;
     String bio;
+    String mediaId;
 }

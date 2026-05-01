@@ -69,7 +69,7 @@ export function ProfilePage() {
     ? {
         userId: profile.userId,
         displayName: profile.fullName ?? "Unknown",
-        username: profile.userName ?? "unknown",
+        username: profile.username ?? "unknown",
         bio: profile.bio ?? "",
         avatar: profile.avatarUrl ?? "/default-avatar.png",
         followers: profile.followersCount ?? 0,
@@ -80,7 +80,7 @@ export function ProfilePage() {
     ? {
         userId: otherProfile.userId,
         displayName: otherProfile.fullName ?? "Unknown",
-        username: otherProfile.userName ?? "unknown",
+        username: otherProfile.username ?? "unknown",
         bio: otherProfile.bio ?? "",
         avatar: otherProfile.avatarUrl ?? "/default-avatar.png",
         followers: otherProfile.followersCount ?? 0,

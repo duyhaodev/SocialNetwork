@@ -1,7 +1,11 @@
 package com.DuyHao.profile_service.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import com.DuyHao.profile_service.FeignClient.MediaClient;
+import com.DuyHao.profile_service.dto.request.ProfileUpdateRequest;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -24,11 +28,14 @@ import lombok.extern.slf4j.Slf4j;
 public class UserProfileRepositoryService {
     UserProfileRepository userProfileRepository;
     UserProfileMapper userProfileMapper;
+    MediaClient mediaClient;
 
     public UserProfileResponse createProfile(ProfileCreationRequest request) {
         UserProfile userProfile = userProfileMapper.toUserProfile(request);
         if (userProfile.getDob() == null) {
-            userProfile.setDob(java.time.LocalDate.of(1900, 1, 1));
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            LocalDate defaultDate = LocalDate.parse("01-01-1900", formatter);
+            userProfile.setDob(defaultDate);
         }
         if (userProfile.getCity() == null || userProfile.getCity().isEmpty()) {
             userProfile.setCity("Chưa cập nhật");
@@ -75,6 +82,31 @@ public class UserProfileRepositoryService {
         UserProfile userProfile = userProfileRepository
                 .findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        return userProfileMapper.toUserProfileResponse(userProfile);
+    }
+
+    @Transactional("transactionManager")
+    public UserProfileResponse updateMyInfo(ProfileUpdateRequest request) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        UserProfile userProfile = userProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Profile not found!"));
+
+        if (request.getFullName() != null) userProfile.setFullName(request.getFullName());
+        if (request.getDob() != null) userProfile.setDob(request.getDob());
+        if (request.getCity() != null) userProfile.setCity(request.getCity());
+        if (request.getBio() != null) userProfile.setBio(request.getBio());
+
+        if (request.getMediaId() != null && !request.getMediaId().isBlank()) {
+            mediaClient.assignMediaToUser(userId, request.getMediaId());
+            var userMedias = mediaClient.getByUserId(userId);
+            if (userMedias != null && !userMedias.isEmpty()) {
+                String newAvatarUrl = userMedias.get(0).getMediaUrl();
+                userProfile.setAvatarUrl(newAvatarUrl);
+            }
+        }
+        userProfile = userProfileRepository.save(userProfile);
         return userProfileMapper.toUserProfileResponse(userProfile);
     }
 

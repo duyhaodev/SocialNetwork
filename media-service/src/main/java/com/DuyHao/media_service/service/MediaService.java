@@ -48,6 +48,7 @@ public class MediaService {
                     .mediaType(isImage ? "image" : "video")
                     .postId(postId)
                     .commentId(commentId)
+                    .userId(null)
                     .build();
 
             mediaRepository.save(media);
@@ -99,6 +100,18 @@ public class MediaService {
         }
         mediaRepository.saveAll(mediaList);
     }
+    @Transactional
+    public void assignMediaToUser(String userId, String mediaId) {
+        List<Media> oldMedias = mediaRepository.findByUserId(userId);
+        if (!oldMedias.isEmpty()) {
+            mediaRepository.deleteAll(oldMedias);
+        }
+
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new RuntimeException("Media not found"));
+        media.setUserId(userId);
+        mediaRepository.save(media);
+    }
 
     // ==================== GET MEDIA ====================
     public List<MediaResponse> getByPostId(String postId) {
@@ -107,6 +120,9 @@ public class MediaService {
 
     public List<MediaResponse> getByCommentId(String commentId) {
         return mediaMapper.toResponseList(mediaRepository.findByCommentId(commentId));
+    }
+    public List<MediaResponse> getByUserId(String userId) {
+        return mediaMapper.toResponseList(mediaRepository.findByUserId(userId));
     }
 
     // ==================== DELETE MEDIA ====================

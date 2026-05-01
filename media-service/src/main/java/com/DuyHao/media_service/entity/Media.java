@@ -34,6 +34,9 @@ public class Media {
     @Column(name = "comment_id")
     String commentId;
 
+    @Column(name = "user_id")
+    String userId;
+
     @PrePersist
     public void prePersist() {
         if (id == null || id.isBlank()) {

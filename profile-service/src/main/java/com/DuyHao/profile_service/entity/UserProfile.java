@@ -2,6 +2,7 @@ package com.DuyHao.profile_service.entity;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
@@ -23,6 +24,8 @@ public class UserProfile {
 
     String username;
     String fullName;
+
+    @JsonFormat(pattern = "dd-MM-yyyy")
     LocalDate dob;
     String city;
     String avatarUrl;

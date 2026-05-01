@@ -1,15 +1,17 @@
 import axiosClient from "./axiosClient";
 
 const userApi = {
+  // Lấy thông tin cá nhân
   getMyInfo() {
-    const url = "profile/myInfo"
-    return axiosClient.get(url)
+    const url = "profile/myInfo";
+    return axiosClient.get(url);
   },
-  editProfile(formData) {
-    return axiosClient.put("profile/users/editprofile", formData, {
-      transformRequest: (v) => v,
-    });
-  },
-}
 
-export default userApi
+  // Cập nhật thông tin cá nhân
+  editProfile(payload) {
+    const url = "profile/myInfo";
+    return axiosClient.put(url, payload); 
+  },
+};
+
+export default userApi;

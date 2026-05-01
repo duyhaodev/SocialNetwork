@@ -2,6 +2,7 @@ package com.DuyHao.profile_service.controller;
 
 import java.util.List;
 
+import com.DuyHao.profile_service.dto.request.ProfileUpdateRequest;
 import org.springframework.web.bind.annotation.*;
 
 import com.DuyHao.profile_service.dto.ApiResponse;
@@ -42,6 +43,12 @@ public class UserProfileController {
     ApiResponse<UserProfileResponse> getMyInfo() {
         return ApiResponse.<UserProfileResponse>builder()
                 .result(userProfileRepositoryService.getMyInfo())
+                .build();
+    }
+    @PutMapping("/myInfo")
+    ApiResponse<UserProfileResponse> updateMyInfo(@RequestBody ProfileUpdateRequest request) {
+        return ApiResponse.<UserProfileResponse>builder()
+                .result(userProfileRepositoryService.updateMyInfo(request))
                 .build();
     }
 }
