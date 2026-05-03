@@ -1,25 +1,22 @@
 package com.DuyHao.profile_service.service;
 
-import java.time.LocalDate;
-import java.util.List;
-
 import com.DuyHao.profile_service.FeignClient.MediaClient;
-import com.DuyHao.profile_service.dto.request.ProfileUpdateRequest;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-
 import com.DuyHao.profile_service.dto.request.ProfileCreationRequest;
+import com.DuyHao.profile_service.dto.request.ProfileUpdateRequest;
 import com.DuyHao.profile_service.dto.response.UserProfileResponse;
 import com.DuyHao.profile_service.entity.UserProfile;
 import com.DuyHao.profile_service.mapper.UserProfileMapper;
 import com.DuyHao.profile_service.repository.UserProfileRepository;
-
+import java.time.LocalDate;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,10 +38,14 @@ public class UserProfileRepositoryService {
             userProfile.setCity("Chưa cập nhật");
         }
         if (userProfile.getAvatarUrl() == null || userProfile.getAvatarUrl().isEmpty()) {
-            userProfile.setAvatarUrl("https://res.cloudinary.com/dfscz2c2l/image/upload/q_auto/f_auto/v1776620937/Gemini_Generated_Image_y5h7uy5h7uy5h7uy_s6vvqx.png");
+            userProfile.setAvatarUrl(
+                    "https://res.cloudinary.com/dfscz2c2l/image/upload/q_auto/f_auto/v1776620937/Gemini_Generated_Image_y5h7uy5h7uy5h7uy_s6vvqx.png");
         }
         if (userProfile.getBio() == null) {
             userProfile.setBio("");
+        }
+        if (userProfile.getSpotifyLink() == null) {
+            userProfile.setSpotifyLink("");
         }
         userProfile = userProfileRepository.save(userProfile);
 
@@ -97,7 +98,7 @@ public class UserProfileRepositoryService {
         if (request.getDob() != null) userProfile.setDob(request.getDob());
         if (request.getCity() != null) userProfile.setCity(request.getCity());
         if (request.getBio() != null) userProfile.setBio(request.getBio());
-
+        if (request.getSpotifyLink() != null) userProfile.setSpotifyLink(request.getSpotifyLink());
         if (request.getMediaId() != null && !request.getMediaId().isBlank()) {
             mediaClient.assignMediaToUser(userId, request.getMediaId());
             var userMedias = mediaClient.getByUserId(userId);

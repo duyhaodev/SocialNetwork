@@ -1,16 +1,13 @@
 package com.DuyHao.profile_service.controller;
 
-import java.util.List;
-
-import org.springframework.web.bind.annotation.*;
-
 import com.DuyHao.profile_service.dto.request.ProfileCreationRequest;
 import com.DuyHao.profile_service.dto.response.UserProfileResponse;
 import com.DuyHao.profile_service.service.UserProfileRepositoryService;
-
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor

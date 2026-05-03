@@ -16,6 +16,7 @@ import userApi from "../../api/userApi";
 import mediaApi from "../../api/mediaApi";
 import { fetchMyInfo } from "../../store/userSlice";
 import { toast } from "sonner";
+import SpotifySection from "../../components/SpotifySection/SpotifyEdit";
 
 export function EditProfileDialog({ open, onOpenChange }) {
   const dispatch = useDispatch();
@@ -25,6 +26,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
   const [dob, setDob] = useState("");
+  const [spotifyLink, setSpotifyLink] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +36,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
     setFullName(profile.fullName ?? "");
     setBio(profile.bio ?? "");
     setCity(profile.city ?? "");
+    setSpotifyLink(profile.spotifyLink ?? "");
     if (profile.dob) {
       const [day, month, year] = profile.dob.split("-");
       setDob(`${year}-${month}-${day}`);
@@ -77,7 +80,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
         formattedDob = `${day}-${month}-${year}`;
       }
 
-      await userApi.editProfile({ fullName, bio, city, dob: formattedDob, mediaId });
+      await userApi.editProfile({ fullName, bio, city, dob: formattedDob, mediaId, spotifyLink });
       toast.success("Profile updated successfully");
       dispatch(fetchMyInfo());
       onOpenChange?.(false);
@@ -107,7 +110,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           <div className="flex items-center gap-4">
             <Avatar className="w-16 h-16 border border-zinc-800">
               <AvatarImage src={displayAvatar} />
@@ -182,6 +185,8 @@ export function EditProfileDialog({ open, onOpenChange }) {
               </PopoverContent>
             </Popover>
           </div>
+
+          <SpotifySection value={spotifyLink} onChange={setSpotifyLink} />
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-zinc-400">City</label>

@@ -28,6 +28,7 @@ import {
 import postApi from "../../api/postApi";
 import followApi from "../../api/followApi";
 import { EditProfileDialog } from "./EditProfileDialog.jsx";
+import SpotifyView from "../../components/SpotifySection/SpotifyView";
 
 export function ProfilePage() {
   const { username: rawUsername } = useParams();
@@ -270,6 +271,7 @@ export function ProfilePage() {
             <span className="text-muted-foreground ml-1">following</span>
           </button>
         </div>
+        <SpotifyView url={isOwnProfile ? profile.spotifyLink : otherProfile?.spotifyLink} />
 
         {/* Nút action: nếu là mình -> Edit/Share, nếu là người khác -> Follow/Mention/... */}
         <div className="flex gap-3">

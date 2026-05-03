@@ -1,8 +1,7 @@
 package com.DuyHao.profile_service.dto.request;
 
-import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDate;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -16,7 +15,9 @@ public class ProfileUpdateRequest {
 
     @JsonFormat(pattern = "dd-MM-yyyy")
     LocalDate dob;
+
     String city;
     String bio;
     String mediaId;
+    String spotifyLink;
 }

@@ -1,8 +1,7 @@
 package com.DuyHao.profile_service.dto.response;
 
-import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDate;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -18,7 +17,9 @@ public class UserProfileResponse {
 
     @JsonFormat(pattern = "dd-MM-yyyy")
     LocalDate dob;
+
     String city;
     String avatarUrl;
     String bio;
+    String spotifyLink;
 }
