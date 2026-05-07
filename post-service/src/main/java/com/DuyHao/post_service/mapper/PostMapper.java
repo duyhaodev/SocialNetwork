@@ -38,7 +38,6 @@ public class PostMapper {
                 .likedByCurrentUser(interaction != null && Boolean.TRUE.equals(interaction.getLikedByCurrentUser()))
                 .repostedByCurrentUser(
                         interaction != null && Boolean.TRUE.equals(interaction.getRepostedByCurrentUser()))
-
                 .repostOfId(post.getRepostOf() != null ? post.getRepostOf().getId() : null)
                 .originalContent(post.getRepostOf() != null ? post.getRepostOf().getContent() : null)
                 .originalUserId(originalUser != null ? originalUser.getUserId() : null)

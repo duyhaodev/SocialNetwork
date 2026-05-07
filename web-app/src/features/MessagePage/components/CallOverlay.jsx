@@ -1,355 +1,249 @@
-import { useState, useEffect, useRef } from "react";
-import { Phone, Video, X, PhoneOff, Mic, MicOff, Video as VideoIcon, VideoOff } from "lucide-react";
-import { useSocket } from "../../../context/SocketContext";
-import { messageApi } from "../../../api/messageApi";
-import { toast } from "sonner";
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, User, MonitorUp } from 'lucide-react';
+import { messageApi } from '../../../api/messageApi';
+import { endCallAction, setCallInProgress } from '../../../store/callSlice';
+import { useWebRTC } from '../../../hooks/useWebRTC';
 
-export function CallOverlay() {
-  const socket = useSocket();
-  const [callData, setCallData] = useState(null); // { id, callerId, calleeId, type, status, ... }
-  const [isIncoming, setIsIncoming] = useState(false);
-  const [isCalling, setIsCalling] = useState(false);
-  const [isInCall, setIsInCall] = useState(false);
-  
-  const [localStream, setLocalStream] = useState(null);
-  const [remoteStream, setRemoteStream] = useState(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+export const CallOverlay = () => {
+    const { callStatus, callData } = useSelector((state) => state.call);
+    const { profile } = useSelector((state) => state.user);
+    const dispatch = useDispatch();
 
-  const pcRef = useRef(null);
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
+    const [isMuted, setIsMuted] = useState(false);
+    const [isVideoOff, setIsVideoOff] = useState(false);
+    const [timer, setTimer] = useState(0);
 
-  // Configuration for WebRTC
-  const iceServers = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-    ],
-  };
+    const {
+        localVideoRef,
+        remoteVideoRef,
+        toggleMuteHook,
+        toggleVideoHook,
+        toggleScreenShareHook,
+        isScreenSharing,
+        localStream,
+        remoteStream
+    } = useWebRTC(callData, callStatus);
 
-  useEffect(() => {
-    if (!socket) return;
+    // Timer logic for IN_PROGRESS
+    useEffect(() => {
+        let interval;
+        if (callStatus === 'IN_PROGRESS') {
+            interval = setInterval(() => {
+                setTimer((prev) => prev + 1);
+            }, 1000);
+        } else {
+            setTimer(0);
+        }
+        return () => clearInterval(interval);
+    }, [callStatus]);
 
-    // Listen for incoming call
-    socket.on("incoming_call", (data) => {
-      setCallData(data);
-      setIsIncoming(true);
-      // Play ringtone (optional)
-    });
+    if (callStatus === 'IDLE' || !callData) return null;
 
-    socket.on("call_accepted", async (data) => {
-      setIsCalling(false);
-      setIsInCall(true);
-      await startWebRTC(true, data.type === 'VIDEO');
-    });
-
-    socket.on("call_rejected", () => {
-      toast.error("Cuộc gọi bị từ chối");
-      cleanupCall();
-    });
-
-    socket.on("call_cancelled", () => {
-      toast.info("Cuộc gọi đã bị hủy");
-      cleanupCall();
-    });
-
-    socket.on("call_ended", () => {
-      toast.info("Cuộc gọi đã kết thúc");
-      cleanupCall();
-    });
-
-    // WebRTC Signaling Listeners
-    socket.on("webrtc_offer", async (data) => {
-      if (!pcRef.current) await startWebRTC(false, callData?.type === 'VIDEO');
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.offer));
-      const answer = await pcRef.current.createAnswer();
-      await pcRef.current.setLocalDescription(answer);
-      
-      socket.emit("webrtc_answer", {
-        toUserId: data.fromUserId,
-        answer: answer
-      });
-    });
-
-    socket.on("webrtc_answer", async (data) => {
-      if (pcRef.current) {
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
-      }
-    });
-
-    socket.on("webrtc_ice_candidate", async (data) => {
-      if (pcRef.current) {
+    const handleAccept = async () => {
         try {
-          await pcRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (e) {
-          console.error("Error adding received ice candidate", e);
+            await messageApi.acceptCall(callData.id);
+            dispatch(setCallInProgress());
+        } catch (error) {
+            console.error("Failed to accept call:", error);
         }
-      }
-    });
-
-    socket.on("peer_disconnected", (data) => {
-        if (callData && (data.userId === callData.callerId || data.userId === callData.calleeId)) {
-            toast.warning("Đối phương đã ngắt kết nối");
-            cleanupCall();
-        }
-    });
-
-    return () => {
-      socket.off("incoming_call");
-      socket.off("call_accepted");
-      socket.off("call_rejected");
-      socket.off("call_cancelled");
-      socket.off("call_ended");
-      socket.off("webrtc_offer");
-      socket.off("webrtc_answer");
-      socket.off("webrtc_ice_candidate");
-      socket.off("peer_disconnected");
-    };
-  }, [socket, callData]);
-
-  const startWebRTC = async (isCaller, isVideo) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: isVideo,
-        audio: true,
-      });
-      setLocalStream(stream);
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-
-      const pc = new RTCPeerConnection(iceServers);
-      pcRef.current = pc;
-
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      pc.ontrack = (event) => {
-        setRemoteStream(event.streams[0]);
-        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
-      };
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          const targetUserId = isCaller ? callData.calleeId : callData.callerId;
-          socket.emit("webrtc_ice_candidate", {
-            toUserId: targetUserId,
-            candidate: event.candidate,
-          });
-        }
-      };
-
-      if (isCaller) {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit("webrtc_offer", {
-          toUserId: callData.calleeId,
-          offer: offer,
-        });
-      }
-    } catch (err) {
-      console.error("WebRTC Error:", err);
-      toast.error("Không thể truy cập camera/micro");
-    }
-  };
-
-  const handleAccept = async () => {
-    try {
-      await messageApi.acceptCall(callData.id);
-      setIsIncoming(false);
-      setIsInCall(true);
-      await startWebRTC(false, callData.type === 'VIDEO');
-    } catch (err) {
-      toast.error("Lỗi khi chấp nhận cuộc gọi");
-    }
-  };
-
-  const handleReject = async () => {
-    try {
-      await messageApi.rejectCall(callData.id);
-      cleanupCall();
-    } catch (err) {
-      cleanupCall();
-    }
-  };
-
-  const handleCancel = async () => {
-    try {
-      await messageApi.cancelCall(callData.id);
-      cleanupCall();
-    } catch (err) {
-      cleanupCall();
-    }
-  };
-
-  const handleEndCall = async () => {
-    try {
-      await messageApi.endCall(callData.id);
-      cleanupCall();
-    } catch (err) {
-      cleanupCall();
-    }
-  };
-
-  const cleanupCall = () => {
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-    }
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-    setCallData(null);
-    setIsIncoming(false);
-    setIsCalling(false);
-    setIsInCall(false);
-    setLocalStream(null);
-    setRemoteStream(null);
-  };
-
-  const toggleMute = () => {
-    if (localStream) {
-      localStream.getAudioTracks()[0].enabled = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const toggleVideo = () => {
-    if (localStream && localStream.getVideoTracks().length > 0) {
-      localStream.getVideoTracks()[0].enabled = !isVideoOff;
-      setIsVideoOff(!isVideoOff);
-    }
-  };
-
-  // Logic to trigger a call (will be exposed or listened via a custom event if needed)
-  // For now, let's expose it via a window event or just handle it in the parent
-  useEffect(() => {
-    const handleInitiateCall = (e) => {
-        const { calleeId, conversationId, type } = e.detail;
-        setIsCalling(true);
-        messageApi.initiateCall({ calleeId, conversationId, type })
-            .then(res => {
-                const data = res.data?.result || res;
-                setCallData(data);
-                if (data.status === 'MISSED') {
-                    toast.error("Người dùng hiện không online");
-                    cleanupCall();
-                }
-            })
-            .catch(() => {
-                toast.error("Lỗi khi khởi tạo cuộc gọi");
-                cleanupCall();
-            });
     };
 
-    window.addEventListener("initiate_call", handleInitiateCall);
-    return () => window.removeEventListener("initiate_call", handleInitiateCall);
-  }, []);
+    const handleReject = async () => {
+        try {
+            await messageApi.rejectCall(callData.id);
+            dispatch(endCallAction());
+        } catch (error) {
+            console.error("Failed to reject call:", error);
+        }
+    };
 
-  if (!callData && !isIncoming && !isCalling && !isInCall) return null;
+    const handleCancel = async () => {
+        try {
+            await messageApi.cancelCall(callData.id);
+            dispatch(endCallAction());
+        } catch (error) {
+            console.error("Failed to cancel call:", error);
+        }
+    };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-[#1a1a1a] w-full max-w-md rounded-2xl overflow-hidden border border-[#333] shadow-2xl flex flex-col">
-        
-        {/* Incoming Call View */}
-        {isIncoming && (
-          <div className="p-8 flex flex-col items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center text-3xl font-bold">
-                {callData?.callerId?.charAt(0).toUpperCase()}
-            </div>
-            <div className="text-center">
-              <h3 className="text-xl font-bold mb-1">Cuộc gọi đến</h3>
-              <p className="text-gray-400">Đang gọi cho bạn...</p>
-            </div>
-            <div className="flex gap-12 mt-4">
-              <button onClick={handleReject} className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors">
-                <PhoneOff className="w-8 h-8" />
-              </button>
-              <button onClick={handleAccept} className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center hover:bg-green-600 transition-colors">
-                {callData.type === 'VIDEO' ? <VideoIcon className="w-8 h-8" /> : <Phone className="w-8 h-8" />}
-              </button>
-            </div>
-          </div>
-        )}
+    const handleEndCall = async () => {
+        try {
+            await messageApi.endCall(callData.id);
+            dispatch(endCallAction());
+        } catch (error) {
+            console.error("Failed to end call:", error);
+        }
+    };
 
-        {/* Outgoing Call View */}
-        {isCalling && (
-          <div className="p-8 flex flex-col items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center text-3xl font-bold">
-                {callData?.calleeId?.charAt(0).toUpperCase()}
-            </div>
-            <div className="text-center">
-              <h3 className="text-xl font-bold mb-1">Đang gọi</h3>
-              <p className="text-gray-400">Đang chờ đối phương trả lời...</p>
-            </div>
-            <div className="mt-4">
-              <button onClick={handleCancel} className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors">
-                <PhoneOff className="w-8 h-8" />
-              </button>
-            </div>
-          </div>
-        )}
+    const toggleMute = () => {
+        setIsMuted(!isMuted);
+        toggleMuteHook();
+    };
+    const toggleVideo = () => {
+        setIsVideoOff(!isVideoOff);
+        toggleVideoHook();
+    };
 
-        {/* Active Call View */}
-        {isInCall && (
-          <div className="relative flex-1 min-h-[400px] bg-black">
-            {/* Remote Video (Main) */}
-            {callData.type === 'VIDEO' ? (
-               <video 
-                ref={remoteVideoRef} 
-                autoPlay 
-                playsInline 
-                className="w-full h-full object-cover"
-               />
-            ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-                    <div className="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center text-3xl font-bold">
-                        ?
+    // Format timer mm:ss
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+
+    // Determine display name/avatar
+    const isCaller = profile?.id === callData.callerId || profile?.userId === callData.callerId;
+    const otherUserId = isCaller ? callData.calleeId : callData.callerId;
+    const callType = callData.type === 'VIDEO' ? 'Video' : 'Audio';
+
+    return (
+        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center text-white backdrop-blur-md ${callStatus === 'INCOMING' || callStatus === 'CALLING' ? 'bg-black/95' : 'bg-gray-900/95'}`}>
+
+            {/* View: INCOMING */}
+            {callStatus === 'INCOMING' && (
+                <div className="flex flex-col items-center space-y-8 animate-in fade-in zoom-in duration-300">
+                    <div className="relative w-32 h-32 rounded-full flex items-center justify-center">
+                        {/* Ripple effect */}
+                        <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+                        <div className="relative w-full h-full bg-gray-800 rounded-full flex items-center justify-center overflow-hidden border-4 border-blue-500 z-10">
+                            <User size={64} className="text-gray-400" />
+                        </div>
                     </div>
-                    <p className="text-gray-400">Đang gọi thoại...</p>
+                    <div className="text-center z-10">
+                        <h2 className="text-3xl font-bold mb-2">Cuộc gọi đến từ User {otherUserId}</h2>
+                        <p className="text-gray-300 text-lg">Cuộc gọi {callType}...</p>
+                    </div>
+                    <div className="flex space-x-8 mt-8 z-10">
+                        <button
+                            onClick={handleReject}
+                            className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/30"
+                        >
+                            <PhoneOff size={28} />
+                        </button>
+                        <button
+                            onClick={handleAccept}
+                            className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-all hover:scale-110 shadow-lg shadow-green-500/30 animate-bounce"
+                        >
+                            {callData.type === 'VIDEO' ? <Video size={28} /> : <Phone size={28} />}
+                        </button>
+                    </div>
                 </div>
             )}
 
-            {/* Local Video (Picture-in-Picture) */}
-            {callData.type === 'VIDEO' && (
-                <div className="absolute top-4 right-4 w-32 aspect-video bg-gray-800 rounded-lg overflow-hidden border border-white/20 shadow-lg">
-                    <video 
-                        ref={localVideoRef} 
-                        autoPlay 
-                        playsInline 
-                        muted 
-                        className="w-full h-full object-cover"
-                    />
+            {/* View: CALLING (Outgoing) */}
+            {callStatus === 'CALLING' && (
+                <div className="flex flex-col items-center space-y-8 animate-in fade-in zoom-in duration-300">
+                    <div className="w-32 h-32 bg-gray-800 rounded-full flex items-center justify-center overflow-hidden border-4 border-gray-600">
+                        <User size={64} className="text-gray-400" />
+                    </div>
+                    <div className="text-center">
+                        <h2 className="text-3xl font-bold mb-2">Đang gọi User {otherUserId}...</h2>
+                        <p className="text-gray-400 text-lg animate-pulse">Đang đổ chuông...</p>
+                    </div>
+                    <div className="mt-8">
+                        <button
+                            onClick={handleCancel}
+                            className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/30"
+                        >
+                            <PhoneOff size={28} />
+                        </button>
+                    </div>
                 </div>
             )}
 
-            {/* Controls */}
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-6">
-              <button 
-                onClick={toggleMute}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isMuted ? 'bg-red-500' : 'bg-gray-700/80 hover:bg-gray-600'}`}
-              >
-                {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-              </button>
-              
-              {callData.type === 'VIDEO' && (
-                <button 
-                    onClick={toggleVideo}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${isVideoOff ? 'bg-red-500' : 'bg-gray-700/80 hover:bg-gray-600'}`}
-                >
-                    {isVideoOff ? <VideoOff className="w-5 h-5" /> : <VideoIcon className="w-5 h-5" />}
-                </button>
-              )}
+            {/* View: IN_PROGRESS */}
+            {callStatus === 'IN_PROGRESS' && (
+                <div className="w-full h-full flex flex-col items-center justify-center relative animate-in fade-in duration-500">
 
-              <button 
-                onClick={handleEndCall}
-                className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors"
-              >
-                <PhoneOff className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                    {/* Video Area (Placeholder for WebRTC) */}
+                    {callData.type === 'VIDEO' ? (
+                        <div className="w-full h-full bg-black relative">
+                            {/* Timer Overlay cho Video Call */}
+                            <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-black/60 px-6 py-2 rounded-full z-40 border border-gray-700/50 backdrop-blur-md shadow-2xl flex items-center space-x-2">
+                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                                <p className="text-xl font-mono text-white font-medium">{formatTime(timer)}</p>
+                            </div>
+
+                            {/* Remote Video Container */}
+                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-black">
+                                {remoteStream ? (
+                                    <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                                ) : (
+                                    <>
+                                        <Video size={64} className="mb-4 opacity-50" />
+                                        <span className="text-xl animate-pulse">Connecting...</span>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Local Video PIP */}
+                            <div className="absolute bottom-24 right-8 w-48 h-64 bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-700 z-20">
+                                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                            </div>
+                        </div>
+                    ) : (
+                        /* Audio Area */
+                        <div className="flex flex-col items-center">
+                            {/* Ẩn thẻ audio đi vì chỉ cần phát tiếng */}
+                            <audio ref={remoteVideoRef} autoPlay />
+
+                            <div className="w-40 h-40 bg-gray-800 rounded-full flex items-center justify-center mb-8 border border-gray-700 shadow-xl relative">
+                                {/* Ripple effect cho âm thanh */}
+                                {remoteStream && <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20"></div>}
+                                <User size={80} className="text-gray-500 z-10" />
+                            </div>
+                            <h2 className="text-3xl font-bold mb-3">User {otherUserId}</h2>
+                            <div className="bg-gray-800 px-6 py-2 rounded-full border border-gray-700">
+                                <p className="text-2xl font-mono text-blue-400">{formatTime(timer)}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Controls Toolbar */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center space-x-6 bg-black/90 p-4 rounded-3xl backdrop-blur-md border border-gray-700/50 shadow-2xl z-30">
+                        <button
+                            onClick={toggleMute}
+                            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isMuted ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-gray-700 hover:bg-gray-600'}`}
+                            title={isMuted ? "Unmute" : "Mute"}
+                        >
+                            {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+                        </button>
+
+                        {callData.type === 'VIDEO' && (
+                            <>
+                                <button
+                                    onClick={toggleVideo}
+                                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isVideoOff ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-gray-700 hover:bg-gray-600'}`}
+                                    title={isVideoOff ? "Turn On Camera" : "Turn Off Camera"}
+                                >
+                                    {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
+                                </button>
+                                
+                                <button
+                                    onClick={toggleScreenShareHook}
+                                    className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isScreenSharing ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-gray-700 hover:bg-gray-600 text-gray-200'}`}
+                                    title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}
+                                >
+                                    <MonitorUp size={24} />
+                                </button>
+                            </>
+                        )}
+
+                        <div className="w-px h-10 bg-gray-700 mx-2"></div> {/* Divider */}
+
+                        <button
+                            onClick={handleEndCall}
+                            className="w-14 h-14 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/30"
+                            title="End Call"
+                        >
+                            <PhoneOff size={24} />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default CallOverlay;

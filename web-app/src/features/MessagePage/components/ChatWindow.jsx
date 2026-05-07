@@ -9,12 +9,14 @@ import { showUnderDevelopmentToast } from "../../../utils/commonUtils";
 import { searchApi } from "../../../api/searchApi";
 import { Search } from "lucide-react";
 import { UserAvatar } from "../../../components/ui/user-avatar";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { startOutgoingCall } from "../../../store/callSlice";
 import { ConversationDetails } from "./ConversationDetails";
 import { ImageViewer } from "../../../components/ImageViewer/ImageViewer";
 
 export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage }) {
   const { profile } = useSelector(state => state.user);
+  const dispatch = useDispatch();
   const [messages, setMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messageInput, setMessageInput] = useState("");
@@ -120,6 +122,23 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
     fetchMessages();
   }, [conversation?.id, profile]);
 
+  const handleInitiateCall = async (type) => {
+    const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId) || conversation.userId;
+    if (!partnerId) return;
+    const payload = {
+      calleeId: partnerId,
+      conversationId: conversation.id,
+      type: type
+    };
+    try {
+      const res = await messageApi.initiateCall(payload);
+      const callData = res.data?.result || res.result || res.data || payload;
+      dispatch(startOutgoingCall(callData));
+    } catch (error) {
+      console.error("Failed to initiate call:", error);
+    }
+  };
+
   const handleEmojiClick = (emojiData) => {
     setMessageInput((prev) => prev + emojiData.emoji);
   };
@@ -157,7 +176,12 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
 
       let mediaData = [];
       if (selectedFiles.length > 0) {
-        const uploadRes = await mediaApi.upload(selectedFiles.map(f => f.file));
+        const fd = new FormData();
+        selectedFiles.forEach(f => {
+          fd.append("files", f.file);
+        });
+
+        const uploadRes = await mediaApi.upload(fd);
         // media-service returns a raw List<MediaResponse> which axiosClient interceptor unwraps to an array
         const uploadData = Array.isArray(uploadRes) ? uploadRes : (uploadRes?.result || []);
 
@@ -231,33 +255,13 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
             <div className="flex items-center gap-2">
               <button
                 className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
-                onClick={() => {
-                  const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
-                  if (!partnerId) return;
-                  window.dispatchEvent(new CustomEvent("initiate_call", {
-                    detail: {
-                      calleeId: partnerId,
-                      conversationId: conversation.id,
-                      type: 'AUDIO'
-                    }
-                  }));
-                }}
+                onClick={() => handleInitiateCall('AUDIO')}
               >
                 <Phone className="w-5 h-5" />
               </button>
               <button
                 className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
-                onClick={() => {
-                  const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId);
-                  if (!partnerId) return;
-                  window.dispatchEvent(new CustomEvent("initiate_call", {
-                    detail: {
-                      calleeId: partnerId,
-                      conversationId: conversation.id,
-                      type: 'VIDEO'
-                    }
-                  }));
-                }}
+                onClick={() => handleInitiateCall('VIDEO')}
               >
                 <Video className="w-5 h-5" />
               </button>
@@ -297,12 +301,28 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                       </p>
                     )}
 
-                    {msg.content && (
+                    {msg.content && !msg.content.startsWith("📞 Cuộc gọi") && (
                       <div
                         title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
                         className={`px-4 py-2 rounded-2xl break-words ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#0095f6] text-white" : "bg-[#262626] text-white"}`}
                       >
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                    )}
+
+                    {msg.content && msg.content.startsWith("📞 Cuộc gọi") && (
+                      <div
+                        title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
+                        onClick={() => handleInitiateCall(msg.content.includes("Video") ? 'VIDEO' : 'AUDIO')}
+                        className={`px-4 py-3 rounded-2xl flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#262626] text-white" : "bg-[#1a1a1a] border border-[#333] text-white"}`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${msg.content.includes("nhỡ") || msg.content.includes("từ chối") ? 'bg-red-500/20 text-red-500' : 'bg-gray-700 text-white'}`}>
+                            {msg.content.includes("Video") ? <Video size={20} /> : <Phone size={20} />}
+                        </div>
+                        <div className="flex flex-col">
+                            <p className="text-sm font-medium">{msg.content.replace("📞 ", "")}</p>
+                            <span className="text-xs text-gray-400 mt-0.5">Nhấn để gọi lại</span>
+                        </div>
                       </div>
                     )}
 

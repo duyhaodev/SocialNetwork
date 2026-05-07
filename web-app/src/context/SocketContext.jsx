@@ -5,6 +5,7 @@ import { getToken } from '../api/localStorageService';
 import { receiveSocketMessage, markConversationRead, fetchConversations } from '../store/chatSlice';
 import { receiveNotification } from '../store/notificationsSlice';
 import { setOnlineUsers, updateUserStatus } from '../store/onlineUsersSlice';
+import { receiveIncomingCall, setCallInProgress, endCallAction } from '../store/callSlice';
 import messageSound from '../assets/sounds/message-sound.wav';
 import notificationSound from '../assets/sounds/notification-sound.mp3';
 import { toast } from 'sonner';
@@ -40,7 +41,7 @@ export const SocketProvider = ({ children }) => {
     if (socket && socket.connected) return;
 
     // Initialize Socket
-    const newSocket = io("http://localhost:8089", {
+    const newSocket = io("http://localhost:8089", {  //http://localhost:8089
       query: { token },
       transports: ['websocket'], // Force websocket for better performance
       reconnection: true,
@@ -75,8 +76,8 @@ export const SocketProvider = ({ children }) => {
         const state = store.getState();
         const currentUserId = state.user.profile?.id || state.user.profile?.userId;
         const enrichedMessage = {
-            ...message,
-            currentUserId
+          ...message,
+          currentUserId
         };
 
         // Dispatch to Redux -> Updates MessagePage & Popup
@@ -119,6 +120,32 @@ export const SocketProvider = ({ children }) => {
       } catch (error) {
         console.error("Socket notification handling error:", error);
       }
+    });
+
+    // --- Call Listeners ---
+    newSocket.on("incoming_call", (data) => {
+      console.log("Incoming call:", data);
+      dispatch(receiveIncomingCall(data));
+    });
+
+    newSocket.on("call_accepted", (data) => {
+      console.log("Call accepted:", data);
+      dispatch(setCallInProgress(data));
+    });
+
+    newSocket.on("call_rejected", (data) => {
+      console.log("Call rejected:", data);
+      dispatch(endCallAction());
+    });
+
+    newSocket.on("call_cancelled", (data) => {
+      console.log("Call cancelled:", data);
+      dispatch(endCallAction());
+    });
+
+    newSocket.on("call_ended", (data) => {
+      console.log("Call ended:", data);
+      dispatch(endCallAction());
     });
 
     // Save socket instance

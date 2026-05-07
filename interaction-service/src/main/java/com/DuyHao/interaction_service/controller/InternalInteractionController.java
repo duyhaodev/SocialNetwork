@@ -15,13 +15,10 @@ public class InternalInteractionController {
     private final InteractionService interactionService;
 
     @GetMapping("/{postId}")
-    public InteractionResponse getInteractionStats(
-            @PathVariable String postId,
-            @AuthenticationPrincipal Jwt jwt) {
+    public InteractionResponse getInteractionStats(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
 
         String userId = (jwt != null) ? jwt.getSubject() : null;
 
         return interactionService.getInteractionStats(postId, userId);
     }
-
 }

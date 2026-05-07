@@ -2,15 +2,15 @@ import axios from "axios";
 import { getToken } from "./localStorageService";
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:8888', // Cổng của API Gateway
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    withCredentials: true
+  baseURL: 'http://localhost:8888', // Cổng của API Gateway http://localhost:8888
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true
 });
 
 // Request Interceptor
-axiosClient.interceptors.request.use( 
+axiosClient.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token) {
@@ -20,13 +20,13 @@ axiosClient.interceptors.request.use(
     // Tinh chỉnh check multipart: 
     // Nếu gửi FormData (thường dùng cho upload ảnh/video)
     if (config.data instanceof FormData) {
-      delete config.headers['Content-Type']; 
+      delete config.headers['Content-Type'];
     }
 
     return config;
   }, (error) => {
     return Promise.reject(error);
-});
+  });
 
 // Response Interceptor
 axiosClient.interceptors.response.use(
@@ -55,7 +55,7 @@ axiosClient.interceptors.response.use(
 
     // Trả về lỗi từ Server (ApiResponse) nếu có
     if (error.response?.data) {
-        return Promise.reject(error.response.data);
+      return Promise.reject(error.response.data);
     }
 
     const message = error.response?.data?.message || "Server error, please try again later!";

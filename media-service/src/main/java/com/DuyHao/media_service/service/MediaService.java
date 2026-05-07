@@ -40,7 +40,10 @@ public class MediaService {
 
             Map<String, Object> uploadResult = cloudinary
                     .uploader()
-                    .upload(file.getBytes(), ObjectUtils.asMap("folder", folder, "resource_type", "auto", "transformation", "q_auto,f_auto"));
+                    .upload(
+                            file.getBytes(),
+                            ObjectUtils.asMap(
+                                    "folder", folder, "resource_type", "auto", "transformation", "q_auto,f_auto"));
 
             Media media = Media.builder()
                     .mediaUrl((String) uploadResult.get("secure_url"))

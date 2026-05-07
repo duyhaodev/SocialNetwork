@@ -61,9 +61,7 @@ public class PostService {
 
         postRepository.deleteByRepostOfId(post.getId());
         postRepository.delete(post);
-        CompletableFuture.runAsync(() ->
-                mediaClient.deleteMediaByPostId(postId)
-        );
+        CompletableFuture.runAsync(() -> mediaClient.deleteMediaByPostId(postId));
     }
 
     // ==================== FEED ====================
@@ -143,10 +141,11 @@ public class PostService {
 
     @Transactional
     public PostResponse createRepost(String userId, String originalPostId) {
-        Post original = postRepository.findById(originalPostId)
+        Post original = postRepository
+                .findById(originalPostId)
                 .orElseThrow(() -> new RuntimeException("Original post not found"));
 
-        //Tạo bài vỏ
+        // Tạo bài vỏ
         Post repost = Post.builder()
                 .userId(userId)
                 .repostOf(original)
@@ -222,8 +221,11 @@ public class PostService {
             interaction = interactionClient.getInteraction(targetIdForData);
         } catch (Exception e) {
             interaction = InteractionResponse.builder()
-                    .likeCount(0L).commentCount(0L).repostCount(0L)
-                    .likedByCurrentUser(false).repostedByCurrentUser(false)
+                    .likeCount(0L)
+                    .commentCount(0L)
+                    .repostCount(0L)
+                    .likedByCurrentUser(false)
+                    .repostedByCurrentUser(false)
                     .build();
             System.err.println("Lỗi gọi Interaction Service: " + e.getMessage());
         }

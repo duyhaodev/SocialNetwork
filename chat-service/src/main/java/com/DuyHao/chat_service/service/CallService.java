@@ -158,16 +158,24 @@ public class CallService {
     }
 
     private void saveCallLogMessage(CallSession session) {
-        // Here we can call messageService.create with a special type or content
-        // For now, let's just create a text message describing the call
-        String content = String.format("Call %s - %s", session.getType(), session.getStatus());
-        if ("COMPLETED".equals(session.getStatus()) && session.getStartTime() != null) {
-            // Calculate duration...
+        String content = String.format("📞 Cuộc gọi %s", "VIDEO".equals(session.getType()) ? "Video" : "Thoại");
+        
+        if ("COMPLETED".equals(session.getStatus()) && session.getStartTime() != null && session.getEndTime() != null) {
+            long durationInSeconds = java.time.Duration.between(session.getStartTime(), session.getEndTime()).getSeconds();
+            long minutes = durationInSeconds / 60;
+            long seconds = durationInSeconds % 60;
+            
+            String durationStr = (minutes > 0 ? minutes + " phút " : "") + seconds + " giây";
+            content += " - " + durationStr;
+        } else if ("MISSED".equals(session.getStatus())) {
+            content += " bị nhỡ";
+        } else if ("REJECTED".equals(session.getStatus())) {
+            content += " bị từ chối";
         }
 
         MessageRequest request = MessageRequest.builder()
                 .conversationId(session.getConversationId())
-                .content(content) // In a real app, this would be a structured message
+                .content(content)
                 .build();
         
         try {

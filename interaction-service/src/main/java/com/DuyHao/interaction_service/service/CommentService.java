@@ -116,8 +116,8 @@ public class CommentService {
     // ================= DELETE =================
     @Transactional
     public void deleteComment(String currentUserId, String commentId) {
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+        Comment comment =
+                commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
 
         if (!comment.getUserId().equals(currentUserId)) {
             throw new RuntimeException("Không có quyền xóa");

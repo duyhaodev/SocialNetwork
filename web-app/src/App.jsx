@@ -19,7 +19,7 @@ import PublicRoute from "./components/PublicRoute.jsx";
 import { getToken } from "./api/localStorageService.js";
 import { VerifyAccountPage } from "./features/VerifyAccountPage/VerifyAccountPage.jsx";
 import { ForgotPasswordPage } from "./features/ForgotPasswordPage/ForgotPasswordPage.jsx";
-import { CallOverlay } from "./features/MessagePage/components/CallOverlay.jsx";
+import CallOverlay from "./features/MessagePage/components/CallOverlay.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -40,7 +40,7 @@ export default function App() {
   if (isVerifyingToken) {
     return (
       <>
-          <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-right" />
         <div className="min-h-screen flex items-center justify-center">
           <Spinner />
         </div>
@@ -50,15 +50,15 @@ export default function App() {
 
   return (
     <>
-        <Toaster richColors position="top-right" />
-        <CallOverlay />
+      <Toaster richColors position="top-right" />
+      <CallOverlay />
       <BrowserRouter>
         <Routes>
           {/* Public routes (Login, Register) - Redirect if authenticated */}
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify" element = {<VerifyAccountPage/>} />
+            <Route path="/verify" element={<VerifyAccountPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
 
