@@ -12,6 +12,7 @@ import com.DuyHao.follow_service.entity.Follow;
 import com.DuyHao.follow_service.repository.FollowRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,7 @@ public class FollowService {
     private final UserClient userClient;
     private final NotificationClient notificationClient;
 
+    @Transactional
     public FollowResponse followUser(String followerId, String followingId) {
 
         if (followerId.equals(followingId)) throw new RuntimeException("Cannot follow yourself");
@@ -38,19 +40,24 @@ public class FollowService {
         followRepo.save(follow);
 
         // call notification service
-        notificationClient.createFollowNotification(followingId, followerId);
+        //notificationClient.createFollowNotification(followingId, followerId);
 
         // call user service
         userClient.incrementFollowers(followingId);
         userClient.incrementFollowing(followerId);
 
+        // Check friendship
+        boolean isFriend = followRepo.existsByFollowerIdAndFollowingId(followingId, followerId);
+
         return FollowResponse.builder()
                 .success(true)
                 .isFollowing(true)
-                .message("Followed successfully")
+                .isFriend(isFriend)
+                .message(isFriend ? "You are now friends" : "Followed successfully")
                 .build();
     }
 
+    @Transactional
     public FollowResponse unfollowUser(String followerId, String followingId) {
 
         if (!followRepo.existsByFollowerIdAndFollowingId(followerId, followingId))
@@ -64,11 +71,25 @@ public class FollowService {
         return FollowResponse.builder()
                 .success(true)
                 .isFollowing(false)
+                .isFriend(false)
                 .message("Unfollowed successfully")
                 .build();
     }
 
     public boolean isFollowing(String followerId, String followingId) {
         return followRepo.existsByFollowerIdAndFollowingId(followerId, followingId);
+    }
+
+    public FollowResponse getFollowStatus(String currentUserId, String targetUserId) {
+        boolean isFollowing = followRepo.existsByFollowerIdAndFollowingId(currentUserId, targetUserId);
+        boolean isFriend = isFollowing
+                && followRepo.existsByFollowerIdAndFollowingId(targetUserId, currentUserId);
+
+        return FollowResponse.builder()
+                .success(true)
+                .isFollowing(isFollowing)
+                .isFriend(isFriend)
+                .message("OK")
+                .build();
     }
 }

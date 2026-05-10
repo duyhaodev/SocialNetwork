@@ -29,6 +29,10 @@ public class UserProfileRepositoryService {
 
     public UserProfileResponse createProfile(ProfileCreationRequest request) {
         UserProfile userProfile = userProfileMapper.toUserProfile(request);
+
+        userProfile.setFollowerCount(0L);
+        userProfile.setFollowingCount(0L);
+
         if (userProfile.getDob() == null) {
             java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy");
             LocalDate defaultDate = LocalDate.parse("01-01-1900", formatter);
@@ -128,5 +132,16 @@ public class UserProfileRepositoryService {
                 .filter(userProfile -> !userProfile.getUserId().equals(currentUserId))
                 .map(userProfileMapper::toUserProfileResponse)
                 .toList();
+    }
+    // Cập nhật số lượng (Followers)
+    @Transactional("transactionManager")
+    public void updateFollowerCount(String userId, int delta) {
+        userProfileRepository.updateFollowerCount(userId, delta);
+    }
+
+    // Cập nhật số lượng (Following)
+    @Transactional("transactionManager")
+    public void updateFollowingCount(String userId, int delta) {
+        userProfileRepository.updateFollowingCount(userId, delta);
     }
 }

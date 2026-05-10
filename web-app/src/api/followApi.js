@@ -1,14 +1,14 @@
 import axios from "./axiosClient";
 
 const followApi = {
-  // Lấy trạng thái follow của người dùng hiện tại đối với followingId
-  checkFollowing: (followingId) => {
-    return axios.get(`/api/follow/status/${followingId}`);
+  // Returns { isFollowing, isFriend } for current user → targetUserId
+  getFollowStatus: (targetUserId) => {
+    return axios.get(`/follow/api/follow/status/${targetUserId}`);
   },
 
-  // Toggle follow/unfollow
+  // Toggle follow/unfollow — returns { success, isFollowing, isFriend }
   toggleFollow: (followingId) => {
-    return axios.post(`/api/follow/${followingId}/toggle`);
+    return axios.post(`/follow/api/follow/${followingId}/toggle`);
   },
 };
 

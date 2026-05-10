@@ -35,4 +35,24 @@ public class InternalUserProfileController {
     public List<UserProfileResponse> getUsers(@RequestBody List<String> userIds) {
         return userProfileRepositoryService.getUsers(userIds);
     }
+    // Tăng số lượng người theo dõi (Followers)
+    @PostMapping("/internal/users/{id}/followers/increment")
+    public void incrementFollowers(@PathVariable("id") String id) {
+        userProfileRepositoryService.updateFollowerCount(id, 1);
+    }
+    // Giảm số lượng người theo dõi (Followers)
+    @PostMapping("/internal/users/{id}/followers/decrement")
+    public void decrementFollowers(@PathVariable("id") String id) {
+        userProfileRepositoryService.updateFollowerCount(id, -1);
+    }
+    // Tăng số lượng người đang theo dõi (Following)
+    @PostMapping("/internal/users/{id}/following/increment")
+    public void incrementFollowing(@PathVariable("id") String id) {
+        userProfileRepositoryService.updateFollowingCount(id, 1);
+    }
+    // Giảm số lượng người đang theo dõi (Following)
+    @PostMapping("/internal/users/{id}/following/decrement")
+    public void decrementFollowing(@PathVariable("id") String id) {
+        userProfileRepositoryService.updateFollowingCount(id, -1);
+    }
 }

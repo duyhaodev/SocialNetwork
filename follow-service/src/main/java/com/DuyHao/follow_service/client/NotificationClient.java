@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @FeignClient(name = "notification-service", url = "http://localhost:8082")
 public interface  NotificationClient {
 
-    @PostMapping("/internal/notifications/follow")
+    @PostMapping("/notification/internal/notifications/follow")
     void createFollowNotification(@RequestParam String receiverId, @RequestParam String senderId);
 }

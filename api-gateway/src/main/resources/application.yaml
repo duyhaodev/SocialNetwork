@@ -35,6 +35,10 @@ spring:
           uri: http://localhost:8085
           predicates:
             - Path=/post/posts/**,/post/feed/**
+        - id: follow-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/follow/**
         - id: media-service
           uri: http://localhost:8086
           predicates:

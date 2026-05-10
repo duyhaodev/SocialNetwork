@@ -22,4 +22,7 @@ public class UserProfileResponse {
     String avatarUrl;
     String bio;
     String spotifyLink;
+
+    long followerCount;
+    long followingCount;
 }

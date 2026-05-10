@@ -8,3 +8,6 @@ server:
   port: 8084
   servlet:
     context-path: /follow
+app:
+  service:
+    profile: http://localhost:8081/profile

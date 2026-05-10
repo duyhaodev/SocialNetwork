@@ -30,4 +30,7 @@ public class UserProfile {
     String avatarUrl;
     String bio;
     String spotifyLink;
+
+    long followerCount;
+    long followingCount;
 }

@@ -13,7 +13,7 @@ const SpotifyView = ({ url }) => {
   if (!embedUrl) return null;
 
   return (
-    <div className="mb-4 w-full w-full animate-in fade-in duration-700">
+    <div className="mb-3 w-full animate-in fade-in duration-700">
       <iframe
         style={{ borderRadius: "12px" }}
         src={embedUrl}
