@@ -7,6 +7,7 @@ import { Image, Smile, AtSign, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover.js";
 import EmojiPicker from "emoji-picker-react";
 import { PostCard } from "../../components/PostCard/PostCard.jsx";
+import { SuggestedUsers } from "../../components/SuggestedUsers/SuggestedUsers.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchFeed,
@@ -33,6 +34,10 @@ export function FeedPage() {
   const loading = useSelector(selectPostsLoading);
   const creating = useSelector(selectPostsCreating);
   const page = useSelector(selectPostsPage);
+
+  // Vị trí chèn suggestion card — random 3-7, cố định trong session
+  const [insertAfter] = useState(() => Math.floor(Math.random() * 5) + 10);
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
 
   // LOCAL STATE
   const [newPost, setNewPost] = useState("");
@@ -406,7 +411,7 @@ export function FeedPage() {
       </div>
 
       <div>
-        {posts.map((post) => {
+        {posts.map((post, index) => {
           const username = post.username ?? post.user?.username ?? "unknown";
           const fullName = post.fullName ?? post.user?.fullName ?? "User";
           const avatarUrl = post.avatarUrl ?? post.user?.avatarUrl;
@@ -417,19 +422,24 @@ export function FeedPage() {
             : [];
 
           return (
-            <PostCard
-              key={post.id}
-              post={{
-                ...post,
-                username,
-                fullName,
-                avatarUrl,
-                createdAt,
-                mediaList,
-              }}
-              onProfileClick={handleProfileClick}
-              onPostClick={(id) => navigate(`/post/${id}`)}
-            />
+            <div key={post.id}>
+              {/* Chèn suggestion card sau bài thứ insertAfter */}
+              {index === insertAfter && !suggestionDismissed && (
+                <SuggestedUsers onDismiss={() => setSuggestionDismissed(true)} />
+              )}
+              <PostCard
+                post={{
+                  ...post,
+                  username,
+                  fullName,
+                  avatarUrl,
+                  createdAt,
+                  mediaList,
+                }}
+                onProfileClick={handleProfileClick}
+                onPostClick={(id) => navigate(`/post/${id}`)}
+              />
+            </div>
           );
         })}
       </div>

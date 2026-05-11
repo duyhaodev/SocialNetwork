@@ -16,6 +16,7 @@ export default function CommentForm({
   isReply = false,
   onCancelReply,
   placeholder,
+  noBorder = false,
 }) {
   const [commentContent, setCommentContent] = useState("");
   const [commentFiles, setCommentFiles] = useState([]);
@@ -170,7 +171,7 @@ export default function CommentForm({
   /* ================= RENDER ================= */
 
   return (
-    <div className="px-4 py-3 border-b">
+    <div className={`px-4 py-3 ${noBorder ? "" : "border-b"}`}>
       <form onSubmit={handleSubmit} noValidate>
         <div className="flex gap-3">
           <Avatar className="w-10 h-10">

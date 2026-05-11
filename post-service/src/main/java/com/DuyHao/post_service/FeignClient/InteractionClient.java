@@ -17,4 +17,8 @@ public interface InteractionClient {
 
     @GetMapping("/internal/interactions")
     List<InteractionResponse> getInteractions(@RequestParam List<String> postIds);
+
+    // Xóa tất cả comments khi post bị xóa
+    @DeleteMapping("/internal/interactions/{postId}/comments")
+    void deleteCommentsByPost(@PathVariable String postId);
 }

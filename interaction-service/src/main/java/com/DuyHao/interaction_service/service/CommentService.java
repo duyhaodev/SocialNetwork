@@ -32,10 +32,19 @@ public class CommentService {
     // ================= CREATE =================
     @Transactional
     public CommentResponse create(String userId, CommentRequest request) {
-        if (request.getParentId() != null) {
-            commentRepository
+        String rootCommentId = null; // comment gốc
+
+        if (request.getParentId() != null) { // Nếu đây là một reply
+            Comment parent = commentRepository
                     .findById(request.getParentId())
                     .orElseThrow(() -> new RuntimeException("Parent comment không tồn tại"));
+
+            if (parent.getRootCommentId() != null) {// Nếu cha nó cũng là một reply thì con lấy chung gốc với cha
+                rootCommentId = parent.getRootCommentId();
+            } else {
+                // Nếu cha là comment gốc, thì ID của cha là root của con
+                rootCommentId = parent.getId();
+            }
         }
 
         Comment comment = Comment.builder()
@@ -43,6 +52,7 @@ public class CommentService {
                 .userId(userId)
                 .content(request.getContent())
                 .parentId(request.getParentId())
+                .rootCommentId(rootCommentId)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -61,7 +71,7 @@ public class CommentService {
             }
         }
         UserResponse user = userClient.getUser(userId);
-        return commentMapper.toResponse(comment, user, mediaUrls, 0, false);
+        return commentMapper.toResponse(comment, user, mediaUrls, 0, false, 0);
     }
 
     // ================= GET ROOT COMMENTS (Chỉ lấy comment gốc) =================
@@ -72,11 +82,10 @@ public class CommentService {
 
         return buildCommentResponses(commentPage.getContent(), currentUserId);
     }
-    // ================= GET REPLIES (Lấy danh sách phản hồi) =================
-    public List<CommentResponse> getReplies(String parentId, String currentUserId) {
-        List<Comment> replies = commentRepository.findByParentIdOrderByCreatedAtAsc(parentId);
-
-        return buildCommentResponses(replies, currentUserId);
+    // ================= GET THREAD (Toàn bộ cây replies theo rootCommentId) =================
+    public List<CommentResponse> getThread(String rootCommentId, String currentUserId) {
+        List<Comment> all = commentRepository.findByRootCommentIdOrderByCreatedAtAsc(rootCommentId);
+        return buildCommentResponses(all, currentUserId);
     }
 
     // ================= HELPER  =================
@@ -101,8 +110,9 @@ public class CommentService {
                     long likeCount = likeRepository.countByCommentId(c.getId());
                     boolean liked = currentUserId != null
                             && likeRepository.existsByUserIdAndCommentId(currentUserId, c.getId());
+                    long replyCount = commentRepository.countByParentId(c.getId());
 
-                    return commentMapper.toResponse(c, user, mediaUrls, likeCount, liked);
+                    return commentMapper.toResponse(c, user, mediaUrls, likeCount, liked, replyCount);
                 })
                 .toList();
     }
@@ -122,6 +132,12 @@ public class CommentService {
         if (!comment.getUserId().equals(currentUserId)) {
             throw new RuntimeException("Không có quyền xóa");
         }
+
+        // Nếu là comment gốc xóa toàn bộ comment con
+        if (comment.getParentId() == null) {
+            commentRepository.deleteByRootCommentId(commentId);
+        }
+
         commentRepository.delete(comment);
         CompletableFuture.runAsync(() -> {
             try {

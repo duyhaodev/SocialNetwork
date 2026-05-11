@@ -64,9 +64,7 @@ public class UserProfileRepositoryService {
 
     public UserProfileResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
-        log.info(context.toString());
         String userId = context.getAuthentication().getName();
-        log.info("UserId : {}", userId);
 
         UserProfile userProfile = userProfileRepository
                 .findByUserId(userId)
@@ -76,7 +74,6 @@ public class UserProfileRepositoryService {
     }
 
     public UserProfileResponse getProfile(String userId) {
-        log.info("UserId : {}", userId);
         UserProfile userProfile = userProfileRepository
                 .findById(userId)
                 .or(() -> userProfileRepository.findByUserId(userId))

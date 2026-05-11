@@ -10,6 +10,11 @@ const followApi = {
   toggleFollow: (followingId) => {
     return axios.post(`/follow/api/follow/${followingId}/toggle`);
   },
+
+  // Gợi ý kết bạn — phân trang
+  getSuggestions: (page = 0, size = 10) => {
+    return axios.get(`/follow/api/follow/suggestions`, { params: { page, size } });
+  },
 };
 
 export default followApi;

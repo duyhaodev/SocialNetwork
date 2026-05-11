@@ -26,6 +26,7 @@ public interface CommentMapper {
     @Mapping(target = "mediaUrls", source = "mediaUrls")
     @Mapping(target = "likeCount", source = "likeCount")
     @Mapping(target = "likedByCurrentUser", source = "liked")
+    @Mapping(target = "replyCount", source = "replyCount")
     CommentResponse toResponse(
-            Comment comment, UserResponse user, List<String> mediaUrls, long likeCount, boolean liked);
+            Comment comment, UserResponse user, List<String> mediaUrls, long likeCount, boolean liked, long replyCount);
 }
