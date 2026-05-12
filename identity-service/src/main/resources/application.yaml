@@ -20,6 +20,7 @@ spring:
     port: 587
     properties:
       mail:
+        debug: true
         smtp:
           auth: true
           starttls:
