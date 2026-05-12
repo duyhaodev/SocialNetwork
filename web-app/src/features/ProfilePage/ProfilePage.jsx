@@ -268,6 +268,7 @@ export function ProfilePage() {
               <AvatarImage
                 src={user?.avatar || "/default-avatar.png"}
                 alt={user?.displayName}
+                style={{ objectFit: "cover" }}
                 onError={(e) => {
                   e.currentTarget.src = "/default-avatar.png";
                 }}

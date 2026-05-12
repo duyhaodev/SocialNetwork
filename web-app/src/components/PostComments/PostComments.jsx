@@ -8,222 +8,15 @@ import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { ImageViewer } from "@/components/ImageViewer/ImageViewer.jsx";
 import { fetchCommentsByPost, createComment as createCommentThunk, selectCommentsByPostId, selectCommentsLoadingByPostId, selectCommentsErrorByPostId, selectCommentSubmittingByPostId, selectCommentsPageByPostId, selectCommentsHasMoreByPostId, } from "@/store/commentsSlice";
-import { toggleCommentLike, deleteComment, fetchReplies, selectRepliesByCommentId, selectRepliesLoadingByCommentId } from "@/store/commentsSlice";
+import { toggleCommentLike, deleteComment, fetchReplies } from "@/store/commentsSlice";
 import {formatTimeAgo} from "../../utils/dateUtils.js"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "../ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
 import CommentForm from "./CommentForm";
+import { ReplyView } from "./ReplyView";
 import mediaApi from "../../api/mediaApi";
 
 const PAGE_SIZE = 10;
-
-// Build cây từ flat list
-function buildTree(flatList, parentId) {
-  return flatList
-    .filter((r) => r.parentId === parentId)
-    .map((r) => ({ ...r, children: buildTree(flatList, r.id) }));
-}
-
-// Flatten cây: depth < MAX_DEPTH thì giữ cây, depth >= MAX_DEPTH thì đưa children ra ngang
-function flattenToMaxDepth(nodes, currentDepth, MAX_DEPTH) {
-  const result = [];
-  for (const node of nodes) {
-    if (currentDepth < MAX_DEPTH) {
-      // Chưa đến max → giữ cây, đệ quy children
-      result.push({
-        ...node,
-        children: flattenToMaxDepth(node.children || [], currentDepth + 1, MAX_DEPTH),
-      });
-    } else {
-      // Đã đến max → đưa node ra ngang, flatten children ra cùng level
-      result.push({ ...node, children: [] });
-      if (node.children?.length > 0) {
-        result.push(...flattenToMaxDepth(node.children, currentDepth, MAX_DEPTH));
-      }
-    }
-  }
-  return result;
-}
-
-// Render 1 node trong cây, depth = 0 hoặc 1 (max 2 cấp thụt vào)
-function ReplyNode({ node, depth, onProfileClick, avatarUrl, fullName, submittingComment, handleCreateReply, handleToggleLikeComment, rootCommentId, dispatch, formatTimeAgo, isLast, buildMediaUrl, openViewerForComment, handleDragStart, handleDragMove, hasDraggedRef }) {
-  const [replyTo, setReplyTo] = useState(null);
-  const MAX_DEPTH = 1; // 0-indexed: cấp 0 = thụt 1 lần, cấp 1 = thụt 2 lần
-
-  // Nếu vượt max depth, render ngang với cấp max (depth = MAX_DEPTH)
-  const renderDepth = Math.min(depth, MAX_DEPTH);
-
-  return (
-    <div className="flex gap-0">
-      {/* Đường kẻ dọc + cong */}
-      <div className="flex flex-col" style={{ width: 36, minWidth: 36 }}>
-        <div
-          className="border-l-2 border-b-2 border-border rounded-bl-lg shrink-0"
-          style={{ width: 18, height: 20, marginLeft: 8 }}
-        />
-        {!isLast && (
-          <div className="border-l-2 border-border grow" style={{ marginLeft: 8 }} />
-        )}
-      </div>
-
-      {/* Nội dung */}
-      <div className="flex-1 pb-3">
-        <div className="flex gap-2">
-          <Avatar className="w-7 h-7 cursor-pointer shrink-0 mt-0.5" onClick={() => onProfileClick?.(node.username)}>
-            <AvatarImage src={node.avatarUrl} alt={node.fullName} />
-            <AvatarFallback className="text-xs">{node.fullName?.[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 space-y-0.5">
-            <div className="flex items-baseline gap-2">
-              <span className="font-semibold text-xs cursor-pointer hover:underline" onClick={() => onProfileClick?.(node.username)}>
-                {node.fullName}
-              </span>
-              <span className="text-xs text-muted-foreground">· {formatTimeAgo(node.createdAt)}</span>
-            </div>
-            <p className="text-sm">{node.content}</p>
-
-            {/* Media của reply */}
-            {node.mediaUrls?.length > 0 && (
-              <div className="mt-3 w-full max-w-full overflow-hidden rounded-xl">
-                <div
-                  className="media-scroll flex gap-2 overflow-x-auto flex-nowrap"
-                  onMouseDown={handleDragStart}
-                  onMouseMove={handleDragMove}
-                  onDragStart={(e) => e.preventDefault()}
-                >
-                  {node.mediaUrls.map((mUrl, idx) => {
-                    const url = buildMediaUrl(mUrl);
-                    const isVideo = mUrl.toLowerCase().endsWith(".mp4");
-                    return (
-                      <div
-                        key={idx}
-                        className="relative flex-shrink-0 max-w-[130px] aspect-[3/4] rounded-xl overflow-hidden bg-black/40 cursor-pointer"
-                        onClick={() => {
-                          if (hasDraggedRef.current) return;
-                          openViewerForComment(node, idx);
-                        }}
-                      >
-                        {isVideo ? (
-                          <video src={url} className="w-full h-full object-cover" autoPlay muted loop playsInline />
-                        ) : (
-                          <img src={url} alt="reply media" className="w-full h-full object-cover" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                onClick={() => handleToggleLikeComment(node.id)}
-                className={`flex items-center gap-1 text-xs transition-colors ${node.likedByCurrentUser ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}
-              >
-                <Heart className={`w-3 h-3 ${node.likedByCurrentUser ? "fill-red-500" : ""}`} />
-                <span>{node.likeCount ?? 0}</span>
-              </button>
-              <button onClick={() => setReplyTo(node.id)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                Reply
-              </button>
-            </div>
-
-            {replyTo === node.id && (
-              <div className="mt-2 rounded-xl overflow-hidden">
-                <CommentForm
-                  isReply={true}
-                  noBorder={true}
-                  avatarUrl={avatarUrl}
-                  fullName={fullName}
-                  placeholder={`Reply to ${node.fullName}...`}
-                  submitting={submittingComment}
-                  onSubmit={async (data) => {
-                    // Nếu đã ở max depth, reply vào node hiện tại (parentId = node.id)
-                    // Nếu chưa max, cũng reply vào node.id để build cây đúng
-                    await handleCreateReply(node.id)(data);
-                    setReplyTo(null);
-                    dispatch(fetchReplies({ commentId: rootCommentId }));
-                  }}
-                  onCancelReply={() => setReplyTo(null)}
-                />
-              </div>
-            )}
-
-            {/* Render children */}
-            {node.children?.length > 0 && (
-              <div className="mt-1">
-                {node.children.map((child, idx) => (
-                  <ReplyNode
-                    key={child.id}
-                    node={child}
-                    depth={depth + 1}
-                    isLast={idx === node.children.length - 1}
-                    onProfileClick={onProfileClick}
-                    avatarUrl={avatarUrl}
-                    fullName={fullName}
-                    submittingComment={submittingComment}
-                    handleCreateReply={handleCreateReply}
-                    handleToggleLikeComment={handleToggleLikeComment}
-                    rootCommentId={rootCommentId}
-                    dispatch={dispatch}
-                    formatTimeAgo={formatTimeAgo}
-                    buildMediaUrl={buildMediaUrl}
-                    openViewerForComment={openViewerForComment}
-                    handleDragStart={handleDragStart}
-                    handleDragMove={handleDragMove}
-                    hasDraggedRef={hasDraggedRef}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Component hiển thị replies nested dưới comment cha
-function RepliesList({ commentId, onProfileClick, currentUserId, profile, avatarUrl, fullName, postId, submittingComment, handleCreateReply, handleToggleLikeComment, handleDeleteComment, buildMediaUrl, openViewerForComment, handleDragStart, handleDragMove, hasDraggedRef, formatTimeAgo }) {
-  const dispatch = useDispatch();
-  const flatReplies = useSelector((state) => selectRepliesByCommentId(state, commentId));
-  const loading = useSelector((state) => selectRepliesLoadingByCommentId(state, commentId));
-
-  if (loading) {
-    return <div className="ml-10 mt-2 text-xs text-muted-foreground">Loading replies...</div>;
-  }
-
-  // Build cây từ flat list — children trực tiếp của commentId (gốc)
-  const rawTree = buildTree(flatReplies, commentId);
-  // Flatten: max 2 cấp thụt vào (depth 0 và 1), cấp 2+ nằm ngang với depth 1
-  const tree = flattenToMaxDepth(rawTree, 0, 1);
-
-  return (
-    <div className="mt-2">
-      {tree.map((node, idx) => (
-        <ReplyNode
-          key={node.id}
-          node={node}
-          depth={0}
-          isLast={idx === tree.length - 1}
-          onProfileClick={onProfileClick}
-          avatarUrl={avatarUrl}
-          fullName={fullName}
-          submittingComment={submittingComment}
-          handleCreateReply={handleCreateReply}
-          handleToggleLikeComment={handleToggleLikeComment}
-          rootCommentId={commentId}
-          dispatch={dispatch}
-          formatTimeAgo={formatTimeAgo}
-          buildMediaUrl={buildMediaUrl}
-          openViewerForComment={openViewerForComment}
-          handleDragStart={handleDragStart}
-          handleDragMove={handleDragMove}
-          hasDraggedRef={hasDraggedRef}
-        />
-      ))}
-    </div>
-  );
-}
 
 export function PostComments({ postId, onProfileClick, onCommentCreated }) {
   const dispatch = useDispatch();
@@ -288,7 +81,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
         
         // Lấy ID (chấp nhận cả trường id hoặc fileId)
         idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
-        console.log("✅ IDs bóc được cho Comment:", idsToSubmit);
+        console.log(" IDs bóc được cho Comment:", idsToSubmit);
       }
 
       const payload = {
@@ -298,7 +91,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
         mediaIds: idsToSubmit 
       };
 
-      console.log("🚀 Gửi Comment Payload:", payload);
+      console.log("Gửi Comment Payload:", payload);
       await dispatch(createCommentThunk(payload)).unwrap();
 
       // Refresh lại danh sách
@@ -323,17 +116,17 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
         const uploaded = uploadRes?.result || uploadRes?.data?.result || (Array.isArray(uploadRes) ? uploadRes : []);
         
         idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
-        console.log("✅ IDs bóc được cho Reply:", idsToSubmit);
+        console.log("IDs bóc được cho Reply:", idsToSubmit);
       }
 
       const payload = {
         postId: postId,
         content: data.content,
         parentId: parentId,
-        mediaIds: idsToSubmit // ĐỒNG BỘ: Dùng mediaIds thay vì mediaUrls
+        mediaIds: idsToSubmit 
       };
 
-      console.log("🚀 Gửi Reply Payload:", payload);
+      console.log("Gửi Reply Payload:", payload);
       await dispatch(createCommentThunk(payload)).unwrap();
 
       dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
@@ -636,18 +429,14 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
 
                   {/* Replies nested */}
                   {expandedReplies.has(c.id) && (
-                    <RepliesList
+                    <ReplyView
                       commentId={c.id}
                       onProfileClick={onProfileClick}
-                      currentUserId={currentUserId}
-                      profile={profile}
                       avatarUrl={avatarUrl}
                       fullName={fullName}
-                      postId={postId}
                       submittingComment={submittingComment}
                       handleCreateReply={handleCreateReply}
                       handleToggleLikeComment={handleToggleLikeComment}
-                      handleDeleteComment={handleDeleteComment}
                       buildMediaUrl={buildMediaUrl}
                       openViewerForComment={openViewerForComment}
                       handleDragStart={handleDragStart}

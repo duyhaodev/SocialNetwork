@@ -15,8 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import userApi from "../../api/userApi";
 import mediaApi from "../../api/mediaApi";
 import { fetchMyInfo } from "../../store/userSlice";
+import { fetchMyPosts, fetchMyReposts } from "../../store/postsSlice";
 import { toast } from "sonner";
 import SpotifySection from "../../components/SpotifySection/SpotifyEdit";
+import { AvatarCropDialog } from "../../components/AvatarCropDialog/AvatarCropDialog";
 
 export function EditProfileDialog({ open, onOpenChange }) {
   const dispatch = useDispatch();
@@ -30,6 +32,10 @@ export function EditProfileDialog({ open, onOpenChange }) {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Cắt ảnh state
+  const [cropOpen, setCropOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -50,8 +56,16 @@ export function EditProfileDialog({ open, onOpenChange }) {
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+    // Mở crop dialog thay vì set file trực tiếp
+    setRawImageSrc(URL.createObjectURL(file));
+    setCropOpen(true);
+    // Reset input để có thể chọn lại cùng file
+    e.target.value = "";
+  };
+
+  const handleCropDone = (croppedFile, croppedPreview) => {
+    setAvatarFile(croppedFile);
+    setAvatarPreview(croppedPreview);
   };
 
   const handleSubmit = async (e) => {
@@ -83,6 +97,8 @@ export function EditProfileDialog({ open, onOpenChange }) {
       await userApi.editProfile({ fullName, bio, city, dob: formattedDob, mediaId, spotifyLink });
       toast.success("Profile updated successfully");
       dispatch(fetchMyInfo());
+      dispatch(fetchMyPosts());
+      dispatch(fetchMyReposts());
       onOpenChange?.(false);
     } catch (err) {
       toast.error("Profile update failed");
@@ -95,6 +111,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
   const displayName = fullName || profile.fullName || "Unknown";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-zinc-950 border-zinc-800 text-white [&>button]:hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -113,7 +130,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           <div className="flex items-center gap-4">
             <Avatar className="w-16 h-16 border border-zinc-800">
-              <AvatarImage src={displayAvatar} />
+              <AvatarImage src={displayAvatar} style={{ objectFit: "cover" }} />
               <AvatarFallback className="bg-zinc-800 text-zinc-400">{displayName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
@@ -204,6 +221,14 @@ export function EditProfileDialog({ open, onOpenChange }) {
         </form>
       </DialogContent>
     </Dialog>
+
+    <AvatarCropDialog
+      open={cropOpen}
+      imageSrc={rawImageSrc}
+      onClose={() => setCropOpen(false)}
+      onCropDone={handleCropDone}
+    />
+  </>
   );
 }
 

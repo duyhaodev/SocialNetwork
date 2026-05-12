@@ -5,8 +5,9 @@ import { Button } from "../ui/button.js";
 import { X, ChevronRight } from "lucide-react";
 import followApi from "../../api/followApi";
 import { toast } from "sonner";
+import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 
-export function SuggestedUsers({ onDismiss }) {
+export function SuggestedUsers({ onDismiss, sidebar = false }) {
   const navigate = useNavigate();
   const scrollRef = useRef(null);
 
@@ -129,6 +130,53 @@ export function SuggestedUsers({ onDismiss }) {
   // Ẩn nếu không có gợi ý
   if (!loading && suggestions.length === 0) return null;
 
+  // Sidebar mode: layout dọc, không có drag scroll, không có dismiss button
+  if (sidebar) {
+    return (
+      <div className="bg-muted rounded-lg p-4">
+        <h3 className="font-bold text-base mb-3">Suggested for you</h3>
+        <div className="space-y-3">
+          {suggestions
+            .filter((s) => !dismissedIds.has(s.userId))
+            .slice(0, 5)
+            .map((s) => (
+              <div key={s.userId} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Avatar
+                    className="w-9 h-9 shrink-0 cursor-pointer"
+                    onClick={() => navigate(`/profile/@${s.username}`)}
+                  >
+                    <AvatarImage src={s.avatarUrl} style={{ objectFit: "cover" }} />
+                    <AvatarFallback className="text-sm">{s.fullName?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <UserHoverCard username={s.username}>
+                      <p
+                        className="text-sm font-semibold truncate cursor-pointer hover:underline"
+                        onClick={() => navigate(`/profile/@${s.username}`)}
+                      >
+                        {s.fullName}
+                      </p>
+                    </UserHoverCard>
+                    <p className="text-xs text-muted-foreground truncate">@{s.username}</p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant={followedIds.has(s.userId) ? "outline" : "default"}
+                  className="h-7 text-xs shrink-0"
+                  onClick={() => handleFollow(s)}
+                >
+                  {followedIds.has(s.userId) ? "Following" : "Follow"}
+                </Button>
+              </div>
+            ))}
+          {loading && <p className="text-xs text-muted-foreground">Loading...</p>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="border-b border-border px-4 py-4">
       {/* Header */}
@@ -179,7 +227,9 @@ export function SuggestedUsers({ onDismiss }) {
                 className="text-sm font-semibold truncate cursor-pointer hover:underline"
                 onClick={() => navigate(`/profile/@${s.username}`)}
               >
-                {s.fullName}
+                <UserHoverCard username={s.username}>
+                  <span>{s.fullName}</span>
+                </UserHoverCard>
               </p>
               <p className="text-xs text-muted-foreground truncate">@{s.username}</p>
             </div>
