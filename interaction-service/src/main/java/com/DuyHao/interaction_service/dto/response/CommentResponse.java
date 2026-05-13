@@ -27,6 +27,7 @@ public class CommentResponse {
     // interaction
     long likeCount;
     boolean likedByCurrentUser;
+    long replyCount;
     // media
     List<String> mediaUrls;
 }

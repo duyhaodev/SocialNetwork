@@ -17,6 +17,7 @@ import {
 import {formatTimeAgo} from "../../utils/dateUtils.js"
 import ConfirmDeleteModal from "../Modals/ConfirmDeleteModal";
 import { Trash2, Link } from "lucide-react";
+import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 
 export function PostCard({ post, onProfileClick, onPostClick }) {
 
@@ -343,7 +344,9 @@ useEffect(() => {
               }}
               title={displayName}
             >
-              <span className="font-medium">{displayName}</span>
+              <UserHoverCard username={handle}>
+                <span className="font-medium">{displayName}</span>
+              </UserHoverCard>
             </button>
             <span className="text-muted-foreground">@{handle}</span>
             <span className="text-muted-foreground">·</span>

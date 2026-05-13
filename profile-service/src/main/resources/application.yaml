@@ -12,3 +12,7 @@ spring:
 app:
   service:
     media: http://localhost:8086
+
+logging:
+  level:
+    org.springframework.data.neo4j.cypher.deprecation: ERROR

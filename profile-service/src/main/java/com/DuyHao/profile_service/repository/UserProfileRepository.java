@@ -24,7 +24,9 @@ public interface UserProfileRepository extends Neo4jRepository<UserProfile, Stri
     @Query("MATCH (u:user_profile {userId: $userId}) " + "SET u.followerCount = COALESCE(u.followerCount, 0) + $delta")
     void updateFollowerCount(@Param("userId") String userId, @Param("delta") int delta);
 
-    @Query("MATCH (u:user_profile {userId: $userId}) "
-            + "SET u.followingCount = COALESCE(u.followingCount, 0) + $delta")
+    @Query("MATCH (u:user_profile {userId: $userId}) SET u.followingCount = COALESCE(u.followingCount, 0) + $delta")
     void updateFollowingCount(@Param("userId") String userId, @Param("delta") int delta);
+
+    @Query("MATCH (u:user_profile) RETURN u ORDER BY u.followerCount DESC LIMIT $limit")
+    List<UserProfile> findTopByFollowerCount(@Param("limit") int limit);
 }

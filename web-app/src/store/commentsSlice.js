@@ -71,6 +71,22 @@ export const deleteComment = createAsyncThunk(
   }
 );
 
+export const fetchReplies = createAsyncThunk(
+  "comments/fetchReplies",
+  async ({ commentId }, { rejectWithValue }) => {
+    try {
+      const res = await commentApi.getThread(commentId);
+      const data = res?.result || res?.data?.result || [];
+      return { commentId, data };
+    } catch (err) {
+      return rejectWithValue({
+        commentId,
+        message: err?.response?.data?.message || "Load replies failed",
+      });
+    }
+  }
+);
+
 const initialState = {
   byPostId: {},
   loadingByPostId: {},
@@ -78,6 +94,10 @@ const initialState = {
   submittingByPostId: {},
   pageByPostId: {},
   hasMoreByPostId: {},
+
+  // Replies theo commentId
+  repliesByCommentId: {},
+  loadingRepliesByCommentId: {},
 };
 
 const commentsSlice = createSlice({
@@ -150,6 +170,21 @@ const commentsSlice = createSlice({
         if (state.byPostId[postId]) {
           state.byPostId[postId] = state.byPostId[postId].filter(c => c.id !== commentId);
         }
+      })
+
+      // fetchReplies
+      .addCase(fetchReplies.pending, (state, action) => {
+        const { commentId } = action.meta.arg;
+        state.loadingRepliesByCommentId[commentId] = true;
+      })
+      .addCase(fetchReplies.fulfilled, (state, action) => {
+        const { commentId, data } = action.payload;
+        state.loadingRepliesByCommentId[commentId] = false;
+        state.repliesByCommentId[commentId] = data;
+      })
+      .addCase(fetchReplies.rejected, (state, action) => {
+        const { commentId } = action.meta.arg;
+        state.loadingRepliesByCommentId[commentId] = false;
       });
   },
 });
@@ -163,3 +198,7 @@ export const selectCommentsErrorByPostId = (state, postId) => state.comments.err
 export const selectCommentSubmittingByPostId = (state, postId) => !!state.comments.submittingByPostId[postId];
 export const selectCommentsPageByPostId = (state, postId) => state.comments.pageByPostId[postId] ?? 0;
 export const selectCommentsHasMoreByPostId = (state, postId) => state.comments.hasMoreByPostId[postId] ?? true;
+
+// Replies selectors
+export const selectRepliesByCommentId = (state, commentId) => state.comments.repliesByCommentId[commentId] || [];
+export const selectRepliesLoadingByCommentId = (state, commentId) => !!state.comments.loadingRepliesByCommentId[commentId];

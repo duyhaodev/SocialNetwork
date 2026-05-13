@@ -41,14 +41,14 @@ public class CommentController {
                 .result(commentService.getCommentsByPost(postId, currentUserId, page, size))
                 .build();
     }
-    // ================= GET REPLIES  =================
-    @GetMapping("/{commentId}/replies")
-    public ApiResponse<List<CommentResponse>> getReplies(
+    // ================= GET FULL THREAD (toàn bộ replies theo comment gốc) =================
+    @GetMapping("/{commentId}/thread")
+    public ApiResponse<List<CommentResponse>> getThread(
             @PathVariable String commentId, @AuthenticationPrincipal Jwt jwt) {
 
         String currentUserId = (jwt != null) ? jwt.getSubject() : null;
         return ApiResponse.<List<CommentResponse>>builder()
-                .result(commentService.getReplies(commentId, currentUserId))
+                .result(commentService.getThread(commentId, currentUserId))
                 .build();
     }
 

@@ -8,14 +8,16 @@ import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { ImageViewer } from "@/components/ImageViewer/ImageViewer.jsx";
 import { fetchCommentsByPost, createComment as createCommentThunk, selectCommentsByPostId, selectCommentsLoadingByPostId, selectCommentsErrorByPostId, selectCommentSubmittingByPostId, selectCommentsPageByPostId, selectCommentsHasMoreByPostId, } from "@/store/commentsSlice";
-import { toggleCommentLike, deleteComment } from "@/store/commentsSlice";
+import { toggleCommentLike, deleteComment, fetchReplies } from "@/store/commentsSlice";
 import {formatTimeAgo} from "../../utils/dateUtils.js"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "../ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
 import CommentForm from "./CommentForm";
+import { ReplyView } from "./ReplyView";
 import mediaApi from "../../api/mediaApi";
 
 const PAGE_SIZE = 10;
+
 export function PostComments({ postId, onProfileClick, onCommentCreated }) {
   const dispatch = useDispatch();
 
@@ -36,6 +38,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
 
   // LOCAL UI STATE
   const [replyTo, setReplyTo] = useState(null); 
+  const [expandedReplies, setExpandedReplies] = useState(new Set()); // commentId nào đang mở replies
   const loadMoreRef = useRef(null);
   const loadDelayRef = useRef(null); // delay trước khi load thêm
 
@@ -78,7 +81,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
         
         // Lấy ID (chấp nhận cả trường id hoặc fileId)
         idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
-        console.log("✅ IDs bóc được cho Comment:", idsToSubmit);
+        console.log(" IDs bóc được cho Comment:", idsToSubmit);
       }
 
       const payload = {
@@ -88,7 +91,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
         mediaIds: idsToSubmit 
       };
 
-      console.log("🚀 Gửi Comment Payload:", payload);
+      console.log("Gửi Comment Payload:", payload);
       await dispatch(createCommentThunk(payload)).unwrap();
 
       // Refresh lại danh sách
@@ -113,17 +116,17 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
         const uploaded = uploadRes?.result || uploadRes?.data?.result || (Array.isArray(uploadRes) ? uploadRes : []);
         
         idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
-        console.log("✅ IDs bóc được cho Reply:", idsToSubmit);
+        console.log("IDs bóc được cho Reply:", idsToSubmit);
       }
 
       const payload = {
         postId: postId,
         content: data.content,
         parentId: parentId,
-        mediaIds: idsToSubmit // ĐỒNG BỘ: Dùng mediaIds thay vì mediaUrls
+        mediaIds: idsToSubmit 
       };
 
-      console.log("🚀 Gửi Reply Payload:", payload);
+      console.log("Gửi Reply Payload:", payload);
       await dispatch(createCommentThunk(payload)).unwrap();
 
       dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
@@ -205,6 +208,21 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
   // ======== REPLY COMMENT ========
   const handleOpenReply = (commentId) => {
     setReplyTo(commentId);
+  };
+
+  // ======== TOGGLE EXPAND REPLIES ========
+  const handleToggleReplies = (commentId, replyCount) => {
+    if (replyCount === 0) return;
+    setExpandedReplies((prev) => {
+      const next = new Set(prev);
+      if (next.has(commentId)) {
+        next.delete(commentId); // đóng lại
+      } else {
+        next.add(commentId);    // mở ra → dispatch fetch
+        dispatch(fetchReplies({ commentId }));
+      }
+      return next;
+    });
   };
 
   // ======== DELETE COMMENT ========
@@ -396,17 +414,53 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
                     >
                       Reply
                     </button>
+                    {/* Nút View replies */}
+                    {c.replyCount > 0 && (
+                      <button
+                        onClick={() => handleToggleReplies(c.id, c.replyCount)}
+                        className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                      >
+                        {expandedReplies.has(c.id)
+                          ? "Hide replies"
+                          : `View ${c.replyCount} ${c.replyCount === 1 ? "reply" : "replies"}`}
+                      </button>
+                    )}
                   </div>
+
+                  {/* Replies nested */}
+                  {expandedReplies.has(c.id) && (
+                    <ReplyView
+                      commentId={c.id}
+                      onProfileClick={onProfileClick}
+                      avatarUrl={avatarUrl}
+                      fullName={fullName}
+                      submittingComment={submittingComment}
+                      handleCreateReply={handleCreateReply}
+                      handleToggleLikeComment={handleToggleLikeComment}
+                      buildMediaUrl={buildMediaUrl}
+                      openViewerForComment={openViewerForComment}
+                      handleDragStart={handleDragStart}
+                      handleDragMove={handleDragMove}
+                      hasDraggedRef={hasDraggedRef}
+                      formatTimeAgo={formatTimeAgo}
+                    />
+                  )}
                   
                   {replyTo === c.id && (
-                    <div className="mt-3 ml-10">
+                    <div className="mt-3 ml-10 rounded-xl overflow-hidden">
                       <CommentForm
                         isReply={true}
+                        noBorder={true}
                         avatarUrl={avatarUrl}
                         fullName={fullName}
                         placeholder={`Trả lời bình luận của ${c.fullName ?? "người dùng"}...`}
                         submitting={submittingComment}
-                        onSubmit={handleCreateReply(c.id)}
+                        onSubmit={async (data) => {
+                          await handleCreateReply(c.id)(data);
+                          // Auto-expand và fetch replies sau khi reply thành công
+                          setExpandedReplies((prev) => new Set([...prev, c.id]));
+                          dispatch(fetchReplies({ commentId: c.id }));
+                        }}
                         onCancelReply={() => setReplyTo(null)}
                       />
                     </div>

@@ -63,6 +63,14 @@ public class PostService {
         postRepository.deleteByRepostOfId(post.getId());
         postRepository.delete(post);
         CompletableFuture.runAsync(() -> mediaClient.deleteMediaByPostId(postId));
+        // Xóa tất cả comments của post này
+        CompletableFuture.runAsync(() -> {
+            try {
+                interactionClient.deleteCommentsByPost(postId);
+            } catch (Exception e) {
+                System.err.println("Lỗi xóa comments khi xóa post: " + e.getMessage());
+            }
+        });
     }
 
     // ==================== FEED ====================

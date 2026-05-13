@@ -14,6 +14,11 @@ const commentApi = {
   deleteComment(commentId) {
     return axiosClient.delete(`/interaction/comments/${commentId}`);
   },
+
+  // Lấy toàn bộ cây replies của 1 comment gốc
+  getThread(commentId) {
+    return axiosClient.get(`/interaction/comments/${commentId}/thread`);
+  },
 };
 
 export default commentApi;
