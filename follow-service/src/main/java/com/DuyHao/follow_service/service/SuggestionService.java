@@ -178,5 +178,5 @@ public class SuggestionService {
                 .limit(size)
                 .map(arr -> (SuggestionResponse) ((Object[]) arr)[0])
                 .collect(Collectors.toList());
-    }
+    } //
 }
