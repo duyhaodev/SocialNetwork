@@ -115,10 +115,11 @@ export function EditProfileDialog({ open, onOpenChange }) {
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-zinc-950 border-zinc-800 text-white [&>button]:hidden"
+      <DialogContent className="sm:max-w-md p-0 bg-zinc-950 border-zinc-800 text-white [&>button]:hidden rounded-xl"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
+        <div className="overflow-hidden rounded-xl flex flex-col">
         <DialogHeader className="border-b border-zinc-800 px-4 py-3">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white" onClick={() => onOpenChange?.(false)}>
@@ -129,7 +130,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto likers-scroll">
           <div className="flex items-center gap-4">
             <Avatar className="w-16 h-16 border border-zinc-800">
               <AvatarImage src={displayAvatar} style={{ objectFit: "cover" }} />
@@ -240,6 +241,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
             {submitting ? "Saving..." : "Save Changes"}
           </Button>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
 

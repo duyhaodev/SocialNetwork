@@ -1851,3 +1851,10 @@ html {
   inherits: false;
   initial-value: 0 0 #0000;
 }
+
+/* LikersDialog scrollbar */
+.likers-scroll::-webkit-scrollbar { width: 6px; }
+.likers-scroll::-webkit-scrollbar-track { background: transparent; }
+.likers-scroll::-webkit-scrollbar-thumb { background: #555; border-radius: 999px; }
+.likers-scroll::-webkit-scrollbar-thumb:hover { background: #777; }
+.likers-scroll { scrollbar-width: thin; scrollbar-color: #555 transparent; }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import { Button } from "../../components/ui/button.js";
@@ -10,6 +10,7 @@ import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import { ImageViewer } from "../../components/ImageViewer/ImageViewer.jsx";
 import {AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,} from "../../components/ui/alert-dialog.js";
 import {fetchMyPosts, selectMyPosts, selectMyPostsLoading, fetchUserPosts, selectUserPosts, selectUserPostsLoading, fetchMyReposts, fetchUserReposts, selectMyReposts, selectMyRepostsLoading, selectUserReposts, selectUserRepostsLoading,} from "../../store/postsSlice";
+import { fetchMyInfo } from "../../store/userSlice";
 import postApi from "../../api/postApi";
 import followApi from "../../api/followApi";
 import { EditProfileDialog } from "./EditProfileDialog.jsx";
@@ -19,6 +20,7 @@ import { toast } from "sonner";
 export function ProfilePage() {
   const { username: rawUsername } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
 
   const cleanUsername =
@@ -85,7 +87,8 @@ export function ProfilePage() {
   useEffect(() => {
   if (isOwnProfile) {
     dispatch(fetchMyPosts());
-    dispatch(fetchMyReposts()); 
+    dispatch(fetchMyReposts());
+    dispatch(fetchMyInfo()); // refresh follower/following count
     return;
   }
 
@@ -109,7 +112,7 @@ export function ProfilePage() {
       console.error("Error loading profile:", err);
     }
   })();
-}, [dispatch, isOwnProfile, cleanUsername]);
+}, [dispatch, isOwnProfile, cleanUsername, location.key]);
   
   
 

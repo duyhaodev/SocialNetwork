@@ -15,6 +15,7 @@ import { Trash2 } from "lucide-react";
 import CommentForm from "./CommentForm";
 import { ReplyView } from "./ReplyView";
 import mediaApi from "../../api/mediaApi";
+import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 
 const PAGE_SIZE = 10;
 
@@ -340,7 +341,9 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
                       className="font-semibold text-sm cursor-pointer hover:underline"
                       onClick={() => onProfileClick?.(c.username)}
                     >
-                      {c.fullName}
+                      <UserHoverCard username={c.username}>
+                        <span>{c.fullName}</span>
+                      </UserHoverCard>
                     </span>
                     <span className="text-xs text-muted-foreground">
                       @{c.username}

@@ -1,6 +1,7 @@
 package com.DuyHao.interaction_service.controller;
 
 import com.DuyHao.interaction_service.dto.response.LikeResponse;
+import com.DuyHao.interaction_service.dto.response.PostLikersResponse;
 import com.DuyHao.interaction_service.service.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,5 +26,13 @@ public class LikeController {
     public LikeResponse toggleCommentLike(@PathVariable String commentId, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         return likeService.toggleCommentLike(commentId, userId);
+    }
+
+    // Lấy danh sách người đã like bài viết (tối đa limit người)
+    @GetMapping("/posts/{postId}/likes/users")
+    public PostLikersResponse getPostLikers(
+            @PathVariable String postId,
+            @RequestParam(defaultValue = "10") int limit) {
+        return likeService.getPostLikers(postId, Math.min(limit, 50));
     }
 }

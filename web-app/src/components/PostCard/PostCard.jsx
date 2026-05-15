@@ -18,6 +18,7 @@ import {formatTimeAgo} from "../../utils/dateUtils.js"
 import ConfirmDeleteModal from "../Modals/ConfirmDeleteModal";
 import { Trash2, Link } from "lucide-react";
 import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
+import { LikersTooltip } from "../LikersTooltip/LikersTooltip";
 
 export function PostCard({ post, onProfileClick, onPostClick }) {
 
@@ -529,17 +530,16 @@ useEffect(() => {
 
           {/* Actions: like / comment / repost */}
           <div className="flex items-center justify-between max-w-md">
-            {/* Like button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 h-auto group"
+            {/* Like button — hover để xem danh sách người tim */}
+            <LikersTooltip
+              postId={originalPostId}
+              isLiked={isLiked}
+              likes={likes}
+              disabled={liking}
               onClick={(e) => {
                 e.stopPropagation();
                 handleLike();
               }}
-              aria-label="Like"
-              disabled={liking}
             >
               <Heart
                 className={`w-5 h-5 ${
@@ -553,7 +553,7 @@ useEffect(() => {
               >
                 {formatNumber(likes)}
               </span>
-            </Button>
+            </LikersTooltip>
 
             {/* Comment: mở chi tiết bài viết */}
             <Button
