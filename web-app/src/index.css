@@ -1858,3 +1858,10 @@ html {
 .likers-scroll::-webkit-scrollbar-thumb { background: #555; border-radius: 999px; }
 .likers-scroll::-webkit-scrollbar-thumb:hover { background: #777; }
 .likers-scroll { scrollbar-width: thin; scrollbar-color: #555 transparent; }
+
+/* SuggestedUsers horizontal scrollbar */
+.suggest-scroll::-webkit-scrollbar { height: 5px; }
+.suggest-scroll::-webkit-scrollbar-track { background: transparent; }
+.suggest-scroll::-webkit-scrollbar-thumb { background: #555; border-radius: 999px; }
+.suggest-scroll::-webkit-scrollbar-thumb:hover { background: #777; }
+.suggest-scroll { scrollbar-width: thin; scrollbar-color: #555 transparent; }

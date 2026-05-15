@@ -193,8 +193,7 @@ export function SuggestedUsers({ onDismiss, sidebar = false }) {
       {/* Horizontal scroll list */}
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto pb-1 cursor-grab"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        className="flex gap-3 overflow-x-auto pb-2 cursor-grab suggest-scroll"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onDragStart={(e) => e.preventDefault()}
