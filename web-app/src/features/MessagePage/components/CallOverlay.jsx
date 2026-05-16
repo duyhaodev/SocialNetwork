@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, User, MonitorUp } from 'lucide-react';
 import { messageApi } from '../../../api/messageApi';
 import { endCallAction, setCallInProgress } from '../../../store/callSlice';
 import { useWebRTC } from '../../../hooks/useWebRTC';
+import { getAccessToken } from '../../../api/localStorageService';
 
 export const CallOverlay = () => {
     const { callStatus, callData } = useSelector((state) => state.call);
@@ -13,32 +14,6 @@ export const CallOverlay = () => {
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
     const [timer, setTimer] = useState(0);
-
-    const {
-        localVideoRef,
-        remoteVideoRef,
-        toggleMuteHook,
-        toggleVideoHook,
-        toggleScreenShareHook,
-        isScreenSharing,
-        localStream,
-        remoteStream
-    } = useWebRTC(callData, callStatus);
-
-    // Timer logic for IN_PROGRESS
-    useEffect(() => {
-        let interval;
-        if (callStatus === 'IN_PROGRESS') {
-            interval = setInterval(() => {
-                setTimer((prev) => prev + 1);
-            }, 1000);
-        } else {
-            setTimer(0);
-        }
-        return () => clearInterval(interval);
-    }, [callStatus]);
-
-    if (callStatus === 'IDLE' || !callData) return null;
 
     const handleAccept = async () => {
         try {
@@ -58,23 +33,93 @@ export const CallOverlay = () => {
         }
     };
 
-    const handleCancel = async () => {
+    const handleCancel = useCallback(async () => {
         try {
             await messageApi.cancelCall(callData.id);
             dispatch(endCallAction());
         } catch (error) {
             console.error("Failed to cancel call:", error);
         }
-    };
+    }, [callData?.id, dispatch]);
 
-    const handleEndCall = async () => {
+    const handleEndCall = useCallback(async () => {
         try {
             await messageApi.endCall(callData.id);
             dispatch(endCallAction());
         } catch (error) {
             console.error("Failed to end call:", error);
         }
-    };
+    }, [callData?.id, dispatch]);
+
+    const handlePeerDisconnectLocal = useCallback(() => {
+        if (callStatus === 'IN_PROGRESS' || callStatus === 'CALLING') {
+            console.log("Ending call due to peer disconnection");
+            dispatch(endCallAction());
+        }
+    }, [callStatus, dispatch]);
+
+    const {
+        localVideoRef,
+        remoteVideoRef,
+        toggleMuteHook,
+        toggleVideoHook,
+        toggleScreenShareHook,
+        isScreenSharing,
+        localStream,
+        remoteStream
+    } = useWebRTC(callData, callStatus, handlePeerDisconnectLocal);
+
+    // Xử lý trước khi đóng tab (BeforeUnload)
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (callData?.id) {
+                const token = getAccessToken();
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const baseUrl = 'http://localhost:8888';
+                
+                let url = null;
+                if (callStatus === 'CALLING') {
+                    url = `${baseUrl}/chat/calls/cancel/${callData.id}`;
+                } else if (callStatus === 'IN_PROGRESS') {
+                    url = `${baseUrl}/chat/calls/end/${callData.id}`;
+                }
+
+                if (url) {
+                    // Sử dụng fetch với keepalive thay vì sendBeacon để hỗ trợ Header Authorization
+                    fetch(url, { method: 'POST', keepalive: true, headers });
+                }
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [callStatus, callData]);
+
+    // Timer logic for IN_PROGRESS
+    useEffect(() => {
+        let interval;
+        if (callStatus === 'IN_PROGRESS') {
+            interval = setInterval(() => {
+                setTimer((prev) => prev + 1);
+            }, 1000);
+        } else {
+            setTimer(0);
+        }
+        return () => clearInterval(interval);
+    }, [callStatus]);
+
+    // Ringing Timeout (60 giây)
+    useEffect(() => {
+        let timeout;
+        if (callStatus === 'CALLING') {
+            timeout = setTimeout(() => {
+                console.log("Call timed out after 60s");
+                handleCancel();
+            }, 60000);
+        }
+        return () => clearTimeout(timeout);
+    }, [callStatus, handleCancel]);
+
+    if (callStatus === 'IDLE' || !callData) return null;
 
     const toggleMute = () => {
         setIsMuted(!isMuted);

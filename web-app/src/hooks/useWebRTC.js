@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext';
 import { useSelector } from 'react-redux';
 
-export const useWebRTC = (callData, callStatus) => {
+export const useWebRTC = (callData, callStatus, onPeerDisconnect) => {
     const socket = useSocket();
     const { profile } = useSelector(state => state.user);
     
@@ -70,11 +70,20 @@ export const useWebRTC = (callData, callStatus) => {
                     });
                 }
             };
+
+            // 6. Theo dõi trạng thái kết nối
+            peerConnection.current.oniceconnectionstatechange = () => {
+                const state = peerConnection.current.iceConnectionState;
+                if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                    console.log("WebRTC: Peer disconnected", state);
+                    if (onPeerDisconnect) onPeerDisconnect();
+                }
+            };
             
         } catch (error) {
             console.error("Lỗi khi khởi tạo RTCPeerConnection:", error);
         }
-    }, [callData, otherUserId, socket]);
+    }, [callData, otherUserId, socket, onPeerDisconnect]);
 
     // Tự động gắn stream vào thẻ video khi thẻ video được render
     useEffect(() => {
@@ -156,12 +165,21 @@ export const useWebRTC = (callData, callStatus) => {
         socket.on('webrtc_answer', handleAnswer);
         socket.on('webrtc_ice_candidate', handleIceCandidate);
 
+        const handlePeerDisconnected = (data) => {
+            if (data.userId === otherUserId) {
+                console.log("Socket: Peer disconnected", data.userId);
+                if (onPeerDisconnect) onPeerDisconnect();
+            }
+        };
+        socket.on('peer_disconnected', handlePeerDisconnected);
+
         return () => {
             socket.off('webrtc_offer', handleOffer);
             socket.off('webrtc_answer', handleAnswer);
             socket.off('webrtc_ice_candidate', handleIceCandidate);
+            socket.off('peer_disconnected', handlePeerDisconnected);
         };
-    }, [socket, otherUserId, startMediaAndPeerConnection]);
+    }, [socket, otherUserId, startMediaAndPeerConnection, onPeerDisconnect]);
 
     // Dọn dẹp tài nguyên khi cúp máy
     useEffect(() => {
