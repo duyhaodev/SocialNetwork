@@ -50,8 +50,6 @@ axiosClient.interceptors.response.use(
     const status = error.response?.status;
     const url = originalRequest.url || "";
 
-    console.log(`DEBUG [axiosClient]: Response Error - Status: ${status}, URL: ${url}`);
-
     const isAuthEndpoint =
       url.includes("/auth/token") ||
       url.includes("/users/registration") ||
@@ -59,11 +57,10 @@ axiosClient.interceptors.response.use(
 
     // Nếu lỗi 401 và không phải là endpoint auth
     if (status === 401 && !isAuthEndpoint && !originalRequest._retry) {
-      
+
       if (isRefreshing) {
         // Nếu đang có một request refresh khác chạy, cho request này vào hàng đợi
-        console.log("DEBUG [axiosClient]: Already refreshing. Queueing request...", url);
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         }).then(token => {
           originalRequest.headers.Authorization = `Bearer ${token}`;
@@ -80,14 +77,12 @@ axiosClient.interceptors.response.use(
 
       if (refreshToken) {
         try {
-          console.log("DEBUG [axiosClient]: 401 Detected. Attempting to refresh token...");
           // Gọi trực tiếp axios để tránh loop vô tận
           const res = await axios.post("http://localhost:8888/identity/auth/refresh", {
             token: refreshToken
           });
 
           if (res.data.code === 1000) {
-            console.log("DEBUG [axiosClient]: Refresh Successful. Retrying original request.");
             const { accessToken, refreshToken: newRefreshToken } = res.data.result;
             setToken(accessToken, newRefreshToken);
 
@@ -98,7 +93,6 @@ axiosClient.interceptors.response.use(
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return axiosClient(originalRequest);
           } else {
-            console.warn("DEBUG [axiosClient]: Refresh API returned non-1000 code:", res.data.code);
             processQueue(new Error('Refresh API returned non-1000 code'));
             removeToken();
             if (window.location.pathname !== "/login") {
@@ -106,11 +100,9 @@ axiosClient.interceptors.response.use(
             }
           }
         } catch (refreshError) {
-          console.error("DEBUG [axiosClient]: Refresh Token failed or expired:", refreshError);
           processQueue(refreshError, null);
           removeToken();
           if (window.location.pathname !== "/login") {
-            console.log("DEBUG [axiosClient]: Redirecting to /login due to refresh failure");
             window.location.href = "/login";
           }
           return Promise.reject(refreshError);
@@ -118,7 +110,6 @@ axiosClient.interceptors.response.use(
           isRefreshing = false;
         }
       } else {
-        console.warn("DEBUG [axiosClient]: No Refresh Token found in localStorage.");
         isRefreshing = false;
         removeToken();
         if (window.location.pathname !== "/login") {
