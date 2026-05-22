@@ -56,6 +56,9 @@ public class UserProfileRepositoryService {
         if (userProfile.getSpotifyLink() == null) {
             userProfile.setSpotifyLink("");
         }
+        if (userProfile.getConnectionsPrivacy() == null) {
+            userProfile.setConnectionsPrivacy("EVERYONE");
+        }
         userProfile = userProfileRepository.save(userProfile);
 
         return userProfileMapper.toUserProfileResponse(userProfile);
@@ -106,6 +109,10 @@ public class UserProfileRepositoryService {
         if (request.getCity() != null) userProfile.setCity(request.getCity());
         if (request.getBio() != null) userProfile.setBio(request.getBio());
         if (request.getSpotifyLink() != null) userProfile.setSpotifyLink(request.getSpotifyLink());
+        if (request.getConnectionsPrivacy() != null
+                && List.of("EVERYONE", "FRIENDS_ONLY", "ONLY_ME").contains(request.getConnectionsPrivacy())) {
+            userProfile.setConnectionsPrivacy(request.getConnectionsPrivacy());
+        }
         if (request.getMediaId() != null && !request.getMediaId().isBlank()) {
             mediaClient.assignMediaToUser(userId, request.getMediaId());
             var userMedias = mediaClient.getByUserId(userId);

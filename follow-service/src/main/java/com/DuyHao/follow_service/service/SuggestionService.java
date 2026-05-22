@@ -74,24 +74,21 @@ public class SuggestionService {
             myCity = myProfile.getCity();
         }
 
+        // Mở rộng candidates: thêm người cùng city + top follower
+        // Lấy top 50 follower từ profile-service
+        List<UserProfileResponse> topFollowers = userClient.getTopFollowers(50);
+        for (UserProfileResponse p : topFollowers) {
+            String uid = p.getUserId();
+            if (uid == null) continue;
+            if (uid.equals(currentUserId)) continue;       // loại chính mình
+            if (myFollowings.contains(uid)) continue;      // loại đã follow
+            candidates.add(uid);
+        }
+
         // Lấy thông tin profile của tất cả candidates
         List<String> candidateIds = candidates.stream().toList();
         if (candidateIds.isEmpty()) {
-            return userClient.getTopFollowers(page * size + size).stream()
-                    .filter(p -> !p.getUserId().equals(currentUserId))
-                    .filter(p -> !myFollowings.contains(p.getUserId()))
-                    .skip((long) page * size)
-                    .limit(size)
-                    .map(p -> SuggestionResponse.builder()
-                            .userId(p.getUserId())
-                            .username(p.getUsername())
-                            .fullName(p.getFullName())
-                            .avatarUrl(p.getAvatarUrl())
-                            .city(p.getCity())
-                            .followerCount(p.getFollowerCount())
-                            .mutualCount(0)
-                            .build())
-                    .collect(Collectors.toList());
+            return List.of();
         }
         List<UserProfileResponse> profiles = userClient.getUsersBatch(candidateIds);
 

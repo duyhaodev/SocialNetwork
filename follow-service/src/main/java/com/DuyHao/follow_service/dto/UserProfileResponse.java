@@ -11,4 +11,5 @@ public class UserProfileResponse {
     String city;
     long followerCount;
     long followingCount;
+    String connectionsPrivacy;
 }

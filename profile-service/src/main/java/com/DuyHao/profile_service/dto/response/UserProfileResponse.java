@@ -25,4 +25,5 @@ public class UserProfileResponse {
 
     long followerCount;
     long followingCount;
+    String connectionsPrivacy; // EVERYONE | FRIENDS_ONLY | ONLY_ME
 }

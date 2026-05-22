@@ -33,4 +33,7 @@ public class UserProfile {
 
     long followerCount;
     long followingCount;
+
+    @Property("connectionsPrivacy")
+    String connectionsPrivacy;
 }

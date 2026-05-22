@@ -1,11 +1,16 @@
 package com.DuyHao.interaction_service.service;
 
 import com.DuyHao.interaction_service.FeignClient.PostClient;
+import com.DuyHao.interaction_service.FeignClient.UserClient;
 import com.DuyHao.interaction_service.dto.response.LikeResponse;
+import com.DuyHao.interaction_service.dto.response.PostLikersResponse;
+import com.DuyHao.interaction_service.dto.response.PostLikersResponse.LikerInfo;
 import com.DuyHao.interaction_service.entity.Like;
 import com.DuyHao.interaction_service.repository.LikeRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +20,8 @@ public class LikeService {
 
     private final LikeRepository likeRepository;
     private final PostClient postClient;
+    private final UserClient userClient;
     private final CommentService commentService;
-    // private final NotificationService notificationService;
 
     @Transactional
     public LikeResponse togglePostLike(String postId, String userId) {
@@ -71,5 +76,35 @@ public class LikeService {
         } catch (Exception e) {
             throw new RuntimeException("Lỗi Like Comment: " + e.getMessage());
         }
+    }
+
+
+     //Lấy danh sách người đã like bài viết (tối đa limit người, mới nhất trước)
+    public PostLikersResponse getPostLikers(String postId, int limit) {
+        long total = likeRepository.countByPostId(postId);
+        if (total == 0) {
+            return PostLikersResponse.builder()
+                    .likers(List.of())
+                    .othersCount(0)
+                    .build();
+        }
+
+        List<String> userIds = likeRepository.findUserIdsByPostId(postId, PageRequest.of(0, limit));
+
+        List<LikerInfo> likers = userClient.getUsers(userIds).stream()
+                .map(u -> LikerInfo.builder()
+                        .userId(u.getUserId() != null ? u.getUserId() : u.getId())
+                        .fullName(u.getFullName())
+                        .username(u.getUsername())
+                        .avatarUrl(u.getAvatarUrl())
+                        .build())
+                .toList();
+
+        long others = Math.max(0, total - likers.size()); // trừ cho 10 người lấy danh sách ra
+
+        return PostLikersResponse.builder()
+                .likers(likers)
+                .othersCount(others)
+                .build();
     }
 }

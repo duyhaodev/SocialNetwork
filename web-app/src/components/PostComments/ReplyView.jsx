@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Heart } from "lucide-react";
 import { fetchReplies, selectRepliesByCommentId, selectRepliesLoadingByCommentId } from "@/store/commentsSlice";
 import CommentForm from "./CommentForm";
+import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -79,7 +80,9 @@ function ReplyNode({
                 className="font-semibold text-xs cursor-pointer hover:underline"
                 onClick={() => onProfileClick?.(node.username)}
               >
-                {node.fullName}
+                <UserHoverCard username={node.username}>
+                  <span>{node.fullName}</span>
+                </UserHoverCard>
               </span>
               <span className="text-xs text-muted-foreground">· {formatTimeAgo(node.createdAt)}</span>
             </div>
