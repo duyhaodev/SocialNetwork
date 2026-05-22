@@ -19,6 +19,9 @@ public class MessageResponse {
     List<MediaInfo> media;
     LocalDateTime createdAt;
     boolean isMe;
+    boolean isRevoked;
+    boolean isEdited;
+    java.util.Map<String, String> reactions;
     SenderInfo sender;
 
     @Data

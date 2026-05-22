@@ -46,6 +46,9 @@ const chatSlice = createSlice({
     error: null,
     selectedConversationId: null,
     latestMessage: null, // Track the newest incoming message object
+    latestRevokedMessage: null, // Track the newest revoked message object
+    latestEditedMessage: null, // Track the newest edited message object
+    latestReactionUpdate: null, // Track the newest reaction update object
   },
   reducers: {
     // Action to handle incoming socket message
@@ -78,6 +81,39 @@ const chatSlice = createSlice({
         // we might need to fetch it or construct it. For now, we ignore or fetch all again.
         // Ideally: fetchConversations() could be triggered.
       }
+    },
+
+    receiveRevokeMessage: (state, action) => {
+      const revokedMsg = action.payload;
+      state.latestRevokedMessage = revokedMsg;
+
+      const index = state.conversations.findIndex(c => c.id === revokedMsg.conversationId);
+      if (index !== -1) {
+          const conversation = state.conversations[index];
+          // Update last message display if it was revoked
+          state.conversations[index] = {
+              ...conversation,
+              lastMessage: "Tin nhắn đã bị thu hồi"
+          };
+      }
+    },
+
+    receiveEditMessage: (state, action) => {
+      const editedMsg = action.payload;
+      state.latestEditedMessage = editedMsg;
+
+      const index = state.conversations.findIndex(c => c.id === editedMsg.conversationId);
+      if (index !== -1) {
+          const conversation = state.conversations[index];
+          state.conversations[index] = {
+              ...conversation,
+              lastMessage: editedMsg.content
+          };
+      }
+    },
+
+    receiveReactionUpdate: (state, action) => {
+      state.latestReactionUpdate = action.payload;
     },
     
     // Action when user selects a conversation (to clear unread locally immediately)
@@ -126,5 +162,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { receiveSocketMessage, setConversationReadLocal, addNewConversation } = chatSlice.actions;
+export const { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, receiveReactionUpdate, setConversationReadLocal, addNewConversation } = chatSlice.actions;
 export default chatSlice.reducer;

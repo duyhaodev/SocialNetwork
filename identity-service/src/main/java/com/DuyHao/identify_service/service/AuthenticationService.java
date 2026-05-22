@@ -83,23 +83,26 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.WRONG_EMAIL_PASSWORD);
         }
 
-        var token = generateToken(user);
+        var accessToken = generateToken(user, false);
+        var refreshToken = generateToken(user, true);
 
         return AuthenticationResponse.builder()
-                .token(token)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .authenticated(true)
                 .build();
     };
 
-    private String generateToken(User user) {
+    private String generateToken(User user, boolean isRefresh) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
+        long duration = isRefresh ? REFRESHABLE_DURATION : VALID_DURATION;
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getId())
                 .issuer("DuyHao")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()
+                        Instant.now().plus(duration, ChronoUnit.SECONDS).toEpochMilli()
                 ))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
@@ -141,9 +144,7 @@ public class AuthenticationService {
 
         SignedJWT signedJWT = SignedJWT.parse(token);
 
-        Date expiryTime = (isRefresh)
-                ? new Date(signedJWT.getJWTClaimsSet().getIssueTime().toInstant().plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS).toEpochMilli())
-                : signedJWT.getJWTClaimsSet().getExpirationTime();
+        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
         var verified = signedJWT.verify(verifier);
 
@@ -170,13 +171,15 @@ public class AuthenticationService {
 
         invalidatedTokenRepository.save(invalidatedToken);
 
-        var username = signToken.getJWTClaimsSet().getSubject();
-        var user = userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        var userId = signToken.getJWTClaimsSet().getSubject();
+        var user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
-        var refreshToken = generateToken(user);
+        var accessToken = generateToken(user, false);
+        var refreshToken = generateToken(user, true);
 
         return AuthenticationResponse.builder()
-                .token(refreshToken)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .authenticated(true)
                 .build();
     }

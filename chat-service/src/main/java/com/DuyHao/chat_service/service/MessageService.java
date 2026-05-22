@@ -116,6 +116,151 @@ public class MessageService {
         return response;
     }
 
+    public MessageResponse revokeMessage(String messageId) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        // Check ownership
+        if (!message.getSenderId().equals(currentUserId)) {
+            throw new RuntimeException("Access denied: You can only revoke your own messages");
+        }
+
+        // Prevent revoking call logs
+        if (message.getContent() != null && message.getContent().startsWith("📞 Cuộc gọi")) {
+            throw new RuntimeException("Cannot revoke call log messages");
+        }
+
+        if (message.isRevoked()) {
+            return toMessageResponse(message, currentUserId);
+        }
+
+        // Update message
+        message.setRevoked(true);
+        message = messageRepository.save(message);
+
+        // Update conversation last message if necessary
+        Conversation conversation = conversationRepository.findById(message.getConversationId())
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        // Simplistic check: if this was the last message, update conversation display
+        if (message.getContent() != null && message.getContent().equals(conversation.getLastMessageContent())) {
+            conversation.setLastMessageContent("Tin nhắn đã bị thu hồi");
+            conversationRepository.save(conversation);
+        }
+
+        MessageResponse response = toMessageResponse(message, currentUserId);
+
+        // Push realtime event
+        RealtimeMessage rtMessage = RealtimeMessage.builder()
+                .toRoomId(message.getConversationId())
+                .type("message_revoked")
+                .payload(response)
+                .build();
+        redisPublisherService.publish(rtMessage);
+
+        return response;
+    }
+
+    public MessageResponse editMessage(String messageId, String newContent) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        // Ownership check
+        if (!message.getSenderId().equals(currentUserId)) {
+            throw new RuntimeException("Access denied: You can only edit your own messages");
+        }
+
+        // Integrity checks
+        if (message.isRevoked()) {
+            throw new RuntimeException("Cannot edit a revoked message");
+        }
+        if (message.getContent() != null && message.getContent().startsWith("📞 Cuộc gọi")) {
+            throw new RuntimeException("Cannot edit call log messages");
+        }
+
+        // "Most recent message" logic: Find the absolute latest message by this user in this conversation
+        Message latestMsg = messageRepository.findFirstByConversationIdAndSenderIdOrderByCreatedAtDesc(
+                        message.getConversationId(), currentUserId)
+                .orElseThrow(() -> new RuntimeException("Latest message not found"));
+
+        if (!latestMsg.getId().equals(messageId)) {
+            throw new RuntimeException("Only the most recent message can be edited");
+        }
+
+        // Update message
+        message.setContent(newContent);
+        message.setEdited(true);
+        message = messageRepository.save(message);
+
+        // Update conversation display
+        Conversation conversation = conversationRepository.findById(message.getConversationId())
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        // If it was the last message of the conversation, update sidebar preview
+        if (message.getCreatedAt().equals(conversation.getLastMessageTimestamp()) ||
+                message.getContent().equals(conversation.getLastMessageContent())) {
+            conversation.setLastMessageContent(newContent);
+            conversationRepository.save(conversation);
+        }
+
+        MessageResponse response = toMessageResponse(message, currentUserId);
+
+        // Broadcast event
+        RealtimeMessage rtMessage = RealtimeMessage.builder()
+                .toRoomId(message.getConversationId())
+                .type("message_edited")
+                .payload(response)
+                .build();
+        redisPublisherService.publish(rtMessage);
+
+        return response;
+    }
+
+    public MessageResponse reactToMessage(String messageId, String emoji) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        if (message.isRevoked()) {
+            throw new RuntimeException("Cannot react to a revoked message");
+        }
+        if (message.getContent() != null && message.getContent().startsWith("📞 Cuộc gọi")) {
+            throw new RuntimeException("Cannot react to call log messages");
+        }
+
+        java.util.Map<String, String> reactions = message.getReactions();
+        if (reactions == null) {
+            reactions = new java.util.HashMap<>();
+        }
+
+        // Toggle logic
+        if (emoji.equals(reactions.get(currentUserId))) {
+            reactions.remove(currentUserId);
+        } else {
+            reactions.put(currentUserId, emoji);
+        }
+
+        message.setReactions(reactions);
+        message = messageRepository.save(message);
+
+        MessageResponse response = toMessageResponse(message, currentUserId);
+
+        // Broadcast event
+        RealtimeMessage rtMessage = RealtimeMessage.builder()
+                .toRoomId(message.getConversationId())
+                .type("message_reaction_updated")
+                .payload(response)
+                .build();
+        redisPublisherService.publish(rtMessage);
+
+        return response;
+    }
+
     private MessageResponse toMessageResponse(Message message, String currentUserId) {
         MessageResponse response = MessageResponse.builder()
                 .id(message.getId())
@@ -124,6 +269,9 @@ public class MessageService {
                 .media(message.getMedia())
                 .createdAt(message.getCreatedAt())
                 .isMe(message.getSenderId().equals(currentUserId))
+                .isRevoked(message.isRevoked())
+                .isEdited(message.isEdited())
+                .reactions(message.getReactions())
                 .build();
 
         try {

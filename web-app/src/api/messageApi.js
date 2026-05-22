@@ -59,6 +59,21 @@ export const messageApi = {
         return axiosClient.delete(url);
     },
 
+    revokeMessage(messageId) {
+        const url = `chat/messages/revoke/${messageId}`;
+        return axiosClient.put(url);
+    },
+
+    editMessage({ messageId, content }) {
+        const url = `chat/messages/edit/${messageId}`;
+        return axiosClient.put(url, { content });
+    },
+
+    reactToMessage({ messageId, emoji }) {
+        const url = `chat/messages/${messageId}/react?emoji=${encodeURIComponent(emoji)}`;
+        return axiosClient.post(url);
+    },
+
     // Call APIs
     initiateCall({ calleeId, conversationId, type }) {
         const url = "chat/calls/initiate";

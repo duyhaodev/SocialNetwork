@@ -31,4 +31,25 @@ public class MessageController {
                 .result(messageService.getMessages(conversationId))
                 .build();
     }
+
+    @PutMapping("/revoke/{messageId}")
+    ApiResponse<MessageResponse> revoke(@PathVariable String messageId) {
+        return ApiResponse.<MessageResponse>builder()
+                .result(messageService.revokeMessage(messageId))
+                .build();
+    }
+
+    @PutMapping("/edit/{messageId}")
+    ApiResponse<MessageResponse> edit(@PathVariable String messageId, @RequestBody MessageRequest request) {
+        return ApiResponse.<MessageResponse>builder()
+                .result(messageService.editMessage(messageId, request.getContent()))
+                .build();
+    }
+
+    @PostMapping("/{messageId}/react")
+    ApiResponse<MessageResponse> react(@PathVariable String messageId, @RequestParam String emoji) {
+        return ApiResponse.<MessageResponse>builder()
+                .result(messageService.reactToMessage(messageId, emoji))
+                .build();
+    }
 }

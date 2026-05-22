@@ -27,5 +27,14 @@ public class Message {
     String content;
     List<MediaInfo> media;
 
+    @Builder.Default
+    boolean isRevoked = false;
+
+    @Builder.Default
+    boolean isEdited = false;
+
+    @Builder.Default
+    java.util.Map<String, String> reactions = new java.util.HashMap<>();
+
     LocalDateTime createdAt;
 }

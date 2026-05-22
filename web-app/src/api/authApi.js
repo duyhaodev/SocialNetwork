@@ -21,6 +21,11 @@ const authApi = {
         return axiosClient.post(url, { token })
     },
 
+    refreshToken(token) {
+        const url = "identity/auth/refresh";
+        return axiosClient.post(url, { token });
+    },
+
     verify(email, code) {
         const url = `identity/users/verify?email=${email}&code=${code}`;
         return axiosClient.post(url);

@@ -17,7 +17,7 @@ import { PostDetailPage } from "./features/PostDetailPage/PostDetailPage.jsx";
 import { ConnectionsPage } from "./features/ConnectionsPage/ConnectionsPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import PublicRoute from "./components/PublicRoute.jsx";
-import { getToken } from "./api/localStorageService.js";
+import { getAccessToken } from "./api/localStorageService.js";
 import { VerifyAccountPage } from "./features/VerifyAccountPage/VerifyAccountPage.jsx";
 import { ForgotPasswordPage } from "./features/ForgotPasswordPage/ForgotPasswordPage.jsx";
 import CallOverlay from "./features/MessagePage/components/CallOverlay.jsx";
@@ -29,7 +29,7 @@ export default function App() {
   // Set dark mode by default and verify token on initial load
   useEffect(() => {
     document.documentElement.classList.add('dark');
-    const token = getToken();
+    const token = getAccessToken();
     if (token) {
       dispatch(verifyToken());
     }
@@ -37,7 +37,7 @@ export default function App() {
 
   // While verifying token, show a loader to prevent route flashing
   // We only want to show this initial loading screen if a token exists and we are verifying it.
-  const isVerifyingToken = loading && !isAuthenticated && getToken();
+  const isVerifyingToken = loading && !isAuthenticated && getAccessToken();
   if (isVerifyingToken) {
     return (
       <>

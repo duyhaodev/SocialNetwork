@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Phone, Video, Camera, Info, Smile, Mic, Image, Heart, Send, X } from "lucide-react";
+import { Phone, Video, Camera, Info, Smile, Mic, Image, Heart, Send, X, RotateCcw, Pencil } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { messageApi } from "../../../api/messageApi";
 import mediaApi from "../../../api/mediaApi";
@@ -11,19 +11,28 @@ import { Search } from "lucide-react";
 import { UserAvatar } from "../../../components/ui/user-avatar";
 import { useSelector, useDispatch } from "react-redux";
 import { startOutgoingCall } from "../../../store/callSlice";
+import { receiveRevokeMessage, receiveEditMessage, receiveReactionUpdate } from "../../../store/chatSlice";
+import { useSocket } from "../../../context/SocketContext";
 import { ConversationDetails } from "./ConversationDetails";
 import { ImageViewer } from "../../../components/ImageViewer/ImageViewer";
 
-export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage }) {
+export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage, revokedMessage, editedMessage, reactionUpdate }) {
   const { profile } = useSelector(state => state.user);
   const dispatch = useDispatch();
+  const socket = useSocket();
   const [messages, setMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [showEmojiPickerFor, setShowEmojiPickerFor] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const emojiRef = useRef(null);
+  const emojiPickerRef = useRef(null);
+
+  const EMOJI_LIST = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
   // Helper to determine if a message is from me
   const checkIsMe = (msg) => {
@@ -34,7 +43,6 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
 
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const emojiRef = useRef(null);
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerMediaList, setViewerMediaList] = useState([]);
@@ -55,7 +63,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle incoming real-time message
+  // Handle incoming real-time message (New Message)
   useEffect(() => {
     if (incomingMessage && conversation && incomingMessage.conversationId === conversation.id) {
       setMessages((prev) => {
@@ -71,19 +79,82 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
     }
   }, [incomingMessage, conversation, profile]);
 
-  // EMOJI: Close when clicking outside
+  // Handle incoming real-time message (Revoke Message)
   useEffect(() => {
-    if (!emojiOpen) return;
+    if (revokedMessage && conversation && revokedMessage.conversationId === conversation.id) {
+      setMessages((prev) => prev.map(m => m.id === revokedMessage.id ? { ...m, isRevoked: true } : m));
+    }
+  }, [revokedMessage, conversation]);
 
+  // Handle incoming real-time message (Edit Message)
+  useEffect(() => {
+    if (editedMessage && conversation && editedMessage.conversationId === conversation.id) {
+      setMessages((prev) => prev.map(m => m.id === editedMessage.id ? { ...m, content: editedMessage.content, isEdited: true } : m));
+    }
+  }, [editedMessage, conversation]);
+
+  // Handle incoming real-time message (Reaction Update)
+  useEffect(() => {
+    if (reactionUpdate && conversation && reactionUpdate.conversationId === conversation.id) {
+      setMessages((prev) => prev.map(m => m.id === reactionUpdate.id ? { ...m, reactions: reactionUpdate.reactions } : m));
+    }
+  }, [reactionUpdate, conversation]);
+
+  const handleRevokeMessage = async (messageId) => {
+    try {
+      const res = await messageApi.revokeMessage(messageId);
+      const data = res.data || res;
+      if (data.code === 1000) {
+        // Optimistic update locally
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isRevoked: true } : m));
+        // Update Redux (this will update sidebar)
+        dispatch(receiveRevokeMessage(data.result));
+      }
+    } catch (error) {
+      console.error("Failed to revoke message:", error);
+    }
+  };
+
+  const handleStartEdit = (msg) => {
+    setEditingMessageId(msg.id);
+    setMessageInput(msg.content);
+    setEmojiOpen(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setMessageInput("");
+  };
+
+  const handleReact = async (messageId, emoji) => {
+    try {
+      const res = await messageApi.reactToMessage({ messageId, emoji });
+      const data = res.data || res;
+      if (data.code === 1000) {
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reactions: data.result.reactions } : m));
+        dispatch(receiveReactionUpdate(data.result));
+      }
+    } catch (error) {
+      console.error("Failed to react to message:", error);
+    } finally {
+      setShowEmojiPickerFor(null);
+    }
+  };
+
+  // EMOJI PICKER & EDIT POPUP: Close when clicking outside
+  useEffect(() => {
     const handleClickOutside = (e) => {
       if (emojiRef.current && !emojiRef.current.contains(e.target)) {
         setEmojiOpen(false);
+      }
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+        setShowEmojiPickerFor(null);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [emojiOpen]);
+  }, []);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -170,6 +241,21 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
     const content = messageInput.trim();
     if (!content && selectedFiles.length === 0) return;
     if (!conversation?.id) return;
+
+    if (editingMessageId) {
+      try {
+        const res = await messageApi.editMessage({ messageId: editingMessageId, content });
+        const data = res.data || res;
+        if (data.code === 1000) {
+          setMessages(prev => prev.map(m => m.id === editingMessageId ? { ...m, content, isEdited: true } : m));
+          dispatch(receiveEditMessage(data.result));
+          handleCancelEdit();
+        }
+      } catch (error) {
+        console.error("Failed to edit message:", error);
+      }
+      return;
+    }
 
     try {
       setIsUploading(true);
@@ -301,50 +387,140 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                       </p>
                     )}
 
-                    {msg.content && !msg.content.startsWith("📞 Cuộc gọi") && (
-                      <div
-                        title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
-                        className={`px-4 py-2 rounded-2xl break-words ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#0095f6] text-white" : "bg-[#262626] text-white"}`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {msg.isRevoked ? (
+                      <div className="px-4 py-2 rounded-2xl bg-[#1a1a1a] border border-[#333] text-gray-500 italic text-sm">
+                        Tin nhắn đã bị thu hồi
                       </div>
-                    )}
+                    ) : (
+                      <div className="relative group flex flex-col items-inherit">
+                        <div className={`flex items-center gap-2 ${msg.isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                          {/* Message Content Bubble */}
+                          {msg.content && !msg.content.startsWith("📞 Cuộc gọi") && (
+                            <div
+                              title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
+                              className={`px-4 py-2 rounded-2xl break-words relative ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#0095f6] text-white" : "bg-[#262626] text-white"}`}
+                            >
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              {msg.isEdited && (
+                                <span className="text-[9px] opacity-60 block mt-1">(đã chỉnh sửa)</span>
+                              )}
+                            </div>
+                          )}
 
-                    {msg.content && msg.content.startsWith("📞 Cuộc gọi") && (
-                      <div
-                        title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
-                        onClick={() => handleInitiateCall(msg.content.includes("Video") ? 'VIDEO' : 'AUDIO')}
-                        className={`px-4 py-3 rounded-2xl flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#262626] text-white" : "bg-[#1a1a1a] border border-[#333] text-white"}`}
-                      >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${msg.content.includes("nhỡ") || msg.content.includes("từ chối") ? 'bg-red-500/20 text-red-500' : 'bg-gray-700 text-white'}`}>
-                            {msg.content.includes("Video") ? <Video size={20} /> : <Phone size={20} />}
+                          {/* Controls (Smile, Pencil, Revoke) */}
+                          {!msg.content?.startsWith("📞 Cuộc gọi") && (
+                            <div className={`flex items-center gap-1 transition-opacity duration-200 ${showEmojiPickerFor === msg.id ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'}`}>
+                              <button 
+                                onClick={() => setShowEmojiPickerFor(msg.id === showEmojiPickerFor ? null : msg.id)}
+                                className={`p-1.5 bg-[#1a1a1a] rounded-full hover:text-yellow-500 ${showEmojiPickerFor === msg.id ? 'text-yellow-500 opacity-100' : 'text-gray-400'}`}
+                                title="Thả cảm xúc"
+                              >
+                                <Smile size={14} />
+                              </button>
+                              
+                              {msg.isMe && (
+                                <>
+                                  {/* Chỉ hiện nút sửa cho tin nhắn cuối cùng của mình */}
+                                  {messages.filter(m => m.isMe && !m.isRevoked && !m.content?.startsWith("📞")).pop()?.id === msg.id && (
+                                    <button 
+                                      onClick={() => handleStartEdit(msg)}
+                                      className="p-1.5 bg-[#1a1a1a] rounded-full text-gray-400 hover:text-blue-500"
+                                      title="Sửa"
+                                    >
+                                      <Pencil size={14} />
+                                    </button>
+                                  )}
+                                  <button 
+                                    onClick={() => handleRevokeMessage(msg.id)}
+                                    className="p-1.5 bg-[#1a1a1a] rounded-full text-gray-400 hover:text-red-500"
+                                    title="Thu hồi"
+                                  >
+                                    <RotateCcw size={14} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex flex-col">
-                            <p className="text-sm font-medium">{msg.content.replace("📞 ", "")}</p>
-                            <span className="text-xs text-gray-400 mt-0.5">Nhấn để gọi lại</span>
-                        </div>
-                      </div>
-                    )}
 
-                    {msg.media && msg.media.length > 0 && (
-                      <div
-                        className={`grid gap-2 ${msg.media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
-                        title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
-                      >
-                        {msg.media.map((m, idx) => (
-                          <div key={idx} className="rounded-2xl overflow-hidden border border-[#333]">
-                            {m.type === 'image' ? (
-                              <img
-                                src={m.url}
-                                alt=""
-                                className="max-w-64 h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity block"
-                                onClick={() => handleOpenViewer(msg.media, idx)}
-                              />
-                            ) : (
-                              <video src={m.url} controls className="max-w-64 h-auto block" />
-                            )}
+                        {/* Call Logs */}
+                        {msg.content && msg.content.startsWith("📞 Cuộc gọi") && (
+                          <div
+                            title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
+                            onClick={() => handleInitiateCall(msg.content.includes("Video") ? 'VIDEO' : 'AUDIO')}
+                            className={`px-4 py-3 rounded-2xl flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#262626] text-white" : "bg-[#1a1a1a] border border-[#333] text-white"}`}
+                          >
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${msg.content.includes("nhỡ") || msg.content.includes("từ chối") ? 'bg-red-500/20 text-red-500' : 'bg-gray-700 text-white'}`}>
+                                {msg.content.includes("Video") ? <Video size={20} /> : <Phone size={20} />}
+                            </div>
+                            <div className="flex flex-col">
+                                <p className="text-sm font-medium">{msg.content.replace("📞 ", "")}</p>
+                                <span className="text-xs text-gray-400 mt-0.5">Nhấn để gọi lại</span>
+                            </div>
                           </div>
-                        ))}
+                        )}
+
+                        {/* Media */}
+                        {msg.media && msg.media.length > 0 && (
+                          <div
+                            className={`grid gap-2 mt-1 ${msg.media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
+                            title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
+                          >
+                            {msg.media.map((m, idx) => (
+                              <div key={idx} className="rounded-2xl overflow-hidden border border-[#333]">
+                                {m.type === 'image' ? (
+                                  <img
+                                    src={m.url}
+                                    alt=""
+                                    className="max-w-64 h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity block"
+                                    onClick={() => handleOpenViewer(msg.media, idx)}
+                                  />
+                                ) : (
+                                  <video src={m.url} controls className="max-w-64 h-auto block" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Emoji Picker Popover */}
+                        {showEmojiPickerFor === msg.id && (
+                          <div 
+                            ref={emojiPickerRef}
+                            className={`absolute bottom-full mb-2 bg-[#1a1a1a] border border-[#333] p-1.5 rounded-full flex gap-1 shadow-2xl z-50 ${msg.isMe ? 'right-0' : 'left-0'}`}
+                          >
+                            {EMOJI_LIST.map(emoji => (
+                              <button 
+                                key={emoji} 
+                                onClick={() => handleReact(msg.id, emoji)}
+                                className={`hover:scale-125 transition-transform p-1 rounded-full ${msg.reactions?.[profile?.id || profile?.userId] === emoji ? 'bg-[#333]' : ''}`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Reactions Display */}
+                        {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                          <div className={`flex flex-wrap gap-1 -mt-3 mb-1 relative z-10 ${msg.isMe ? 'justify-end pr-2' : 'justify-start pl-2'}`}>
+                            {Object.entries(
+                              Object.values(msg.reactions).reduce((acc, emoji) => {
+                                acc[emoji] = (acc[emoji] || 0) + 1;
+                                return acc;
+                              }, {})
+                            ).map(([emoji, count]) => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleReact(msg.id, emoji)}
+                                className={`flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded-full px-1.5 py-0.5 text-[10px] shadow-sm hover:bg-[#262626] transition-colors ${msg.reactions?.[profile?.id || profile?.userId] === emoji ? 'border-blue-500/50 bg-[#1e293b]' : ''}`}
+                              >
+                                <span>{emoji}</span>
+                                {count > 1 && <span className="font-medium">{count}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -362,6 +538,17 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
 
         {/* Message Input */}
         <div className="p-4 border-t border-[#333]">
+          {editingMessageId && (
+            <div className="flex items-center justify-between bg-[#1a1a1a] px-4 py-2 mb-2 rounded-lg border-l-4 border-blue-500">
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Pencil size={12} />
+                <span>Đang chỉnh sửa tin nhắn...</span>
+              </div>
+              <button onClick={handleCancelEdit} className="text-gray-400 hover:text-white">
+                <X size={14} />
+              </button>
+            </div>
+          )}
           {selectedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {selectedFiles.map((file, idx) => (

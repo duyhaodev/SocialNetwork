@@ -72,6 +72,11 @@ public class CallService {
         CallSession session = callRepository.findById(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
         
+        if ("IN_PROGRESS".equals(session.getStatus()) || "COMPLETED".equals(session.getStatus()) || 
+            "REJECTED".equals(session.getStatus()) || "MISSED".equals(session.getStatus())) {
+            return toCallResponse(session);
+        }
+
         session.setStatus("IN_PROGRESS");
         session.setStartTime(LocalDateTime.now());
         session = callRepository.save(session);
@@ -91,6 +96,10 @@ public class CallService {
         CallSession session = callRepository.findById(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
         
+        if ("COMPLETED".equals(session.getStatus()) || "REJECTED".equals(session.getStatus()) || "MISSED".equals(session.getStatus())) {
+            return toCallResponse(session);
+        }
+
         session.setStatus("REJECTED");
         session.setEndTime(LocalDateTime.now());
         session = callRepository.save(session);
@@ -112,6 +121,10 @@ public class CallService {
         CallSession session = callRepository.findById(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
         
+        if ("COMPLETED".equals(session.getStatus()) || "REJECTED".equals(session.getStatus()) || "MISSED".equals(session.getStatus())) {
+            return toCallResponse(session);
+        }
+
         session.setStatus("MISSED");
         session.setEndTime(LocalDateTime.now());
         session = callRepository.save(session);
@@ -133,6 +146,10 @@ public class CallService {
         CallSession session = callRepository.findById(callId)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
         
+        if ("COMPLETED".equals(session.getStatus()) || "REJECTED".equals(session.getStatus()) || "MISSED".equals(session.getStatus())) {
+            return toCallResponse(session);
+        }
+
         session.setStatus("COMPLETED");
         session.setEndTime(LocalDateTime.now());
         session = callRepository.save(session);

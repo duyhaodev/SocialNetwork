@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
-import { getToken } from '../api/localStorageService';
-import { receiveSocketMessage, markConversationRead, fetchConversations } from '../store/chatSlice';
+import { getAccessToken } from '../api/localStorageService';
+import { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, markConversationRead, fetchConversations } from '../store/chatSlice';
 import { receiveNotification } from '../store/notificationsSlice';
 import { setOnlineUsers, updateUserStatus } from '../store/onlineUsersSlice';
 import { receiveIncomingCall, setCallInProgress, endCallAction } from '../store/callSlice';
@@ -26,7 +26,7 @@ export const SocketProvider = ({ children }) => {
   // For now, the global listener just updates the data.
 
   useEffect(() => {
-    const token = getToken();
+    const token = getAccessToken();
 
     // Only connect if we have a token (user logged in)
     if (!token) {
@@ -98,6 +98,36 @@ export const SocketProvider = ({ children }) => {
         }
       } catch (error) {
         console.error("Socket message handling error:", error);
+      }
+    });
+
+    // Global Message Revoke Listener
+    newSocket.on("message_revoked", (data) => {
+      try {
+        console.log("Message revoked:", data);
+        dispatch(receiveRevokeMessage(data));
+      } catch (error) {
+        console.error("Socket message_revoked handling error:", error);
+      }
+    });
+
+    // Global Message Edit Listener
+    newSocket.on("message_edited", (data) => {
+      try {
+        console.log("Message edited:", data);
+        dispatch(receiveEditMessage(data));
+      } catch (error) {
+        console.error("Socket message_edited handling error:", error);
+      }
+    });
+
+    // Global Message Reaction Listener
+    newSocket.on("message_reaction_updated", (data) => {
+      try {
+        console.log("Message reaction updated:", data);
+        dispatch(receiveReactionUpdate(data));
+      } catch (error) {
+        console.error("Socket message_reaction_updated handling error:", error);
       }
     });
 

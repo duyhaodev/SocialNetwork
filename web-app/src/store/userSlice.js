@@ -1,20 +1,20 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import authApi from "../api/authApi";
 import userApi from "../api/userApi";
-import { getToken, removeToken, setToken } from "../api/localStorageService";
+import { getAccessToken, removeToken, setToken } from "../api/localStorageService";
 
 export const login = createAsyncThunk(
   "user/login",
   async (credentials, { rejectWithValue, dispatch }) => {
     try {
       const res = await authApi.login(credentials);
-      if (!res || res.code !== 1000 || !res.result?.token) {
+      if (!res || res.code !== 1000 || !res.result?.accessToken) {
         return rejectWithValue(res || "LOGIN_FAILED");
       }
-      const token = res.result.token;
-      setToken(token);
+      const { accessToken, refreshToken } = res.result;
+      setToken(accessToken, refreshToken);
       dispatch(fetchMyInfo()); // Fetch user info after successful login
-      return { token };
+      return { token: accessToken };
     } catch (e) {
       return rejectWithValue(e.response?.data || e.message || "LOGIN_ERROR");
     }
@@ -25,7 +25,7 @@ export const verifyToken = createAsyncThunk(
   "user/verifyToken",
   async (_, { rejectWithValue, dispatch }) => {
     try {
-      const token = getToken()
+      const token = getAccessToken()
       if (!token) return rejectWithValue("NO_TOKEN");
 
       const res = await authApi.introspect(token);
@@ -38,6 +38,7 @@ export const verifyToken = createAsyncThunk(
       dispatch(fetchMyInfo());
       return { token };
     } catch (e) {
+      // Lưu ý: Nếu interceptor đã thử refresh thất bại, nó sẽ quăng lỗi về đây.
       removeToken();
       return rejectWithValue(e.response?.data || e.message || "VERIFY_ERROR");
     }
@@ -61,7 +62,7 @@ export const logoutUser = createAsyncThunk(
   "user/logout",
   async (_, { rejectWithValue, getState }) => {
     try {
-      const token = getState().user.token || localStorage.getItem("token");
+      const token = getState().user.token || getAccessToken();
       if (token) {
         await authApi.logout(token);
       }
@@ -94,7 +95,7 @@ const userSlice = createSlice({
       state.profile = null;
       state.isAuthenticated = false;
       state.error = null;
-      localStorage.removeItem("token");
+      removeToken();
     }
   },
   extraReducers: (builder) => {
