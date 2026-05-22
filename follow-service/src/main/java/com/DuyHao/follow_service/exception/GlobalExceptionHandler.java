@@ -54,6 +54,15 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(value = PrivacyException.class)
+    ResponseEntity<ApiResponse> handlingPrivacyException(PrivacyException exception) {
+        return ResponseEntity.status(403)
+                .body(ApiResponse.builder()
+                        .code(403)
+                        .message(exception.getMessage())
+                        .build());
+    }
+
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse> handlingValidation(MethodArgumentNotValidException exception) {
         String enumKey = exception.getFieldError().getDefaultMessage();

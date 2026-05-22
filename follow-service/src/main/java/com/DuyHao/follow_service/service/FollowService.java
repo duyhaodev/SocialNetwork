@@ -1,6 +1,8 @@
 package com.DuyHao.follow_service.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -90,5 +92,35 @@ public class FollowService {
                 .isFriend(isFriend)
                 .message("OK")
                 .build();
+    }
+
+    // Lấy danh sách người đang follow userId (followers)
+    public List<String> getFollowerIds(String userId) {
+        return followRepo.findByFollowingId(userId)
+                .stream()
+                .map(f -> f.getFollowerId())
+                .toList();
+    }
+
+    // Lấy danh sách userId đang follow (following)
+    public List<String> getFollowingIds(String userId) {
+        return followRepo.findByFollowerId(userId)
+                .stream()
+                .map(f -> f.getFollowingId())
+                .toList();
+    }
+
+    // Lấy danh sách bạn bè (follow 2 chiều)
+    public List<String> getFriendIds(String userId) {
+        Set<String> followings = followRepo.findByFollowerId(userId)
+                .stream()
+                .map(f -> f.getFollowingId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        return followRepo.findByFollowingId(userId)
+                .stream()
+                .map(f -> f.getFollowerId())
+                .filter(followings::contains)
+                .toList();
     }
 }

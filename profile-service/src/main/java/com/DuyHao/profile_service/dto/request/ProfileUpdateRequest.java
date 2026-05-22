@@ -20,4 +20,5 @@ public class ProfileUpdateRequest {
     String bio;
     String mediaId;
     String spotifyLink;
+    String connectionsPrivacy; // EVERYONE | FRIENDS_ONLY | ONLY_ME
 }

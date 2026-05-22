@@ -15,6 +15,21 @@ const followApi = {
   getSuggestions: (page = 0, size = 10) => {
     return axios.get(`/follow/api/follow/suggestions`, { params: { page, size } });
   },
+
+  // Danh sách followers của userId
+  getFollowers: (userId) => {
+    return axios.get(`/follow/api/follow/followers/${userId}`);
+  },
+
+  // Danh sách following của userId
+  getFollowing: (userId) => {
+    return axios.get(`/follow/api/follow/following/${userId}`);
+  },
+
+  // Danh sách bạn bè (follow 2 chiều) của userId
+  getFriends: (userId) => {
+    return axios.get(`/follow/api/follow/friends/${userId}`);
+  },
 };
 
 export default followApi;
