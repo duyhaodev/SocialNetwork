@@ -77,6 +77,14 @@ async def suggest_status(req: SuggestRequest) -> SuggestResponse:
             )
         model_version = f"{settings.BASE_MODEL_NAME}-fine-tuned"
 
+        # Khong pad them tu template — tra ve bao nhieu cau chat luong hieu
+        # bay nhieu. Tha tra 3 cau dung chu de + tu nhien con hon 10 cau rac.
+        if len(raw_results) < req.num_suggestions:
+            logger.info(
+                f"Model chi sinh duoc {len(raw_results)}/{req.num_suggestions} "
+                f"cau dat chat luong — tra ve nhu vay, khong pad them."
+            )
+
     suggestions = [
         SuggestionItem(text=text, score=score) for text, score in raw_results
     ]
