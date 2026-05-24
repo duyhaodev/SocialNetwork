@@ -39,8 +39,8 @@ const SpotifySection = React.memo(({ value, onChange }) => {
   return (
     <div className="space-y-2">
       <div className="flex flex-col">
-        <label className="text-sm font-medium text-zinc-400">Nhạc yêu thích</label>
-        <p className="text-[11px] text-zinc-500">Dán link bài hát từ Spotify để làm đẹp profile</p>
+        <label className="text-sm font-medium text-zinc-400">Favorite Music</label>
+        <p className="text-[11px] text-zinc-500">Paste a Spotify song link to enhance your profile</p>
       </div>
 
       <input 
@@ -69,8 +69,8 @@ const SpotifySection = React.memo(({ value, onChange }) => {
               <Music2 size={20} />
             </div>
             <div>
-              <p className="text-xs font-medium text-zinc-400">Chưa có bài hát nào</p>
-              <p className="text-[10px] text-zinc-600">Dán link Spotify để thêm nhạc nền</p>
+              <p className="text-xs font-medium text-zinc-400">No songs yet</p>
+              <p className="text-[10px] text-zinc-600">Paste a Spotify link to add background music</p>
             </div>
           </div>
         )}

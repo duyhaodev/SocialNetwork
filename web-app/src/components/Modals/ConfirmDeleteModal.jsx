@@ -17,13 +17,13 @@ export default function ConfirmDeleteModal({ open, onClose, onConfirm }) {
         {/* Content */}
         <div className="px-5 pt-5 pb-4 text-center">
           <h3 className="text-base font-semibold mb-2">
-            Xóa bài viết?
+            Delete post?
           </h3>
 
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Nếu xóa bài viết này, bạn sẽ <br />
+            If you delete this post, <br />
             <span className="text-white font-medium">
-              không thể khôi phục được nữa.
+              you won’t be able to recover it.
             </span>
           </p>
         </div>
@@ -37,14 +37,14 @@ export default function ConfirmDeleteModal({ open, onClose, onConfirm }) {
             onClick={onClose}
             className="flex-1 py-3 hover:bg-white/5 transition font-medium"
           >
-            Hủy
+            Cancel
           </button>
           <div className="w-px bg-white/10" />
           <button
             onClick={onConfirm}
             className="flex-1 py-3 text-red-500 hover:bg-red-500/10 transition font-medium"
           >
-            Xóa
+            Delete
           </button>
         </div>
       </div>

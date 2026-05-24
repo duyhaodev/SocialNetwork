@@ -9,6 +9,9 @@ import EmojiPicker from "emoji-picker-react";
 import { toast } from "sonner";
 import { createPost, selectPostsCreating } from "../../store/postsSlice";
 import mediaApi from "../../api/mediaApi";
+import aiApi from "../../api/aiApi";
+import AISuggestPanel from "./AISuggestPanel";
+import ModerationWarning from "../ModerationWarning/ModerationWarning";
 
 export function CreatePost({ open, onOpenChange }) {
 
@@ -24,6 +27,9 @@ export function CreatePost({ open, onOpenChange }) {
   const [content, setContent] = useState("");
   const [mediaFiles, setMediaFiles] = useState([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [moderationResult, setModerationResult] = useState(null);
+  const [showModWarning, setShowModWarning] = useState(false);
 
   // REFS
   const fileInputRef = useRef(null);
@@ -80,6 +86,7 @@ export function CreatePost({ open, onOpenChange }) {
 
   // gỡ 1 file
   const handleRemoveOne = (index) => {
+    setAiPanelOpen(false);
     setMediaFiles((prev) => {
       const clone = [...prev];
       const removed = clone.splice(index, 1)[0];
@@ -90,6 +97,7 @@ export function CreatePost({ open, onOpenChange }) {
 
   // gỡ tất cả file
   const handleRemoveAll = () => {
+    setAiPanelOpen(false);
     mediaFiles.forEach((m) => {
       if (m.preview) URL.revokeObjectURL(m.preview);
     });
@@ -97,7 +105,8 @@ export function CreatePost({ open, onOpenChange }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSubmit = async () => {
+  // Thực hiện đăng bài (bỏ qua moderation)
+  const doPost = async () => {
     const trimContent = (content || "").trim();
     if (!trimContent && mediaFiles.length === 0) return;
 
@@ -120,18 +129,40 @@ export function CreatePost({ open, onOpenChange }) {
         mediaIds,
       };
 
-      // 🔥 FIX QUAN TRỌNG: dùng unwrap để tránh stuck loading
       await dispatch(createPost(payload)).unwrap();
 
       toast.success("Posted successfully!");
       setContent("");
       handleRemoveAll();
       setEmojiOpen(false);
+      setModerationResult(null);
       onOpenChange(false);
 
     } catch (err) {
       toast.error(err?.message || "Post failed!");
     }
+  };
+
+  // Kiểm duyệt trước khi đăng
+  const handleSubmit = async () => {
+    const trimContent = (content || "").trim();
+    if (!trimContent && mediaFiles.length === 0) return;
+
+    // Nếu có nội dung text → kiểm duyệt
+    if (trimContent) {
+      try {
+        const res = await aiApi.moderate({ content: trimContent });
+        if (res.warning_level && res.warning_level !== "safe") {
+          setModerationResult(res);
+          setShowModWarning(true);
+          return;
+        }
+      } catch {
+        // Nếu moderation service lỗi → cho đăng bình thường
+      }
+    }
+
+    await doPost();
   };
 
   // EMOJI 
@@ -220,6 +251,7 @@ export function CreatePost({ open, onOpenChange }) {
           <Button
             variant="ghost"
             onClick={() => {
+              setAiPanelOpen(false);
               setEmojiOpen(false);
               onOpenChange(false);
             }}
@@ -256,10 +288,20 @@ export function CreatePost({ open, onOpenChange }) {
                   placeholder="What's new?"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[25px] resize-none border-none p-0 focus-visible:ring-0 text-base bg-transparent placeholder:text-muted-foreground w-full max-w-full"
+                  className="min-h-[25px] max-h-[52px] overflow-y-auto resize-none border-none p-0 focus-visible:ring-0 text-base bg-transparent placeholder:text-muted-foreground w-full max-w-full"
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                   maxLength={500}
                   autoFocus
+                />
+
+                <AISuggestPanel
+                  open={aiPanelOpen}
+                  onOpenChange={setAiPanelOpen}
+                  onUseSuggestion={(text) => {
+                    const t = (text || "").trim();
+                    if (!t) return;
+                    setContent(t.slice(0, 500));
+                  }}
                 />
               </div>
 
@@ -269,7 +311,7 @@ export function CreatePost({ open, onOpenChange }) {
                   variant="ghost"
                   size="sm"
                   className="p-2 h-auto text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => { setAiPanelOpen(false); fileInputRef.current?.click(); }}
                 >
                   <ImageIcon className="w-5 h-5" />
                 </Button>
@@ -287,6 +329,7 @@ export function CreatePost({ open, onOpenChange }) {
                   variant="ghost"
                   size="sm"
                   className="p-2 h-auto text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => setAiPanelOpen(false)}
                 >
                   <AtSign className="w-5 h-5" />
                 </Button>
@@ -297,7 +340,7 @@ export function CreatePost({ open, onOpenChange }) {
                     variant="ghost"
                     size="sm"
                     className="p-2 h-auto text-muted-foreground hover:text-foreground cursor-pointer"
-                    onClick={() => setEmojiOpen((v) => !v)}
+                    onClick={() => { setAiPanelOpen(false); setEmojiOpen((v) => !v); }}
                   >
                     <Smile className="w-5 h-5" />
                   </Button>
@@ -344,7 +387,7 @@ export function CreatePost({ open, onOpenChange }) {
                       {mediaFiles.map((m, idx) => (
                         <div
                           key={idx}
-                          className="relative group flex-shrink-0 max-w-[150px] aspect-[3/4] rounded-xl overflow-hidden"
+                          className="relative group flex-shrink-0 max-w-[110px] aspect-[3/4] rounded-lg overflow-hidden"
                         >
                           <button
                             type="button"
@@ -401,6 +444,17 @@ export function CreatePost({ open, onOpenChange }) {
         </div>
 
       </DialogContent>
+
+      <ModerationWarning
+        open={showModWarning}
+        result={moderationResult}
+        onClose={() => setShowModWarning(false)}
+        onPostAnyway={() => {
+          setShowModWarning(false);
+          setModerationResult(null);
+          doPost();
+        }}
+      />
     </Dialog>
   );
 }

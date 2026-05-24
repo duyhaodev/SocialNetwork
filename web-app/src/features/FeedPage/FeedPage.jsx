@@ -20,6 +20,9 @@ import {
 } from "../../store/postsSlice";
 import { toast } from "sonner";
 import mediaApi from "../../api/mediaApi";
+import aiApi from "../../api/aiApi";
+import AISuggestPanel from "../../components/CreatePost/AISuggestPanel";
+import ModerationWarning from "../../components/ModerationWarning/ModerationWarning";
 
 export function FeedPage() {
   // REDUX
@@ -44,6 +47,9 @@ export function FeedPage() {
   const [mediaFiles, setMediaFiles] = useState([]);
   const fileInputRef = useRef(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [moderationResult, setModerationResult] = useState(null);
+  const [showModWarning, setShowModWarning] = useState(false);
 
   // FIX: trạng thái posting ngay lập tức
   const [isPosting, setIsPosting] = useState(false);
@@ -130,6 +136,7 @@ export function FeedPage() {
   };
 
   const handleRemoveOne = (index) => {
+    setAiPanelOpen(false);
     setMediaFiles((prev) => {
       const clone = [...prev];
       const removed = clone.splice(index, 1)[0];
@@ -139,6 +146,7 @@ export function FeedPage() {
   };
 
   const handleRemoveAll = () => {
+    setAiPanelOpen(false);
     mediaFiles.forEach((m) => {
       if (m.preview) URL.revokeObjectURL(m.preview);
     });
@@ -198,11 +206,12 @@ export function FeedPage() {
     el.scrollLeft = scrollLeftRef.current - walk;
   };
 
-  const handleCreatePost = async () => {
+  // Thực hiện đăng bài (bỏ qua moderation)
+  const doPost = async () => {
     const content = (newPost || "").trim();
     if (!content && mediaFiles.length === 0) return;
 
-    setIsPosting(true); // FIX: khóa UI ngay lập tức
+    setIsPosting(true);
 
     try {
       let mediaIds = [];
@@ -228,6 +237,7 @@ export function FeedPage() {
       if (createPost.fulfilled.match(action)) {
         toast.success("Posted successfully");
         setNewPost("");
+        setModerationResult(null);
         handleRemoveAll();
       } else {
         toast.error(action.payload?.message || "Post failed");
@@ -235,8 +245,29 @@ export function FeedPage() {
     } catch (err) {
       toast.error(err?.message || "Post failed");
     } finally {
-      setIsPosting(false); // FIX: luôn reset
+      setIsPosting(false);
     }
+  };
+
+  // Kiểm duyệt trước khi đăng
+  const handleCreatePost = async () => {
+    const content = (newPost || "").trim();
+    if (!content && mediaFiles.length === 0) return;
+
+    if (content) {
+      try {
+        const res = await aiApi.moderate({ content });
+        if (res.warning_level && res.warning_level !== "safe") {
+          setModerationResult(res);
+          setShowModWarning(true);
+          return;
+        }
+      } catch {
+        // Moderation service lỗi → cho đăng bình thường
+      }
+    }
+
+    await doPost();
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -276,8 +307,18 @@ export function FeedPage() {
               placeholder="What's new?"
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
-              className="min-h-[80px] resize-none text-base w-full"
+              className="min-h-[80px] max-h-[96px] overflow-y-auto resize-none text-base w-full"
               maxLength={500}
+            />
+
+            <AISuggestPanel
+              open={aiPanelOpen}
+              onOpenChange={setAiPanelOpen}
+              onUseSuggestion={(text) => {
+                const t = (text || "").trim();
+                if (!t) return;
+                setNewPost(t.slice(0, 500));
+              }}
             />
 
             {hasMedia && (
@@ -354,7 +395,7 @@ export function FeedPage() {
                   variant="ghost"
                   size="sm"
                   className="p-2 h-auto text-muted-foreground hover:text-foreground"
-                  onClick={openFilePicker}
+                  onClick={() => { setAiPanelOpen(false); openFilePicker(); }}
                 >
                   <Image className="w-5 h-5" />
                 </Button>
@@ -366,6 +407,7 @@ export function FeedPage() {
                       variant="ghost"
                       size="sm"
                       className="p-2 h-auto text-muted-foreground hover:text-foreground"
+                      onClick={() => setAiPanelOpen(false)}
                     >
                       <Smile className="w-5 h-5" />
                     </Button>
@@ -387,6 +429,7 @@ export function FeedPage() {
                   variant="ghost"
                   size="sm"
                   className="p-2 h-auto text-muted-foreground hover:text-foreground"
+                  onClick={() => setAiPanelOpen(false)}
                 >
                   <AtSign className="w-5 h-5" />
                 </Button>
@@ -453,6 +496,17 @@ export function FeedPage() {
           <span className="text-muted-foreground text-sm">No more posts</span>
         )}
       </div>
+
+      <ModerationWarning
+        open={showModWarning}
+        result={moderationResult}
+        onClose={() => setShowModWarning(false)}
+        onPostAnyway={() => {
+          setShowModWarning(false);
+          setModerationResult(null);
+          doPost();
+        }}
+      />
     </div>
   );
 }

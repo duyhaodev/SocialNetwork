@@ -19,6 +19,6 @@ RUN python -c "from transformers import AutoTokenizer, AutoModelForCausalLM; \
     AutoTokenizer.from_pretrained('distilgpt2'); \
     AutoModelForCausalLM.from_pretrained('distilgpt2')"
 
-EXPOSE 8089
+EXPOSE 8092
 
 CMD ["python", "run.py"]

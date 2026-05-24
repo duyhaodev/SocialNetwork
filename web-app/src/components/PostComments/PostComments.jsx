@@ -15,6 +15,8 @@ import { Trash2 } from "lucide-react";
 import CommentForm from "./CommentForm";
 import { ReplyView } from "./ReplyView";
 import mediaApi from "../../api/mediaApi";
+import aiApi from "../../api/aiApi";
+import ModerationWarning from "../ModerationWarning/ModerationWarning";
 import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 
 const PAGE_SIZE = 10;
@@ -37,8 +39,14 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
   const commentsPage = useSelector((state) => selectCommentsPageByPostId(state, postId));
   const hasMoreComments = useSelector((state) => selectCommentsHasMoreByPostId(state, postId));
 
+  // MODERATION
+  const [moderationResult, setModerationResult] = useState(null);
+  const [showModWarning, setShowModWarning] = useState(false);
+  const pendingActionRef = useRef(null);
+  const [formResetKey, setFormResetKey] = useState(0);
+
   // LOCAL UI STATE
-  const [replyTo, setReplyTo] = useState(null); 
+  const [replyTo, setReplyTo] = useState(null);
   const [expandedReplies, setExpandedReplies] = useState(new Set()); // commentId nào đang mở replies
   const loadMoreRef = useRef(null);
   const loadDelayRef = useRef(null); // delay trước khi load thêm
@@ -65,78 +73,94 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
     setViewerOpen(true);
   };
 
-  // 1. Tạo comment chính
-  const handleCreateComment = async (data) => {
-    try {
-      let idsToSubmit = []; 
+  // Kiểm duyệt nội dung trước khi gửi
+  const moderateAndRun = async (content, action) => {
+    if (content?.trim()) {
+      let modResult = null;
+      try {
+        modResult = await aiApi.moderate({ content: content.trim() });
+      } catch {
+        // Moderation service lỗi → cho gửi bình thường
+      }
+      if (modResult?.warning_level && modResult.warning_level !== "safe") {
+        setModerationResult(modResult);
+        pendingActionRef.current = action;
+        setShowModWarning(true);
+        throw new Error("__moderation__");
+      }
+    }
+    await action();
+  };
 
-      // Chỉ thực hiện upload nếu có files
+  // Thực hiện gửi comment (bỏ qua moderation)
+  const doCreateComment = async (data) => {
+    try {
+      let idsToSubmit = [];
+
       if (data.files && data.files.length > 0) {
         const fd = new FormData();
         data.files.forEach((f) => fd.append("files", f));
 
         const uploadRes = await mediaApi.upload(fd);
-        
-        // Bóc tách mảng: ưu tiên .result, sau đó đến .data.result, cuối cùng là chính nó
         const uploaded = uploadRes?.result || uploadRes?.data?.result || (Array.isArray(uploadRes) ? uploadRes : []);
-        
-        // Lấy ID (chấp nhận cả trường id hoặc fileId)
+
         idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
-        console.log(" IDs bóc được cho Comment:", idsToSubmit);
       }
 
       const payload = {
-        postId: postId, // Đảm bảo postId này tồn tại
+        postId: postId,
         content: data.content,
         parentId: null,
-        mediaIds: idsToSubmit 
+        mediaIds: idsToSubmit
       };
 
-      console.log("Gửi Comment Payload:", payload);
       await dispatch(createCommentThunk(payload)).unwrap();
-
-      // Refresh lại danh sách
       dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
       onCommentCreated?.();
     } catch (err) {
       console.error("Lỗi tạo comment:", err);
-      toast.error(err?.message || "Không gửi được bình luận");
+      toast.error(err?.message || "Unable to post comment");
     }
   };
 
-  // 2. Tạo reply
-  const handleCreateReply = (parentId) => async (data) => {
+  // 1. Tạo comment chính (có kiểm duyệt)
+  const handleCreateComment = (data) =>
+    moderateAndRun(data.content, () => doCreateComment(data));
+
+  // Thực hiện gửi reply (bỏ qua moderation)
+  const doCreateReply = async (parentId, data) => {
     try {
-      let idsToSubmit = []; 
+      let idsToSubmit = [];
 
       if (data.files && data.files.length > 0) {
         const fd = new FormData();
         data.files.forEach((f) => fd.append("files", f));
-        
+
         const uploadRes = await mediaApi.upload(fd);
         const uploaded = uploadRes?.result || uploadRes?.data?.result || (Array.isArray(uploadRes) ? uploadRes : []);
-        
+
         idsToSubmit = uploaded.map((m) => m.id || m.fileId).filter(Boolean);
-        console.log("IDs bóc được cho Reply:", idsToSubmit);
       }
 
       const payload = {
         postId: postId,
         content: data.content,
         parentId: parentId,
-        mediaIds: idsToSubmit 
+        mediaIds: idsToSubmit
       };
 
-      console.log("Gửi Reply Payload:", payload);
       await dispatch(createCommentThunk(payload)).unwrap();
-
       dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
       setReplyTo(null);
     } catch (err) {
       console.error("Lỗi tạo reply:", err);
-      toast.error(err?.message || "Không gửi được phản hồi");
+      toast.error(err?.message || "Unable to post reply");
     }
   };
+
+  // 2. Tạo reply (có kiểm duyệt)
+  const handleCreateReply = (parentId) => (data) =>
+    moderateAndRun(data.content, () => doCreateReply(parentId, data));
 
 
   // ======== LOAD COMMENTS ========
@@ -303,6 +327,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
       </style>
 
       <CommentForm
+        key={`comment-form-${formResetKey}`}
         avatarUrl={avatarUrl}
         fullName={fullName}
         submitting={submittingComment}
@@ -316,7 +341,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
           </div>
         ) : !comments.length ? (
           <div className="text-sm text-muted-foreground">
-            Chưa có bình luận nào.
+            No comments yet. Be the first to comment!
           </div>
         ) : (
           <div className="space-y-4">
@@ -456,7 +481,7 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
                         noBorder={true}
                         avatarUrl={avatarUrl}
                         fullName={fullName}
-                        placeholder={`Trả lời bình luận của ${c.fullName ?? "người dùng"}...`}
+                        placeholder={`Reply to ${c.fullName ?? "user"}'s comment...`}
                         submitting={submittingComment}
                         onSubmit={async (data) => {
                           await handleCreateReply(c.id)(data);
@@ -531,6 +556,22 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
         onClose={() => setViewerOpen(false)}
         mediaList={viewerMediaList}
         index={viewerIndex}
+      />
+
+      <ModerationWarning
+        open={showModWarning}
+        result={moderationResult}
+        onClose={() => setShowModWarning(false)}
+        onPostAnyway={async () => {
+          setShowModWarning(false);
+          setModerationResult(null);
+          const action = pendingActionRef.current;
+          pendingActionRef.current = null;
+          if (action) {
+            await action();
+            setFormResetKey((k) => k + 1);
+          }
+        }}
       />
   </>
   );

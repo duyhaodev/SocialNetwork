@@ -188,7 +188,7 @@ export default function CommentForm({
                 <Textarea
                   placeholder={
                     placeholder ??
-                    (isReply ? "Viết phản hồi..." : "Viết bình luận...")
+                    (isReply ? "Write a reply..." : "Write a comment...")
                   }
                   value={commentContent}
                   onChange={(e) => setCommentContent(e.target.value)}
@@ -303,7 +303,7 @@ export default function CommentForm({
               <div className="flex items-center justify-between px-2 py-1 border-t border-zinc-800">
                 <label className="flex items-center gap-1 text-xs cursor-pointer">
                   <ImageIcon className="w-4 h-4" />
-                  <span>Thêm ảnh / video</span>
+                  <span>Add photo / video</span>
 
                   <input
                     type="file"
@@ -328,7 +328,7 @@ export default function CommentForm({
                         hover:bg-muted/40
                       "
                     >
-                      Hủy
+                      Cancel
                     </Button>
                   )}
 
@@ -338,7 +338,7 @@ export default function CommentForm({
                     disabled={submitting}
                     className="h-7 px-4 text-[12px] rounded-full"
                   >
-                    Gửi
+                    Post
                   </Button>
                 </div>
               </div>

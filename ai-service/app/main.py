@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from app.config import settings
@@ -47,13 +46,6 @@ app = FastAPI(
         "Sử dụng mô hình GPT-2 được fine-tune, chạy hoàn toàn local."
     ),
     lifespan=lifespan,
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 app.include_router(health.router)

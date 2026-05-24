@@ -41,7 +41,7 @@ export const SocketProvider = ({ children }) => {
     if (socket && socket.connected) return;
 
     // Initialize Socket
-    const newSocket = io("http://localhost:8089", {  //http://localhost:8089
+    const newSocket = io("http://localhost:8089", {  // realtime-service socket.io port (rt-service.socket.port)
       query: { token },
       transports: ['websocket'], // Force websocket for better performance
       reconnection: true,

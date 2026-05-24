@@ -272,19 +272,19 @@ _CATEGORY_SEVERITY: Dict[str, str] = {
 _LEVEL_ORDER = ["safe", "mild", "moderate", "severe"]
 
 _CATEGORY_LABELS_VI: Dict[str, str] = {
-    "profanity":     "Từ tục tĩu / chửi thề",
-    "hate_speech":   "Ngôn ngữ kỳ thị / phân biệt",
-    "violence":      "Nội dung bạo lực / đe dọa",
-    "adult_content": "Nội dung người lớn",
-    "personal_info": "Thông tin cá nhân",
-    "spam":          "Quảng cáo / spam",
+    "profanity":     "Profanity / Swearing",
+    "hate_speech":   "Hate speech / Discrimination",
+    "violence":      "Violence / Threats",
+    "adult_content": "Adult content",
+    "personal_info": "Personal information",
+    "spam":          "Advertising / Spam",
 }
 
 _WARNING_MESSAGES: Dict[str, str] = {
-    "safe":     "Nội dung bài viết có vẻ phù hợp để đăng.",
-    "mild":     "Bài viết có một số từ ngữ có thể gây hiểu lầm. Bạn nên cân nhắc trước khi đăng.",
-    "moderate": "Bài viết chứa nội dung nhạy cảm. Hãy chỉnh sửa trước khi đăng.",
-    "severe":   "Bài viết vi phạm tiêu chuẩn cộng đồng. Không nên đăng nội dung này.",
+    "safe":     "Your post looks good to go.",
+    "mild":     "Your post contains some potentially inappropriate language. Please review before posting.",
+    "moderate": "Your post contains sensitive content. Please edit before posting.",
+    "severe":   "Your post violates community guidelines. This content cannot be posted.",
 }
 
 
@@ -477,22 +477,22 @@ def moderate(content: str, strict: bool = False) -> ModerationResult:
 
 
 def _build_suggestion(categories: List[str], level: str) -> str:
-    """Sinh gợi ý cụ thể dựa trên category vi phạm."""
+    """Build specific suggestions based on violation categories."""
     if not categories:
-        return "Bài viết của bạn sẵn sàng để đăng!"
+        return "Your post is ready to publish!"
 
     tips = []
     if "profanity" in categories:
-        tips.append("Thay thế các từ tục tĩu bằng ngôn ngữ lịch sự hơn.")
+        tips.append("Replace profanity with more respectful language.")
     if "hate_speech" in categories:
-        tips.append("Bỏ các từ ngữ kỳ thị hoặc phân biệt đối xử.")
+        tips.append("Remove discriminatory or hateful language.")
     if "violence" in categories:
-        tips.append("Loại bỏ nội dung đe dọa hoặc kêu gọi bạo lực.")
+        tips.append("Remove threatening or violent content.")
     if "adult_content" in categories:
-        tips.append("Nội dung người lớn không được phép đăng công khai.")
+        tips.append("Adult content is not allowed on this platform.")
     if "personal_info" in categories:
-        tips.append("Cân nhắc che/xóa thông tin cá nhân nhạy cảm (SĐT, CCCD, email).")
+        tips.append("Consider removing sensitive personal information (phone, ID, email).")
     if "spam" in categories:
-        tips.append("Bỏ các nội dung quảng cáo hoặc có dấu hiệu lừa đảo.")
+        tips.append("Remove advertising or potentially fraudulent content.")
 
     return " ".join(tips)

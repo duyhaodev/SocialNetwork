@@ -54,15 +54,28 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         String token = authHeader.getFirst().replace("Bearer ", "");
         log.debug("token:{}", token);
 
-        return identityService.introspect(token).flatMap(introspectResponse -> {
-            if (introspectResponse.getResult() != null && introspectResponse.getResult().isValid())
-                return chain.filter(exchange);
-            else
-                return unauthenticated(exchange.getResponse());
-        }).onErrorResume(throwable -> {
-            log.error("Introspect error: {}", throwable.getMessage());
-            return unauthenticated(exchange.getResponse());
-        });
+        String path = exchange.getRequest().getURI().getPath();
+        return identityService.introspect(token)
+                .doOnError(t -> log.error("[INTROSPECT FAIL] path={} err={}", path, t.getMessage()))
+                .flatMap(introspectResponse -> {
+                    if (introspectResponse.getResult() != null && introspectResponse.getResult().isValid())
+                        return chain.filter(exchange)
+                                .doOnError(t -> log.error("[FORWARD FAIL] path={} err={}", path, t.getMessage()));
+                    else {
+                        log.warn("[INTROSPECT INVALID] path={}", path);
+                        return unauthenticated(exchange.getResponse());
+                    }
+                })
+                .onErrorResume(throwable -> {
+                    // Nếu là forward fail thì client đã nhận response rồi (hoặc gateway sẽ trả lỗi gateway).
+                    // Chỉ trả 1401 khi introspect thực sự fail.
+                    if (throwable.getMessage() != null && throwable.getMessage().contains("Connection refused")
+                            && !throwable.getMessage().contains("8080")) {
+                        // Connection refused tới service khác (không phải identity) = service down
+                        log.error("[BACKEND DOWN] path={} err={}", path, throwable.getMessage());
+                    }
+                    return unauthenticated(exchange.getResponse());
+                });
     }
 
     @Override
