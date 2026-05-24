@@ -1,6 +1,8 @@
 package com.DuyHao.interaction_service.service;
 
 import com.DuyHao.interaction_service.FeignClient.MediaClient;
+import com.DuyHao.interaction_service.FeignClient.NotificationClient;
+import com.DuyHao.interaction_service.FeignClient.PostClient;
 import com.DuyHao.interaction_service.FeignClient.UserClient;
 import com.DuyHao.interaction_service.dto.request.CommentRequest;
 import com.DuyHao.interaction_service.dto.response.CommentResponse;
@@ -28,6 +30,8 @@ public class CommentService {
 
     private final UserClient userClient;
     private final MediaClient mediaClient;
+    private final PostClient postClient;
+    private final NotificationClient notificationClient;
 
     // ================= CREATE =================
     @Transactional
@@ -71,6 +75,28 @@ public class CommentService {
             }
         }
         UserResponse user = userClient.getUser(userId);
+
+        // Bắn notification: reply nếu có parent, ngược lại comment lên post
+        try {
+            if (request.getParentId() != null) {
+                Comment parent =
+                        commentRepository.findById(request.getParentId()).orElse(null);
+                if (parent != null && !parent.getUserId().equals(userId)) {
+                    // Truyền parent.getId() để gộp tất cả reply cùng 1 comment cha thành 1 group
+                    notificationClient.reply(parent.getUserId(), userId, parent.getId(), comment.getPostId());
+                }
+            } else {
+                var post = postClient.getPost(request.getPostId());
+                if (post != null
+                        && post.getUserId() != null
+                        && !post.getUserId().equals(userId)) {
+                    notificationClient.comment(post.getUserId(), userId, comment.getId(), request.getPostId());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi push notification comment/reply: " + e.getMessage());
+        }
+
         return commentMapper.toResponse(comment, user, mediaUrls, 0, false, 0);
     }
 
@@ -133,12 +159,27 @@ public class CommentService {
             throw new RuntimeException("Không có quyền xóa");
         }
 
-        // Nếu là comment gốc xóa toàn bộ comment con
+        // Lấy danh sách comment con TRƯỚC khi xóa để còn gỡ notification của từng cái
+        List<String> commentIdsToCleanup = new ArrayList<>();
+        commentIdsToCleanup.add(commentId);
         if (comment.getParentId() == null) {
+            commentRepository
+                    .findByRootCommentIdOrderByCreatedAtAsc(commentId)
+                    .forEach(c -> commentIdsToCleanup.add(c.getId()));
             commentRepository.deleteByRootCommentId(commentId);
         }
 
         commentRepository.delete(comment);
+
+        // Gỡ notification realtime cho mọi comment đã xóa
+        for (String cid : commentIdsToCleanup) {
+            try {
+                notificationClient.deleteCommentNotifications(cid);
+            } catch (Exception e) {
+                System.err.println("Lỗi gỡ notification cho comment " + cid + ": " + e.getMessage());
+            }
+        }
+
         CompletableFuture.runAsync(() -> {
             try {
                 mediaClient.deleteMediaByCommentId(commentId);

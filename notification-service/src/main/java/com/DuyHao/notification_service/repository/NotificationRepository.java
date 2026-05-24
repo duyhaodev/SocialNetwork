@@ -24,4 +24,15 @@ public interface NotificationRepository extends MongoRepository<Notification, St
             String userId, String fromUserId, String type, String commentId);
 
     long countByUserIdAndIsReadFalse(String userId);
+
+    void deleteByUserIdAndFromUserIdAndTypeAndPostId(String userId, String fromUserId, String type, String postId);
+
+    void deleteByUserIdAndFromUserIdAndTypeAndCommentId(
+            String userId, String fromUserId, String type, String commentId);
+
+    void deleteByUserIdAndFromUserIdAndType(String userId, String fromUserId, String type);
+
+    List<Notification> findAllByTypeAndCommentId(String type, String commentId);
+
+    List<Notification> findAllByTypeAndPostId(String type, String postId);
 }

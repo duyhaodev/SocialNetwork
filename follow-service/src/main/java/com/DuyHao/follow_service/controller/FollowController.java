@@ -1,7 +1,6 @@
 package com.DuyHao.follow_service.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -65,8 +64,7 @@ public class FollowController {
     /** Danh sách followers của userId */
     @GetMapping("/followers/{userId}")
     public ResponseEntity<List<UserProfileResponse>> getFollowers(
-            @PathVariable String userId,
-            @AuthenticationPrincipal Jwt jwt) {
+            @PathVariable String userId, @AuthenticationPrincipal Jwt jwt) {
 
         String currentUserId = jwt != null ? jwt.getSubject() : null;
         checkPrivacy(userId, currentUserId);
@@ -78,8 +76,7 @@ public class FollowController {
     /** Danh sách following của userId */
     @GetMapping("/following/{userId}")
     public ResponseEntity<List<UserProfileResponse>> getFollowing(
-            @PathVariable String userId,
-            @AuthenticationPrincipal Jwt jwt) {
+            @PathVariable String userId, @AuthenticationPrincipal Jwt jwt) {
 
         String currentUserId = jwt != null ? jwt.getSubject() : null;
         checkPrivacy(userId, currentUserId);
@@ -91,8 +88,7 @@ public class FollowController {
     /** Danh sách bạn bè — chỉ chính chủ */
     @GetMapping("/friends/{userId}")
     public ResponseEntity<List<UserProfileResponse>> getFriends(
-            @PathVariable String userId,
-            @AuthenticationPrincipal Jwt jwt) {
+            @PathVariable String userId, @AuthenticationPrincipal Jwt jwt) {
 
         String currentUserId = jwt != null ? jwt.getSubject() : null;
         if (!userId.equals(currentUserId)) {

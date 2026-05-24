@@ -8,4 +8,10 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:root@localhost:27017/notification-service?authSource=admin
+    redis:
+      host: localhost
+      port: 6379
 
+rt-service:
+  redis:
+    channel: realtime-topic

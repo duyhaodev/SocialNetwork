@@ -7,7 +7,7 @@ export const fetchNotifications = createAsyncThunk(
     try {
       const res = await notificationApi.getNotifications();
       // res cấu trúc: { activities: [], unreadCount: number }
-      return res; 
+      return res;
     } catch (err) {
       return rejectWithValue(err?.message || "Failed to fetch notifications");
     }
@@ -19,12 +19,28 @@ export const markAllNotificationsRead = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await notificationApi.markAllRead();
-      return; 
+      return;
     } catch (err) {
       return rejectWithValue(err?.message || "Failed to mark all as read");
     }
   }
 );
+
+// Đồng bộ với NotificationService.getGroupedActivities ở backend
+const groupKey = (n) => {
+  const type = n.groupType || n.type;
+  // Follow: KHÔNG gộp — mỗi notification 1 group riêng để có nút Follow back
+  if (type === "follow") return `follow_${n.id}`;
+  // Gộp theo postId
+  if (type === "comment_post" || type === "like_post" || type === "repost") {
+    return `${type}_post_${n.postId || "none"}`;
+  }
+  // Gộp theo commentId (parent comment với reply_comment)
+  if (type === "reply_comment" || type === "like_comment") {
+    return `${type}_comment_${n.commentId || "none"}`;
+  }
+  return `${type}_${n.postId || "none"}_${n.commentId || "none"}`;
+};
 
 const notificationsSlice = createSlice({
   name: "notifications",
@@ -36,11 +52,47 @@ const notificationsSlice = createSlice({
   },
   reducers: {
     receiveNotification: (state, action) => {
-      const newNotification = action.payload;
-      // Thêm vào đầu danh sách
-      state.items.unshift(newNotification);
-      // Tăng số lượng chưa đọc
+      const incoming = action.payload;
+      if (!incoming) return;
+
+      const key = groupKey(incoming);
+      const existingIndex = state.items.findIndex((it) => groupKey(it) === key);
+
+      if (existingIndex !== -1) {
+        // Gộp: tăng count, prepend user mới (nếu chưa có), refresh createdAt
+        const existing = state.items[existingIndex];
+        const incomingUsers = incoming.users || (incoming.user ? [incoming.user] : []);
+        const mergedUsers = [...incomingUsers];
+        (existing.users || []).forEach((u) => {
+          if (!mergedUsers.find((m) => m.id === u.id)) mergedUsers.push(u);
+        });
+        const updated = {
+          ...existing,
+          ...incoming,
+          users: mergedUsers,
+          count: mergedUsers.length,
+          read: false,
+        };
+        state.items.splice(existingIndex, 1);
+        state.items.unshift(updated);
+      } else {
+        const normalized = {
+          ...incoming,
+          users: incoming.users || (incoming.user ? [incoming.user] : []),
+          count: incoming.count || 1,
+        };
+        state.items.unshift(normalized);
+      }
       state.unreadCount += 1;
+    },
+    removeNotification: (state, action) => {
+      const { id } = action.payload || {};
+      if (!id) return;
+      const idx = state.items.findIndex((it) => it.id === id);
+      if (idx !== -1) {
+        if (!state.items[idx].read && state.unreadCount > 0) state.unreadCount -= 1;
+        state.items.splice(idx, 1);
+      }
     },
     resetUnreadCount: (state) => {
       state.unreadCount = 0;
@@ -52,7 +104,23 @@ const notificationsSlice = createSlice({
       if (index !== -1) {
         state.items[index] = { ...state.items[index], ...changes };
       }
-    }
+    },
+    // Đánh dấu trạng thái follow của 1 user trên TẤT CẢ follow notifications liên quan
+    // Dùng khi user toggle follow ở bất kỳ đâu (UserHoverCard, profile, search...)
+    markUserFollowed: (state, action) => {
+      const { userId, followed } = action.payload || {};
+      if (!userId) return;
+      state.items.forEach((item) => {
+        const type = item.groupType || item.type;
+        if (type !== "follow") return;
+        const matched = (item.users || []).some((u) => u.id === userId)
+          || item.user?.id === userId
+          || item.fromUserId === userId;
+        if (matched) {
+          item.followed = !!followed;
+        }
+      });
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -76,7 +144,7 @@ const notificationsSlice = createSlice({
   },
 });
 
-export const { receiveNotification, resetUnreadCount, updateNotificationItem } = notificationsSlice.actions;
+export const { receiveNotification, removeNotification, resetUnreadCount, updateNotificationItem, markUserFollowed } = notificationsSlice.actions;
 export const selectUnreadCount = (state) => state.notifications.unreadCount;
 export const selectNotifications = (state) => state.notifications.items;
 

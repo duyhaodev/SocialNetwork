@@ -80,8 +80,8 @@ public class SuggestionService {
         for (UserProfileResponse p : topFollowers) {
             String uid = p.getUserId();
             if (uid == null) continue;
-            if (uid.equals(currentUserId)) continue;       // loại chính mình
-            if (myFollowings.contains(uid)) continue;      // loại đã follow
+            if (uid.equals(currentUserId)) continue; // loại chính mình
+            if (myFollowings.contains(uid)) continue; // loại đã follow
             candidates.add(uid);
         }
 

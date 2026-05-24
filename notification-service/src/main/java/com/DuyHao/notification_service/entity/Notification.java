@@ -33,6 +33,10 @@ public class Notification {
 
     Boolean isRead = false;
 
+    // Đánh dấu notification follow đã được "xử lý xong" (người nhận đã follow back)
+    // Chỉ dùng cho type "follow". Khi true → ẩn khỏi tab All nhưng vẫn hiện ở tab Follows.
+    Boolean resolved = false;
+
     LocalDateTime createdAt;
 
     public void prePersist() {

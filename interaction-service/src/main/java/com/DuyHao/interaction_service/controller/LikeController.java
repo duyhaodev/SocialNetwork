@@ -30,9 +30,7 @@ public class LikeController {
 
     // Lấy danh sách người đã like bài viết (tối đa limit người)
     @GetMapping("/posts/{postId}/likes/users")
-    public PostLikersResponse getPostLikers(
-            @PathVariable String postId,
-            @RequestParam(defaultValue = "10") int limit) {
+    public PostLikersResponse getPostLikers(@PathVariable String postId, @RequestParam(defaultValue = "10") int limit) {
         return likeService.getPostLikers(postId, Math.min(limit, 50));
     }
 }

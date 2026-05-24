@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { markUserFollowed } from "../../store/notificationsSlice";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
@@ -16,6 +17,7 @@ import { toast } from "sonner";
 
 export function UserHoverCard({ username, children }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const currentProfile = useSelector((s) => s.user.profile) ?? {};
 
   const [profile, setProfile] = useState(null);
@@ -79,6 +81,8 @@ export function UserHoverCard({ username, children }) {
       if (res?.success) {
         setIsFollowing(res.isFollowing);
         setIsFriend(res.isFriend);
+        // Đồng bộ trạng thái follow vào notifications store
+        dispatch(markUserFollowed({ userId: profile.userId, followed: !!res.isFollowing }));
         toast.success(res.isFriend ? `You and ${profile.fullName} are now friends!` : "Following successfully");
       }
     } catch {
@@ -96,6 +100,7 @@ export function UserHoverCard({ username, children }) {
       if (res?.success) {
         setIsFollowing(res.isFollowing);
         setIsFriend(res.isFriend);
+        dispatch(markUserFollowed({ userId: profile.userId, followed: !!res.isFollowing }));
         toast.success("Unfollowed successfully");
       }
     } catch {

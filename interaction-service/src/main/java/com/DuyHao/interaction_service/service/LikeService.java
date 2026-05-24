@@ -1,5 +1,6 @@
 package com.DuyHao.interaction_service.service;
 
+import com.DuyHao.interaction_service.FeignClient.NotificationClient;
 import com.DuyHao.interaction_service.FeignClient.PostClient;
 import com.DuyHao.interaction_service.FeignClient.UserClient;
 import com.DuyHao.interaction_service.dto.response.LikeResponse;
@@ -22,6 +23,7 @@ public class LikeService {
     private final PostClient postClient;
     private final UserClient userClient;
     private final CommentService commentService;
+    private final NotificationClient notificationClient;
 
     @Transactional
     public LikeResponse togglePostLike(String postId, String userId) {
@@ -31,8 +33,11 @@ public class LikeService {
 
             boolean alreadyLiked = likeRepository.existsByUserIdAndPostId(userId, postId);
 
+            String postOwnerId = post.getUserId();
+
             if (alreadyLiked) {
                 likeRepository.deleteByUserIdAndPostId(userId, postId);
+                safeNotify(() -> notificationClient.unlikePost(postOwnerId, userId, postId));
             } else {
                 Like like = Like.builder()
                         .userId(userId)
@@ -40,6 +45,7 @@ public class LikeService {
                         .createdAt(LocalDateTime.now())
                         .build();
                 likeRepository.save(like);
+                safeNotify(() -> notificationClient.likePost(postOwnerId, userId, postId));
             }
 
             long count = likeRepository.countByPostId(postId);
@@ -57,17 +63,21 @@ public class LikeService {
             if (comment == null) throw new RuntimeException("Comment not found");
 
             boolean alreadyLiked = likeRepository.existsByUserIdAndCommentId(userId, commentId);
+            String commentOwnerId = comment.getUserId();
+            String postId = comment.getPostId();
 
             if (alreadyLiked) {
                 likeRepository.deleteByUserIdAndCommentId(userId, commentId);
+                safeNotify(() -> notificationClient.unlikeComment(commentOwnerId, userId, commentId));
             } else {
                 Like like = Like.builder()
                         .userId(userId)
-                        .postId(comment.getPostId())
+                        .postId(postId)
                         .commentId(commentId)
                         .createdAt(LocalDateTime.now())
                         .build();
                 likeRepository.save(like);
+                safeNotify(() -> notificationClient.likeComment(commentOwnerId, userId, commentId, postId));
             }
 
             long count = likeRepository.countByCommentId(commentId);
@@ -78,15 +88,18 @@ public class LikeService {
         }
     }
 
+    private void safeNotify(Runnable action) {
+        try {
+            action.run();
+        } catch (Exception ignored) {
+        }
+    }
 
-     //Lấy danh sách người đã like bài viết (tối đa limit người, mới nhất trước)
+    // Lấy danh sách người đã like bài viết (tối đa limit người, mới nhất trước)
     public PostLikersResponse getPostLikers(String postId, int limit) {
         long total = likeRepository.countByPostId(postId);
         if (total == 0) {
-            return PostLikersResponse.builder()
-                    .likers(List.of())
-                    .othersCount(0)
-                    .build();
+            return PostLikersResponse.builder().likers(List.of()).othersCount(0).build();
         }
 
         List<String> userIds = likeRepository.findUserIdsByPostId(postId, PageRequest.of(0, limit));
@@ -102,9 +115,6 @@ public class LikeService {
 
         long others = Math.max(0, total - likers.size()); // trừ cho 10 người lấy danh sách ra
 
-        return PostLikersResponse.builder()
-                .likers(likers)
-                .othersCount(others)
-                .build();
+        return PostLikersResponse.builder().likers(likers).othersCount(others).build();
     }
 }

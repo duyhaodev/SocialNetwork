@@ -8,6 +8,6 @@ import com.DuyHao.notification_service.dto.UserResponse;
 @FeignClient(name = "profile-service", url = "http://localhost:8081/profile")
 public interface UserClient {
 
-    @GetMapping("/internal/users/{id}")
+    @GetMapping("/internal/users/id/{id}")
     UserResponse getUser(@PathVariable String id);
 }

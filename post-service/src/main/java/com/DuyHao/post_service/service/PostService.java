@@ -79,6 +79,10 @@ public class PostService {
                 PageRequest.of(page, size, Sort.by("createdAt").descending()));
         List<Post> posts = postPage.getContent();
 
+        if (posts.isEmpty()) {
+            return List.of();
+        }
+
         Set<String> userIds = posts.stream()
                 .flatMap(p -> {
                     Set<String> ids = new HashSet<>();
@@ -86,10 +90,13 @@ public class PostService {
                     if (p.getRepostOf() != null) ids.add(p.getRepostOf().getUserId());
                     return ids.stream();
                 })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
-                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+        Map<String, UserResponse> userMap = userIds.isEmpty()
+                ? Map.of()
+                : userClient.getUsers(new ArrayList<>(userIds)).stream()
+                        .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return posts.stream()
                 .map(post -> buildPostResponse(post, currentUserId, userMap))

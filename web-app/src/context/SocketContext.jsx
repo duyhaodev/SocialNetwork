@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { io } from 'socket.io-client';
 import { getAccessToken } from '../api/localStorageService';
 import { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, markConversationRead, fetchConversations } from '../store/chatSlice';
-import { receiveNotification } from '../store/notificationsSlice';
+import { receiveNotification, removeNotification, updateNotificationItem } from '../store/notificationsSlice';
 import { setOnlineUsers, updateUserStatus } from '../store/onlineUsersSlice';
 import { receiveIncomingCall, setCallInProgress, endCallAction } from '../store/callSlice';
 import messageSound from '../assets/sounds/message-sound.wav';
@@ -141,14 +141,41 @@ export const SocketProvider = ({ children }) => {
         // Dispatch to Redux
         dispatch(receiveNotification(notification));
 
-        // Display toast notification
-        toast.info(notification.message, {
+        // Display toast notification dạng "A và n người khác ..."
+        const firstName = notification.user?.displayName || notification.user?.username || "Someone";
+        const others = (notification.count || 1) - 1;
+        const headline = others > 0
+          ? `${firstName} and ${others} other${others > 1 ? "s" : ""} ${notification.message}`
+          : `${firstName} ${notification.message}`;
+
+        toast.info(headline, {
           description: notification.user ? `@${notification.user.username}` : '',
-          duration: 3000, // Show for 3 seconds
+          duration: 3000,
         });
 
       } catch (error) {
         console.error("Socket notification handling error:", error);
+      }
+    });
+
+    // Gỡ thông báo realtime khi user kia hủy hành động (unrepost / delete comment / unfollow / unlike ...)
+    newSocket.on("remove_notification", (payload) => {
+      try {
+        dispatch(removeNotification(payload));
+      } catch (error) {
+        console.error("Socket remove_notification handling error:", error);
+      }
+    });
+
+    // Đánh dấu noti follow đã resolved (user follow back) — chỉ update field, không xóa
+    newSocket.on("resolve_notification", (payload) => {
+      try {
+        const { id, ...changes } = payload || {};
+        if (id) {
+          dispatch(updateNotificationItem({ id, changes }));
+        }
+      } catch (error) {
+        console.error("Socket resolve_notification handling error:", error);
       }
     });
 

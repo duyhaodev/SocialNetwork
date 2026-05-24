@@ -41,15 +41,31 @@ public class FollowService {
 
         followRepo.save(follow);
 
-        // call notification service
-        // notificationClient.createFollowNotification(followingId, followerId);
+        // Kiểm tra có phải follow back không (followingId đã follow followerId từ trước)
+        boolean isFollowBack = followRepo.existsByFollowerIdAndFollowingId(followingId, followerId);
+
+        // Tạo notification "followerId followed you" cho followingId (như bình thường)
+        try {
+            notificationClient.createFollowNotification(followingId, followerId);
+        } catch (Exception e) {
+            System.err.println("Lỗi tạo follow notification: " + e.getMessage());
+        }
+
+        // Nếu đây là follow back → đánh dấu notification cũ "followingId followed you"
+        // của followerId là RESOLVED (để ẩn ở tab All, vẫn giữ ở tab Follows)
+        if (isFollowBack) {
+            try {
+                notificationClient.resolveFollowNotification(followerId, followingId);
+            } catch (Exception e) {
+                System.err.println("Lỗi resolve follow notification: " + e.getMessage());
+            }
+        }
 
         // call user service
         userClient.incrementFollowers(followingId);
         userClient.incrementFollowing(followerId);
 
-        // Check friendship
-        boolean isFriend = followRepo.existsByFollowerIdAndFollowingId(followingId, followerId);
+        boolean isFriend = isFollowBack;
 
         return FollowResponse.builder()
                 .success(true)
@@ -66,6 +82,13 @@ public class FollowService {
             throw new RuntimeException("Not following");
 
         followRepo.deleteByFollowerIdAndFollowingId(followerId, followingId);
+
+        // Gỡ notification follow đã tạo trước đó
+        try {
+            notificationClient.deleteFollowNotification(followingId, followerId);
+        } catch (Exception e) {
+            System.err.println("Lỗi gỡ follow notification: " + e.getMessage());
+        }
 
         userClient.decrementFollowers(followingId);
         userClient.decrementFollowing(followerId);
@@ -96,29 +119,25 @@ public class FollowService {
 
     // Lấy danh sách người đang follow userId (followers)
     public List<String> getFollowerIds(String userId) {
-        return followRepo.findByFollowingId(userId)
-                .stream()
+        return followRepo.findByFollowingId(userId).stream()
                 .map(f -> f.getFollowerId())
                 .toList();
     }
 
     // Lấy danh sách userId đang follow (following)
     public List<String> getFollowingIds(String userId) {
-        return followRepo.findByFollowerId(userId)
-                .stream()
+        return followRepo.findByFollowerId(userId).stream()
                 .map(f -> f.getFollowingId())
                 .toList();
     }
 
     // Lấy danh sách bạn bè (follow 2 chiều)
     public List<String> getFriendIds(String userId) {
-        Set<String> followings = followRepo.findByFollowerId(userId)
-                .stream()
+        Set<String> followings = followRepo.findByFollowerId(userId).stream()
                 .map(f -> f.getFollowingId())
                 .collect(java.util.stream.Collectors.toSet());
 
-        return followRepo.findByFollowingId(userId)
-                .stream()
+        return followRepo.findByFollowingId(userId).stream()
                 .map(f -> f.getFollowerId())
                 .filter(followings::contains)
                 .toList();

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.DuyHao.notification_service.service.NotificationService;
@@ -35,6 +36,13 @@ public class NotificationController {
 
         notificationService.markAsRead(notificationId);
 
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/read-all")
+    public ResponseEntity<?> markAllAsRead() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        notificationService.markAllAsRead(userId);
         return ResponseEntity.ok().build();
     }
 }

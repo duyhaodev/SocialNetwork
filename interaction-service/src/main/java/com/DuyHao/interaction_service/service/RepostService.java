@@ -1,5 +1,6 @@
 package com.DuyHao.interaction_service.service;
 
+import com.DuyHao.interaction_service.FeignClient.NotificationClient;
 import com.DuyHao.interaction_service.FeignClient.PostClient;
 import com.DuyHao.interaction_service.dto.response.PostResponse; // Import ở đây nè!
 import com.DuyHao.interaction_service.dto.response.RepostResponse;
@@ -16,6 +17,7 @@ public class RepostService {
 
     private final RepostRepository repostRepository;
     private final PostClient postClient;
+    private final NotificationClient notificationClient;
 
     @Transactional
     public RepostResponse toggleRepost(String postId, String userId) {
@@ -26,10 +28,16 @@ public class RepostService {
             boolean alreadyReposted = repostRepository.existsByUserIdAndPostId(userId, postId);
             PostResponse newRepostPost = null;
             String deletedId = null;
+            String postOwnerId = originalPost.getUserId();
 
             if (alreadyReposted) {
                 repostRepository.deleteByUserIdAndPostId(userId, postId);
                 deletedId = postClient.deleteRepost(userId, postId);
+                try {
+                    notificationClient.unrepost(postOwnerId, userId, postId);
+                } catch (Exception e) {
+                    System.err.println("Lỗi gỡ notification repost: " + e.getMessage());
+                }
 
             } else {
                 Repost repost = Repost.builder()
@@ -39,6 +47,11 @@ public class RepostService {
                         .build();
                 repostRepository.save(repost);
                 newRepostPost = postClient.createRepost(userId, postId);
+                try {
+                    notificationClient.repost(postOwnerId, userId, postId);
+                } catch (Exception e) {
+                    System.err.println("Lỗi tạo notification repost: " + e.getMessage());
+                }
             }
             long count = repostRepository.countByPostId(postId);
             if (newRepostPost != null) {
