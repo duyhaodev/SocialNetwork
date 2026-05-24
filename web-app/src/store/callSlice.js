@@ -3,6 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   callStatus: 'IDLE', // 'IDLE' | 'CALLING' | 'INCOMING' | 'IN_PROGRESS'
   callData: null, // Payload: { id, callerId, calleeId, conversationId, type, status, ... }
+  isAnotherTabBusy: false, // Flag to block calling if another tab is in a call
 };
 
 const callSlice = createSlice({
@@ -14,20 +15,30 @@ const callSlice = createSlice({
       state.callData = action.payload;
     },
     receiveIncomingCall: (state, action) => {
-      state.callStatus = 'INCOMING';
-      state.callData = action.payload;
+      // Chỉ nhận cuộc gọi mới nếu đang IDLE và không bận ở tab khác
+      if (state.callStatus === 'IDLE' && !state.isAnotherTabBusy) {
+        state.callStatus = 'INCOMING';
+        state.callData = action.payload;
+      }
     },
     setCallInProgress: (state, action) => {
-      state.callStatus = 'IN_PROGRESS';
-      // Cập nhật thêm data nếu có (ví dụ: lấy đc full payload sau khi accept)
-      if (action.payload) {
+      // Lọc theo ID: Chỉ update nếu khớp ID cuộc gọi hiện tại
+      if (state.callData && action.payload && state.callData.id === action.payload.id) {
+        state.callStatus = 'IN_PROGRESS';
         state.callData = { ...state.callData, ...action.payload };
       }
     },
-    endCallAction: (state) => {
-      state.callStatus = 'IDLE';
-      state.callData = null;
+    endCallAction: (state, action) => {
+      // Nếu có payload (từ socket), kiểm tra ID. 
+      // Nếu không có payload (từ nút bấm local), cứ reset.
+      if (!action.payload || (state.callData && action.payload.id === state.callData.id)) {
+        state.callStatus = 'IDLE';
+        state.callData = null;
+      }
     },
+    setAnotherTabBusy: (state, action) => {
+      state.isAnotherTabBusy = action.payload;
+    }
   },
 });
 
@@ -35,7 +46,8 @@ export const {
     startOutgoingCall, 
     receiveIncomingCall, 
     setCallInProgress, 
-    endCallAction 
+    endCallAction,
+    setAnotherTabBusy
 } = callSlice.actions;
 
 export default callSlice.reducer;

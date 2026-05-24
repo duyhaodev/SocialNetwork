@@ -17,8 +17,9 @@ export const CallOverlay = () => {
 
     const handleAccept = async () => {
         try {
-            await messageApi.acceptCall(callData.id);
-            dispatch(setCallInProgress());
+            const res = await messageApi.acceptCall(callData.id);
+            const updatedData = res.data?.result || res.result || res.data || callData;
+            dispatch(setCallInProgress(updatedData));
         } catch (error) {
             console.error("Failed to accept call:", error);
         }
@@ -27,7 +28,7 @@ export const CallOverlay = () => {
     const handleReject = async () => {
         try {
             await messageApi.rejectCall(callData.id);
-            dispatch(endCallAction());
+            dispatch(endCallAction(callData));
         } catch (error) {
             console.error("Failed to reject call:", error);
         }
@@ -36,20 +37,20 @@ export const CallOverlay = () => {
     const handleCancel = useCallback(async () => {
         try {
             await messageApi.cancelCall(callData.id);
-            dispatch(endCallAction());
+            dispatch(endCallAction(callData));
         } catch (error) {
             console.error("Failed to cancel call:", error);
         }
-    }, [callData?.id, dispatch]);
+    }, [callData, dispatch]);
 
     const handleEndCall = useCallback(async () => {
         try {
             await messageApi.endCall(callData.id);
-            dispatch(endCallAction());
+            dispatch(endCallAction(callData));
         } catch (error) {
             console.error("Failed to end call:", error);
         }
-    }, [callData?.id, dispatch]);
+    }, [callData, dispatch]);
 
     const handlePeerDisconnectLocal = useCallback(() => {
         if (callStatus === 'IN_PROGRESS' || callStatus === 'CALLING') {
@@ -76,7 +77,7 @@ export const CallOverlay = () => {
                 const token = getAccessToken();
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
                 const baseUrl = 'http://localhost:8888';
-                
+
                 let url = null;
                 if (callStatus === 'CALLING') {
                     url = `${baseUrl}/chat/calls/cancel/${callData.id}`;
@@ -264,7 +265,7 @@ export const CallOverlay = () => {
                                 >
                                     {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
                                 </button>
-                                
+
                                 <button
                                     onClick={toggleScreenShareHook}
                                     className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isScreenSharing ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-gray-700 hover:bg-gray-600 text-gray-200'}`}
