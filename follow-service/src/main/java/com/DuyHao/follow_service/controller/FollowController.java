@@ -29,8 +29,7 @@ public class FollowController {
 
     @PostMapping("/{followingId}/toggle")
     public ResponseEntity<FollowResponse> toggleFollow(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String followingId) {
+            @AuthenticationPrincipal Jwt jwt, @PathVariable String followingId) {
 
         String followerId = jwt.getSubject();
         boolean isFollowing = followService.isFollowing(followerId, followingId);
@@ -47,8 +46,7 @@ public class FollowController {
 
     @GetMapping("/status/{targetUserId}")
     public ResponseEntity<FollowResponse> getFollowStatus(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String targetUserId) {
+            @AuthenticationPrincipal Jwt jwt, @PathVariable String targetUserId) {
 
         String currentUserId = jwt.getSubject();
         return ResponseEntity.ok(followService.getFollowStatus(currentUserId, targetUserId));

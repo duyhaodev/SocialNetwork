@@ -39,7 +39,7 @@ public class CommentService {
                     .findById(request.getParentId())
                     .orElseThrow(() -> new RuntimeException("Parent comment không tồn tại"));
 
-            if (parent.getRootCommentId() != null) {// Nếu cha nó cũng là một reply thì con lấy chung gốc với cha
+            if (parent.getRootCommentId() != null) { // Nếu cha nó cũng là một reply thì con lấy chung gốc với cha
                 rootCommentId = parent.getRootCommentId();
             } else {
                 // Nếu cha là comment gốc, thì ID của cha là root của con

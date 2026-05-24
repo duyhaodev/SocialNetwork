@@ -30,14 +30,12 @@ public class SuggestionService {
     public List<SuggestionResponse> getSuggestions(String currentUserId, int page, int size) {
 
         // Lấy danh sách người A đang follow
-        Set<String> myFollowings = followRepo.findByFollowerId(currentUserId)
-                .stream()
+        Set<String> myFollowings = followRepo.findByFollowerId(currentUserId).stream()
                 .map(f -> f.getFollowingId())
                 .collect(Collectors.toSet());
 
         // Lấy danh sách người đang follow lại A
-        Set<String> myFollowers = followRepo.findByFollowingId(currentUserId)
-                .stream()
+        Set<String> myFollowers = followRepo.findByFollowingId(currentUserId).stream()
                 .map(f -> f.getFollowerId())
                 .collect(Collectors.toSet());
 
@@ -49,14 +47,12 @@ public class SuggestionService {
         Set<String> candidates = new HashSet<>();
         for (String friendId : myFriends) {
             // Lấy những người friend đang follow
-            Set<String> friendFollowings = followRepo.findByFollowerId(friendId)
-                    .stream()
+            Set<String> friendFollowings = followRepo.findByFollowerId(friendId).stream()
                     .map(f -> f.getFollowingId())
                     .collect(Collectors.toSet());
 
             // Lấy những người đang follow lại friend
-            Set<String> friendFollowers = followRepo.findByFollowingId(friendId)
-                    .stream()
+            Set<String> friendFollowers = followRepo.findByFollowingId(friendId).stream()
                     .map(f -> f.getFollowerId())
                     .collect(Collectors.toSet());
 
@@ -97,20 +93,18 @@ public class SuggestionService {
         List<UserProfileResponse> profiles = userClient.getUsersBatch(candidateIds);
 
         // Chuyển List<UserProfileResponse> thành Map<userId, profile> để tra nhanh
-        Map<String, UserProfileResponse> profileMap = profiles.stream()
-                .collect(Collectors.toMap(UserProfileResponse::getUserId, p -> p));
+        Map<String, UserProfileResponse> profileMap =
+                profiles.stream().collect(Collectors.toMap(UserProfileResponse::getUserId, p -> p));
 
         // Tính bạn chung
         // Map<candidateId, Set<mutualFriendId>>
         Map<String, Set<String>> mutualFriendsMap = new HashMap<>();
         for (String candidateId : candidates) {
-            Set<String> candidateFollowings = followRepo.findByFollowerId(candidateId)
-                    .stream()
+            Set<String> candidateFollowings = followRepo.findByFollowerId(candidateId).stream()
                     .map(f -> f.getFollowingId())
                     .collect(Collectors.toSet());
 
-            Set<String> candidateFollowers = followRepo.findByFollowingId(candidateId)
-                    .stream()
+            Set<String> candidateFollowers = followRepo.findByFollowingId(candidateId).stream()
                     .map(f -> f.getFollowerId())
                     .collect(Collectors.toSet());
 
@@ -125,13 +119,13 @@ public class SuggestionService {
 
         // Lấy profile của tất cả bạn chung để có avatar
         // Gom tất cả mutualFriendId từ mọi candidate, batch 1 lần
-        Set<String> allMutualIds = mutualFriendsMap.values().stream()
-                .flatMap(Set::stream)
-                .collect(Collectors.toSet());
+        Set<String> allMutualIds =
+                mutualFriendsMap.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
 
         Map<String, UserProfileResponse> mutualProfileMap = new HashMap<>();
         if (!allMutualIds.isEmpty()) {
-            userClient.getUsersBatch(allMutualIds.stream().toList())
+            userClient
+                    .getUsersBatch(allMutualIds.stream().toList())
                     .forEach(p -> mutualProfileMap.put(p.getUserId(), p));
         }
 
@@ -146,12 +140,9 @@ public class SuggestionService {
                     Set<String> mutualIds = mutualFriendsMap.getOrDefault(candidateId, Set.of());
                     int mutual = mutualIds.size();
                     // Kiểm tra có cùng thành phố
-                    boolean sameCity = finalMyCity != null
-                            && finalMyCity.equalsIgnoreCase(profile.getCity());
+                    boolean sameCity = finalMyCity != null && finalMyCity.equalsIgnoreCase(profile.getCity());
 
-                    double score = (mutual * 3.0)
-                            + (sameCity ? 2.0 : 0.0)
-                            + (profile.getFollowerCount() / 1000.0);
+                    double score = (mutual * 3.0) + (sameCity ? 2.0 : 0.0) + (profile.getFollowerCount() / 1000.0);
 
                     // Lấy tối đa 2 avatar của bạn chung để hiển thị
                     List<String> mutualAvatars = new ArrayList<>();
@@ -164,7 +155,7 @@ public class SuggestionService {
                             }
                         }
                     }
-                    //SuggestionResponse trả về Fe
+                    // SuggestionResponse trả về Fe
                     SuggestionResponse suggestion = SuggestionResponse.builder()
                             .userId(profile.getUserId())
                             .username(profile.getUsername())
@@ -176,7 +167,7 @@ public class SuggestionService {
                             .mutualFriendAvatars(mutualAvatars)
                             .build();
 
-                    return new Object[]{ suggestion, score };
+                    return new Object[] {suggestion, score};
                 })
                 // Sort theo score giảm dần
                 .sorted(Comparator.comparingDouble(arr -> -(double) ((Object[]) arr)[1]))

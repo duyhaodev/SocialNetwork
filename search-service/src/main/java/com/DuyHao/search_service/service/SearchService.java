@@ -33,10 +33,7 @@ public class SearchService {
             System.err.println("Error calling post-service: " + e.getMessage());
         }
 
-        return SearchResponse.builder()
-                .users(users)
-                .posts(posts)
-                .build();
+        return SearchResponse.builder().users(users).posts(posts).build();
     }
 
     public List<UserProfileResponse> searchUsers(String keyword) {
