@@ -16,4 +16,6 @@ public interface MediaRepository extends JpaRepository<Media, String> {
     List<Media> findAllByIdIn(List<String> ids);
 
     List<Media> findByUserId(String userId);
+
+    List<Media> findByStoryId(String storyId);
 }

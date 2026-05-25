@@ -144,6 +144,27 @@ public class MediaService {
         return mediaMapper.toResponseList(mediaRepository.findByConversationId(conversationId));
     }
 
+    // ==================== STORY ====================
+    @Transactional
+    public void assignMediaToStory(String storyId, List<String> mediaIds) {
+        if (mediaIds == null || mediaIds.isEmpty()) return;
+
+        List<Media> mediaList = mediaRepository.findAllByIdIn(mediaIds);
+        for (Media media : mediaList) {
+            media.setStoryId(storyId);
+        }
+        mediaRepository.saveAll(mediaList);
+    }
+
+    public List<MediaResponse> getByStoryId(String storyId) {
+        return mediaMapper.toResponseList(mediaRepository.findByStoryId(storyId));
+    }
+
+    public void deleteByStoryId(String storyId) {
+        List<Media> medias = mediaRepository.findByStoryId(storyId);
+        medias.forEach(this::deleteMedia);
+    }
+
     // ==================== DELETE MEDIA ====================
     @Async
     public void deleteMedia(Media media) {

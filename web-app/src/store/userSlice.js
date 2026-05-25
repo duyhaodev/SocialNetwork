@@ -171,3 +171,10 @@ const userSlice = createSlice({
 
 export const { logout, setProfile } = userSlice.actions;
 export default userSlice.reducer;
+<<<<<<< HEAD
+=======
+
+// Selectors
+export const selectUser = (state) => state.user.profile;
+export const selectIsAuthenticated = (state) => state.user.isAuthenticated;
+>>>>>>> HiepKa

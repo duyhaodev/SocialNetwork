@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: story-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/STORY
+    username: admin123
+    password: admin123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  scheduling:
+    enabled: true
+
+server:
+  port: 8091
+  servlet:
+    context-path: /story
+
+app:
+  service:
+    profile: http://localhost:8081/profile
+    follow: http://localhost:8084/follow
+    media: http://localhost:8086
+
+
+
+spotify:
+  client-id: 229b16f5ce93404ca96b963b0c5a06e0
+  client-secret: 03dd6ef9eebc47949ef5f66a6a63e621

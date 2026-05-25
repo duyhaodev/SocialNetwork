@@ -7,6 +7,7 @@ import commentsReducer from "../store/commentsSlice";
 import notificationsReducer from "../store/notificationsSlice";
 import onlineUsersReducer from "../store/onlineUsersSlice";
 import callReducer from "../store/callSlice";
+import storiesReducer from "../store/storySlice";
 
 const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ const store = configureStore({
     notifications: notificationsReducer,
     onlineUsers: onlineUsersReducer,
     call: callReducer,
+    stories: storiesReducer,
   },
 });
 

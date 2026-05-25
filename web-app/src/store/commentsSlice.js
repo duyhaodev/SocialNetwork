@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import commentApi from "@/api/commentApi";
 import likeApi from "../api/likeApi";
+import { syncCommentCount } from "./postsSlice";
 
 export const fetchCommentsByPost = createAsyncThunk(
   "comments/fetchByPost",
@@ -21,15 +22,17 @@ export const fetchCommentsByPost = createAsyncThunk(
 
 export const createComment = createAsyncThunk(
   "comments/create",
-  async ({ postId, content, mediaIds, parentId }, { rejectWithValue }) => {
+  async ({ postId, content, mediaIds, parentId }, { rejectWithValue, dispatch }) => {
     try {
       const res = await commentApi.createComment({
         postId,
         content,
         parentId: parentId || null,
-        mediaIds: mediaIds || [] // Chuyển từ mediaUrls của FE thành mediaIds của BE
+        mediaIds: mediaIds || []
       });
-      
+
+      dispatch(syncCommentCount({ postId, delta: +1 }));
+
       return { postId, data: res?.data?.result || res?.result };
     } catch (err) {
       return rejectWithValue({

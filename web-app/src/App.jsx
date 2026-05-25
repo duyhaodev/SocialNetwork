@@ -21,6 +21,7 @@ import { getAccessToken } from "./api/localStorageService.js";
 import { VerifyAccountPage } from "./features/VerifyAccountPage/VerifyAccountPage.jsx";
 import { ForgotPasswordPage } from "./features/ForgotPasswordPage/ForgotPasswordPage.jsx";
 import CallOverlay from "./features/MessagePage/components/CallOverlay.jsx";
+import CreateStoryPage from "./features/StoryPage/CreateStoryPage.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -68,6 +69,10 @@ export default function App() {
             {/* Messages route rendered full-screen (outside ThreadsLayout) */}
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/message" element={<Navigate to="/messages" replace />} />
+
+            {/* Story create — fullscreen, outside ThreadsLayout */}
+            <Route path="/story/create/image" element={<CreateStoryPage mode="image" />} />
+            <Route path="/story/create/text" element={<CreateStoryPage mode="text" />} />
 
             {/* Main app routes with Layout */}
             <Route path="/" element={<ThreadsLayout />}>

@@ -204,6 +204,22 @@ const postsSlice = createSlice({
       state.searchPosts = action.payload || [];
       state.searchPostsError = null;
     },
+    syncCommentCount(state, action) {
+      const { postId, delta } = action.payload || {};
+      if (!postId) return;
+      const apply = (p) => {
+        if ((p?.repostOfId || p?.id) === postId || p?.id === postId) {
+          p.commentCount = Math.max(0, (p.commentCount ?? 0) + delta);
+        }
+      };
+      state.items.forEach(apply);
+      state.myPosts.forEach(apply);
+      state.userPosts.forEach(apply);
+      state.myReposts.forEach(apply);
+      state.userReposts.forEach(apply);
+      state.searchPosts.forEach(apply);
+      if (state.postDetail) apply(state.postDetail);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -343,7 +359,7 @@ const postsSlice = createSlice({
   },
 });
 
-export const { resetFeed, syncLikeByOriginalId, setSearchPosts } = postsSlice.actions;
+export const { resetFeed, syncLikeByOriginalId, setSearchPosts, syncCommentCount } = postsSlice.actions;
 export default postsSlice.reducer;
 
 // ==========================================

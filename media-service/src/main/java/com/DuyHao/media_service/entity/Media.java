@@ -37,6 +37,9 @@ public class Media {
     @Column(name = "conversation_id")
     String conversationId;
 
+    @Column(name = "story_id")
+    String storyId;
+
     @Column(name = "user_id")
     String userId;
 

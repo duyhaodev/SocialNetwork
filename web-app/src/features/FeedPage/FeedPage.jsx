@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import EmojiPicker from "emoji-picker-react";
 import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import { SuggestedUsers } from "../../components/SuggestedUsers/SuggestedUsers.jsx";
+import StoryBar from "../../components/Story/StoryBar.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchFeed,
@@ -103,16 +104,33 @@ export function FeedPage() {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB mỗi file
+    const MAX_TOTAL_SIZE = 20 * 1024 * 1024; // 20MB tổng request
+
     const newItems = [];
+    let totalSize = mediaFiles.reduce((sum, m) => sum + m.file.size, 0);
 
     for (const file of files) {
       const type = file.type || "";
       const isImage = type.startsWith("image/");
       const isVideo = type.startsWith("video/");
+
       if (!isImage && !isVideo) {
-        toast.error(`File "${file.name}" is not an image or video, skipped.`);
+        toast.error(`File "${file.name}" không phải ảnh hoặc video, bỏ qua.`);
         continue;
       }
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`File "${file.name}" vượt quá 20MB, bỏ qua.`);
+        continue;
+      }
+
+      if (totalSize + file.size > MAX_TOTAL_SIZE) {
+        toast.error(`Tổng dung lượng vượt quá 20MB. Vui lòng chọn ít file hơn.`);
+        break;
+      }
+
+      totalSize += file.size;
       const previewUrl = URL.createObjectURL(file);
       newItems.push({
         file,
@@ -264,6 +282,7 @@ export function FeedPage() {
         <h2 className="text-xl font-semibold">Home</h2>
       </div>
 
+      {/* Phần đăng post */}
       <div className="border-b border-border p-4">
         <div className="flex gap-3">
           <Avatar className="w-10 h-10 flex-shrink-0">
@@ -408,6 +427,11 @@ export function FeedPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Story Bar — dưới phần đăng post */}
+      <div className="border-b border-border px-4 py-3">
+        <StoryBar />
       </div>
 
       <div>

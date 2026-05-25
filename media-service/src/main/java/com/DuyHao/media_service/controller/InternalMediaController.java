@@ -58,6 +58,22 @@ public class InternalMediaController {
     public void assignMediaToConversation(@RequestParam String conversationId, @RequestBody List<String> mediaIds) {
         mediaService.assignMediaToConversation(conversationId, mediaIds);
     }
+
+    // ==================== STORY ====================
+    @GetMapping("/story/{storyId}")
+    public List<MediaResponse> getByStoryId(@PathVariable String storyId) {
+        return mediaService.getByStoryId(storyId);
+    }
+
+    @PutMapping("/assign/story")
+    public void assignMediaToStory(@RequestParam String storyId, @RequestBody List<String> mediaIds) {
+        mediaService.assignMediaToStory(storyId, mediaIds);
+    }
+
+    @DeleteMapping("/story/{storyId}")
+    public void deleteByStoryId(@PathVariable String storyId) {
+        mediaService.deleteByStoryId(storyId);
+    }
     // ==================== USER ====================
     @GetMapping("/user/{userId}")
     public List<MediaResponse> getByUserId(@PathVariable String userId) {
