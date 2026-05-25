@@ -28,13 +28,15 @@ public class PostService {
     private final InteractionClient interactionClient;
 
     // ==================== CREATE ====================
-    public PostResponse create(String userId, String content, String repostOfId, List<String> mediaIds) {
+    public PostResponse create(
+            String userId, String content, String repostOfId, List<String> mediaIds, List<String> tags) {
         UserResponse user = userClient.getUser(userId);
 
         Post post = Post.builder()
                 .userId(user.getUserId())
                 .content(content)
                 .scope("public")
+                .tags(tags)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -101,6 +103,72 @@ public class PostService {
         return posts.stream()
                 .map(post -> buildPostResponse(post, currentUserId, userMap))
                 .collect(Collectors.toList());
+    }
+
+    public List<PostResponse> getRecommendedFeed(String currentUserId, int page, int size) {
+        // 1. Fetch Preferences
+        Map<String, Double> userWeights = userClient.getUserPreferences(currentUserId);
+        if (userWeights == null) userWeights = new HashMap<>();
+
+        // 2. Candidate Generation (Top 200 recent posts)
+        List<Post> candidates = postRepository.findAll(PageRequest.of(0, 200, Sort.by("createdAt").descending()))
+                .getContent();
+
+        // 3. Scoring
+        final Map<String, Double> finalWeights = userWeights;
+        List<PostScorePair> scoredPosts = candidates.stream()
+                .map(post -> {
+                    double score = 0.0;
+                    List<String> tags = post.getTags();
+                    if (tags != null && !tags.isEmpty()) {
+                        for (String tag : tags) {
+                            score += finalWeights.getOrDefault(tag, 0.1);
+                        }
+                    } else {
+                        score = 0.1;
+                    }
+                    return new PostScorePair(post, score);
+                })
+                .collect(Collectors.toList());
+
+        // 4. Ranking (Sort by Score descending)
+        scoredPosts.sort((p1, p2) -> Double.compare(p2.score, p1.score));
+
+        // 5. Pagination
+        int start = Math.min(page * size, scoredPosts.size());
+        int end = Math.min((page + 1) * size, scoredPosts.size());
+        if (start > end) return Collections.emptyList();
+
+        List<Post> pagedPosts = scoredPosts.subList(start, end).stream()
+                .map(pair -> pair.post)
+                .toList();
+
+        // 6. Mapping to Response
+        Set<String> userIds = pagedPosts.stream()
+                .flatMap(p -> {
+                    Set<String> ids = new HashSet<>();
+                    ids.add(p.getUserId());
+                    if (p.getRepostOf() != null) ids.add(p.getRepostOf().getUserId());
+                    return ids.stream();
+                })
+                .collect(Collectors.toSet());
+
+        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        return pagedPosts.stream()
+                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .collect(Collectors.toList());
+    }
+
+    private static class PostScorePair {
+        Post post;
+        double score;
+
+        PostScorePair(Post post, double score) {
+            this.post = post;
+            this.score = score;
+        }
     }
 
     // ==================== PROFILE ====================

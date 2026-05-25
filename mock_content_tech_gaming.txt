@@ -1,0 +1,411 @@
+### 1. Góc Build PC & Tấu Hài
+{
+    "content": "Góc xót ví: Vừa build xong dàn PC 50 củ để... gõ Word cho mượt 🥲💻\n\nNói đùa thế thôi chứ anh em nhìn tản nhiệt nước AIO đèn đóm lập lòe thế này có kích thích không? Cấu hình sương sương Core i9, RTX 4080 Super, RAM 64GB bao chiến mọi thể loại game AAA hiện nay. Khổ nỗi lúc lắp mải chém gió, bôi keo tản nhiệt thế nào trào cả ra mainboard, hú hồn tưởng đi luôn con main chục củ. Tối nay chính thức khánh thành góc gaming mới, anh em nào rảnh vào chạy bo PUBG với mình không? 🎮🔥 #PCMasterRace #BuildPC #GamingSetup",
+    "tags": ["tech_auto", "gaming", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 2. Trải nghiệm Game Bom Tấn (Black Myth: Wukong)
+{
+    "content": "Hành trình thỉnh kinh gian nan vất vả: Kẹt ở con Boss Hổ Tiên Phong 3 tiếng đồng hồ! 🐒🥊\n\nGame gì mà đồ họa Unreal Engine 5 đẹp nhức nách, tối ưu phần cứng cực tốt nhưng độ khó thì đúng kiểu hành xác người chơi. Né đòn thì xịt, đánh thì như gãi ngứa, uống bình hồ lô thì chậm chạp. Mình đã thử đổi từ gậy sang thương, farm thêm level mà vẫn bị nó vả cho không trượt phát nào. Anh em nào qua được đoạn này xin tí bí kíp với, chứ tay cầm PS5 của tôi sắp bay vào tường đến nơi rồi!!! 😡🕹️ #BlackMythWukong #GamingLife #RageQuit",
+    "tags": ["gaming", "entertainment", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 3. Review Công Nghệ - Phím Cơ Custom
+{
+    "content": "Chơi hệ phím cơ custom: Con đường nghiện ngập không có lối thoát ⌨️💸\n\nBắt đầu bằng câu nói 'Mua cái bàn phím 1 triệu gõ cho sướng tay', và giờ góc bàn tôi có 4 cái bàn phím tổng thiệt hại sương sương 20 củ. Hôm nay mới tậu bộ switch Linear gõ êm ru, lube mỏi cả tay từ sáng tới chiều. Công nhận tiếng thock thock nghe nó đã tai gì đâu, cơ mà đêm khuya cày game gõ ầm ầm bị phụ huynh gõ cửa mắng cho trận. Khuyến cáo anh em nào có ý định dấn thân vào con đường này thì nên chuẩn bị sẵn bông bịt tai cho người nhà nhé =))) #CustomKeyboard #TechReview #Funny",
+    "tags": ["tech_auto", "vibe_funny", "gaming"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 4. Nỗi khổ leo Rank đêm khuya
+{
+    "content": "Góc khuất leo rank lúc 2h sáng: Đồng đội tàng hình, đối thủ như Faker 😭⚔️\n\nThề luôn, không hiểu thuật toán ghép trận kiểu gì mà cứ nửa đêm là y như rằng gặp ngay Yasuo 0/10/0 gank team (gank team mình). Cầm AD bắn mỏi tay, né skill như ma mà vẫn không gánh nổi mấy ông thần afk giữa trận để đi pha mì tôm. Chơi game xả stress mà chơi xong stress nhân đôi. Sáng mai 8h đi làm mà giờ này vẫn kẹt ở Bạch Kim I, anh em cứu tôi với! Cần lắm một Pro support buff giáp tận răng! 🛡️⚡ #LeagueOfLegends #Esports #NoobTeammates",
+    "tags": ["gaming", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 5. Review Điện thoại Gaming
+{
+    "content": "Trên tay con quái vật ROG Phone mới nhất: Liệu có đáng tiền? 📱🔥\n\nĐiểm cộng: Màn hình 165Hz vuốt cực mượt, chip Snapdragon 8 Gen 3 cân Genshin Impact max setting không rớt một FPS nào. Nút trigger vật lý trên viền máy đúng là chân ái cho dân chơi FPS như PUBG hay Call of Duty. \n\nĐiểm trừ: Nặng chịch, cầm lâu mỏi tay, và đặc biệt là nóng như cái lò than nếu không ốp sò lạnh. Thiết kế thì quá hầm hố, mang đi họp sếp nhìn bằng ánh mắt hình viên đạn. Nói chung là máy để cày cuốc chứ dùng hàng ngày thì hơi cấn. Đánh giá: 8/10! ⭐️ #ROGPhone #TechReview #MobileGaming",
+    "tags": ["tech_auto", "gaming"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 6. AI và Câu chuyện Lập Trình
+{
+    "content": "Người ta bảo AI sắp thay thế lập trình viên, nhưng AI có gánh được tôi lên Thách Đấu không? 🤖🤷‍♂️\n\nHôm nay ngồi test con ChatGPT bản mới bắt nó viết hộ đoạn script auto farm tài nguyên trong game. Nó viết lèo lèo 5 giây xong, mình copy vào chạy thử thì nhân vật đâm đầu thẳng vào tường rồi kẹt luôn trong map. Đấy, AI thì cũng thế thôi, làm sao hiểu được nghệ thuật luồn lách của con người! Túm lại là công nghệ có xịn đến mấy thì kỹ năng (và độ rùa) của game thủ vẫn là chân ái. Đi code tiếp để kiếm tiền nạp game đây anh em ạ. 👨‍💻💸 #AI #TechLife #Gaming",
+    "tags": ["tech_auto", "entertainment", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 7. Trải nghiệm xe hơi công nghệ
+{
+    "content": "Ngồi thử chiếc xe điện mới: Cảm giác như đang lái cái máy tính khổng lồ 🚙⚡\n\nHôm nay ké được ông anh chạy thử con xe điện mới ra mắt. Bước vào trong không thấy nút bấm vật lý nào, toàn màn hình cảm ứng chà bá. Trợ lý ảo gọi dạ bảo vâng, bật điều hòa, mở nhạc Youtube mượt như dùng iPad. Thích nhất là tính năng đỗ xe tự động, thả tay ra vô lăng tự xoay nhìn ảo ma Canada thật sự. \n\nTuy nhiên dân tổ lái như mình vẫn thấy thiếu thiếu tiếng gầm rú của động cơ đốt trong. Êm quá đi dễ buồn ngủ anh em ạ! Tương lai chắc toàn xe điện thế này mất. #EV #TechAuto #CarReview",
+    "tags": ["tech_auto", "travel_nature"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 8. Bình luận Esports (Giải đấu lớn)
+{
+    "content": "Cảm xúc vỡ òa: Quỷ vương Faker lại một lần nữa nâng cúp vô địch!!! 🏆👑\n\nTrận chung kết đêm qua đúng nghĩa là siêu kinh điển, mãn nhãn từng pha combat. Thấy Faker lách nhẹ né 3 cái ultimate rồi lật kèo, cả xóm trọ tôi hét lên như vừa trúng số. Thật sự ngưỡng mộ ý chí của người đàn ông này, tuổi 28 đối với eSports là 'lão tướng' rồi mà phản xạ vẫn như người ngoài hành tinh. Hồi xưa vì anh mà tôi tải game, giờ tôi nghỉ game đi làm rồi mà anh vẫn vô địch. Respect! 🙏🔥 #Esports #Faker #GamingNews",
+    "tags": ["gaming", "news_society", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 9. Setup Smart Home cho Gamer
+{
+    "content": "Mới setup xong quả Smart Home phòng khách: Tối ưu cho việc cày phim và chơi PS5 🛋️💡\n\nVừa đầu tư mớ đèn LED dây đồng bộ màu với màn hình TV (Ambilight). Tưởng tượng đang chơi God of War, ném cái búa sét ra là cả phòng chớp sáng màu xanh dương, đánh boss máu me thì đèn chuyển màu đỏ rực. Phê chữ ê kéo dài! Set thêm lệnh giọng nói: 'Alexa, it's gaming time' là rèm tự đóng, đèn đóm mờ lại, máy lạnh bật 20 độ. Cuộc sống công nghệ sinh ra là để hầu hạ những đứa lười mà thích hưởng thụ như mình 🤣🔌 #SmartHome #TechSetup #PS5",
+    "tags": ["tech_auto", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 10. Cuộc chiến Console vs PC
+{
+    "content": "Cuộc chiến muôn thuở: Có 25 triệu, nên build PC hay mua PS5 + Tivi 4K? 🤔🔥\n\nHôm nay trong group anh em combat nảy lửa vụ này. Phe PC thì bảo: 'PC làm được nghìn việc, mod game tẹt ga, nâng cấp dễ dàng'. Phe Console thì cãi: 'PS5 cắm điện là quất, game độc quyền AAA bao phê, nằm sofa chơi sướng hơn ngồi ghế đau lưng'. \n\nRiêng tôi thì tôi chọn... cả hai. Vừa gõ code kiếm tiền trên PC ban ngày, tối vác gối ra sofa cầm tay cầm PS5 phang quái thú. Trẻ con mới chọn, người lớn như tôi chỉ tiếc là không có tiền thôi! Anh em team nào điểm danh cái nhẹ? 👇⚔️ #PCvsConsole #GamingCommunity #TechTalk",
+    "tags": ["tech_auto", "gaming", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+
+--- Hệ "Làm Đẹp & Ăn Uống" ---
+
+### 11. Review Nhà hàng Omakase
+{
+    "content": "Lần đầu đi ăn Omakase 3 củ/người và cái kết... 🍣✨\n\nNói thật là bước vào quán thấy không gian im ắng, sang trọng mà mình hơi rén. Bếp trưởng làm đồ ăn ngay trước mặt, từng miếng sushi tươi rói, trang trí tỉ mỉ như một tác phẩm nghệ thuật. Thích nhất là món bụng cá ngừ Otoro, béo ngậy tan ngay trong miệng. Cơ mà ăn xong 15 món vẫn thấy... hơi thòm thèm, chắc do dạ dày mình quen ăn bát phở full topping rồi 😂. Lâu lâu đổi gió tự thưởng cho bản thân cũng xứng đáng! Có ai đam mê đồ Nhật như mình không? #Omakase #FoodReview #FineDining",
+    "tags": ["food_drink", "travel_nature"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 12. Haul Đồ Taobao/Shopee
+{
+    "content": "Bóc phốt chính mình: Tự nhủ không mua đồ nữa và cái kết 4 thùng hàng Taobao 📦👗\n\nCác bà ơi, đang lướt mạng tự dưng thấy mấy em váy hoa nhí mùa thu xinh quá nên lại không kìm được lòng. Hôm nay đập hộp 3 chiếc váy, 2 đôi giày Mary Jane và cả đống kẹp tóc ruy băng. Chất vải đợt này về khá xịn xò, lên form tôn dáng cực kỳ, che được khuyết điểm mỡ bụng luôn. Hôm nào rảnh mình sẽ lên clip try-on mix & match cho các bà xem nhé. Giờ thì phải giấu đống hộp này đi không mẹ mắng chết =))) #TaobaoHaul #Fashion #OOTD",
+    "tags": ["fashion_beauty", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 13. Skincare Routine Trị Mụn
+{
+    "content": "Cứu rỗi làn da thức khuya chạy deadline: Routine Skincare tối giản nhưng cực hiệu quả 🧴💧\n\nDạo này chạy dự án thức đến 2h sáng, da mặt đình công nổi luôn mấy cục mụn sưng viêm chà bá. May mà vớ được em serum BHA xịn xò này. Routine của mình dạo này chỉ có: Tẩy trang -> Sữa rửa mặt dịu nhẹ -> Toner cấp ẩm -> Chấm mụn BHA -> Kem dưỡng phục hồi B5. Trộm vía sau 3 ngày mụn xẹp hẳn, vết thâm cũng mờ nhanh. Chị em nào đang bị mụn nội tiết hay do stress thì tham khảo thử nhé! Đừng quên uống đủ nước nha! #SkincareRoutine #BeautyTips #AntiAcne",
+    "tags": ["fashion_beauty", "education"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 14. Cà Phê Sống Ảo Cuối Tuần
+{
+    "content": "Phát hiện một quán Cafe tone Hàn Quốc ẩn mình trong con hẻm nhỏ ☕️📸\n\nCuối tuần rủ hội chị em đi trốn nắng, loanh quanh thế nào lại lạc vào quán cafe cực chill này. Quán decor tone gỗ ấm, ngập tràn cây xanh, ánh sáng tự nhiên hắt vào chụp góc nào cũng có ảnh đẹp mang về. Mình order một ly Cold Brew chua nhẹ và bánh Croissant bơ tỏi thơm lừng. Ngồi đọc sách hay làm việc ở đây siêu tập trung luôn. Tuy nhiên quán hơi nhỏ nên mọi người nhớ đi sớm để có chỗ ngồi ưng ý nhé! #CafeHolic #CheckIn #WeekendVibes",
+    "tags": ["travel_nature", "food_drink"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 15. Nấu Ăn Healthy / Eat Clean
+{
+    "content": "Eat Clean không hề nhàm chán: Công thức Salad lườn gà sốt mè rang siêu cuốn 🥗🥑\n\nTừ ngày quyết tâm độ dáng, mình phải tự mày mò nấu ăn ở nhà để kiểm soát calo. Nhiều người nghĩ ăn kiêng là phải ăn lạt lẽo, nhưng nhầm to nha! Lườn gà áp chảo xé phay, thêm xà lách, bơ, cà chua bi, rắc chút hạt quinoa rồi rưới sốt mè rang lên... Ta nói nó ngon bá cháy mà không hề bị ngấy. Bữa trưa chưa tới 300 calo mà no bụng đến chiều. Ai cần công thức chi tiết thì cmt dưới bài này mình gửi cho nhé! 💪✨ #EatClean #HealthyFood #Diet",
+    "tags": ["food_drink", "fashion_beauty"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 16. Review Mỹ Phẩm / Son
+{
+    "content": "Thỏi son 'chân ái' cho những ngày không biết đánh màu gì 💄💋\n\nNàng nào hay bị khô môi thì bơi hết vào đây! Mới tậu được em son tint bóng màu Đỏ Gạch siêu tôn da. Đánh một lớp mỏng đi học nhìn cực kỳ tự nhiên, đánh nhiều lớp đi quẩy thì quyến rũ khỏi bàn. Điểm cộng lớn nhất là chất son siêu dưỡng, đánh lên môi căng mọng như tiêm filler mà không bị bết dính. Uống nước có dây ra thành cốc một tí nhưng lớp base màu bám lại vẫn rất xinh. Must-have trong túi xách nha các tình yêu! #Lipstick #ReviewMyPham #BeautyReview",
+    "tags": ["fashion_beauty", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 17. Food Tour Phố Cổ
+{
+    "content": "Cầm 200k càn quét Phố Cổ Hà Nội: No nê quên lối về 🍜🍢\n\nLâu lắm mới có hôm trời thu mát mẻ, xách xe lượn lờ phố cổ làm chuyến food tour cho thỏa cơn thèm. Mở bát bằng đĩa nộm bò khô phố Hồ Hoàn Kiếm chua ngọt giòn rụm (40k), lượn sang ngõ chợ Đồng Xuân làm bát bún ốc sườn siêu đầy đặn (50k). Chiều chiều tạt qua Hàng Than ăn bánh trôi tàu nóng hổi (20k), kết thúc bằng cốc trà chanh chém gió (20k). Vừa ngon, vừa rẻ lại còn được ngắm phố phường siêu chill. Ẩm thực đường phố VN mãi đỉnh! 🇻🇳❤️ #FoodTour #StreetFood #HaNoi",
+    "tags": ["food_drink", "travel_nature"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 18. Mix & Match Outfit
+{
+    "content": "Chỉ với 1 chiếc áo sơ mi trắng: 3 cách mix đồ từ đi làm đến đi chơi 👔👗\n\nĐừng vội vứt chiếc sơ mi trắng basic trong tủ đồ đi nhé! \nLook 1 (Đi làm): Sơ mi trắng + Quần âu ống rộng + Giày cao gót -> Thanh lịch, chững chạc.\nLook 2 (Đi chơi): Sơ mi trắng form rộng khoác ngoài áo hai dây + Quần short jean + Sneaker -> Năng động, cá tính.\nLook 3 (Đi hẹn hò): Sơ mi trắng phối cùng chân váy midi lụa + Túi xách kẹp nách -> Dịu dàng, tiểu thư.\nCác bà thích phong cách nào nhất? Comment tui biết nha! ✨ #MixAndMatch #OOTD #FashionTips",
+    "tags": ["fashion_beauty", "education"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 19. Du Lịch Nghỉ Dưỡng (Resort/Homestay)
+{
+    "content": "Healing trip: 2 ngày 1 đêm 'trốn' thế giới tại khu nghỉ dưỡng ngoại ô 🌿🛁\n\nQuá mệt mỏi với khói bụi, cuối tuần rồi mình quyết định tự thưởng một chuyến staycation ở một resort nhỏ cách trung tâm chỉ 1 tiếng chạy xe. Nơi đây không có wifi mạnh, không có TV, chỉ có tiếng chim hót, mùi cỏ cây và một bồn tắm lộ thiên cực chill. Nằm ngâm mình trong nước ấm, nhâm nhi ly rượu vang và ngắm nhìn rừng thông đung đưa trong gió... Mọi muộn phiền như tan biến hết. Cảm thấy như được sạc đầy 100% pin để thứ 2 chiến đấu tiếp! 🔋💚 #Healing #Staycation #TravelNature",
+    "tags": ["travel_nature", "vibe_mood"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 20. Trải nghiệm Buffet Sang Chảnh / Fail
+{
+    "content": "Cú lừa ngoạn mục: Đu trend đi ăn Buffet lẩu nướng hot top top và ôm cục tức 🥩😒\n\nThấy mấy tiktoker review khen nức nở quán buffet D*** mới mở, mình cũng hí hửng book bàn. Tới nơi thì nhân viên thái độ lồi lõm, gọi thịt 3 lần mới mang ra được 1 đĩa bé tí. Nước lẩu thì mặn chát, hải sản (tôm, mực) bở rợt không hề tươi chút nào. Quầy line tráng miệng vớt vát được mỗi món chè bưởi. Chốt bill 400k/người mà ăn về bị đau bụng râm ran. Nói chung là chê mạnh, không bao giờ có lần 2! Mọi người đi ăn nhớ đọc kỹ review chân thật nha. 🚫 #FoodReview #Fail #Drama",
+    "tags": ["food_drink", "news_society", "vibe_mood"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+
+--- Hệ "Học Thuật & Phát Triển Bản Thân" ---
+
+### 21. Quản lý thời gian & Năng suất (Pomodoro)
+{
+    "content": "Làm sao để làm việc 8 tiếng mà không bị xao nhãng? Bí kíp của mình là Pomodoro! 🍅⏱️\n\nTrước đây mình cứ ngồi vào bàn là lướt điện thoại, kết quả là công việc dồn ứ đến đêm. Từ khi áp dụng kỹ thuật Pomodoro: Làm việc tập trung cao độ 25 phút - Nghỉ 5 phút, mình thấy năng suất tăng lên gấp đôi. Đặc biệt, trong 25 phút đó mình tắt mọi thông báo, cất điện thoại sang phòng khác. Lúc đầu hơi khó chịu nhưng quen rồi thì rèn được tính kỷ luật thép luôn. Anh em nào đang struggle với sự trì hoãn thì thử ngay nhé! 💪📈 #Productivity #Pomodoro #SelfDevelopment",
+    "tags": ["education", "vibe_motivation"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 22. Đọc sách & Review Sách (Atomic Habits)
+{
+    "content": "Review 'Atomic Habits - Thay đổi tí hon, hiệu quả bất ngờ': Cuốn sách làm thay đổi cuộc đời mình! 📖✨\n\nNếu bạn luôn đặt mục tiêu to lớn rồi bỏ cuộc giữa chừng, thì cuốn sách này dành cho bạn. Tác giả James Clear đã chứng minh rằng: Đừng cố gắng thay đổi 100% ngay lập tức, hãy chỉ cần tốt hơn 1% mỗi ngày. Thay vì nói 'Tôi sẽ chạy bộ 1 tiếng mỗi ngày', hãy bắt đầu bằng việc 'Tôi sẽ xỏ giày thể thao vào mỗi sáng'. Mình đã áp dụng và thành công xây dựng thói quen đọc sách 15 phút trước khi ngủ. Recommend 10/10 cho ai muốn thay đổi bản thân! 🧠💡 #BookReview #AtomicHabits #Reading",
+    "tags": ["education", "vibe_motivation", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 23. Học Ngoại Ngữ (Tiếng Anh/IELTS)
+{
+    "content": "Làm sao để tăng điểm Speaking IELTS từ 5.5 lên 7.0 trong 3 tháng? Tự kỷ ám thị! 🗣️🇬🇧\n\nThực ra phương pháp này gọi là Shadowing. Mình bật một video TED Talk hoặc BBC News lên, nghe diễn giả nói một câu, pause lại và nhại lại y chang ngữ điệu, trọng âm của họ. Lúc tắm, lúc rửa bát mình cũng tự lẩm bẩm nói chuyện một mình bằng tiếng Anh. Điểm mấu chốt không phải là dùng từ vựng quá cao siêu, mà là độ trôi chảy (Fluency) và phát âm (Pronunciation). Đừng ngại sai, cứ nói nhiều vào! Anh em có tip học tiếng Anh nào hay chia sẻ thêm nhé! 🎓🗣️ #IELTS #EnglishLearning #Education",
+    "tags": ["education", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 24. Tư duy Tài chính & Đầu tư (Phát triển bản thân)
+{
+    "content": "Quy tắc 50/30/20: Bài học vỡ lòng về quản lý tài chính cá nhân mà trường học không dạy bạn 💰📊\n\nLương tháng 15 củ nhưng cuối tháng vẫn phải ăn mì tôm? Đó là lúc bạn cần kỷ luật lại túi tiền của mình. Mình luôn chia thu nhập thành 3 phần:\n- 50% cho nhu cầu thiết yếu (Tiền nhà, ăn uống, xăng xe).\n- 30% cho mong muốn cá nhân (Cà phê, mua sắm, giải trí).\n- 20% bắt buộc để tiết kiệm/đầu tư trước khi tiêu xài.\nTháng nào có việc đột xuất thì cắt bớt phần 30%, tuyệt đối không đụng vào quỹ 20%. Bạn đã biết cách quản lý tiền của mình chưa? Chia sẻ dưới comment nhé! 💵📉 #PersonalFinance #Investing #Growth",
+    "tags": ["education", "news_society", "vibe_motivation"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 25. Kỹ năng Mềm (Giao tiếp & Thuyết trình)
+{
+    "content": "Nỗi sợ nói trước đám đông: Mình đã vượt qua nó như thế nào? 🎤🥶\n\nNhớ hồi năm nhất đại học, lên thuyết trình mà tay run bần bật, giọng run rẩy không nói thành lời. Sau đó mình đăng ký một khóa Public Speaking và nhận ra bí mật: Sợ hãi là vì mình sợ bị đánh giá. Mẹo của mình là: Hãy chuẩn bị nội dung thật kỹ (chiếm 80% sự tự tin), khi lên sân khấu, đừng nhìn vào mắt mọi người mà hãy nhìn vào đỉnh đầu hoặc khoảng không phía sau họ. Và nhớ hít một hơi thật sâu trước khi bắt đầu. Giờ thì cầm mic trước 500 người mình vẫn tự tin chém gió! 🗣️✨ #PublicSpeaking #SoftSkills #Confidence",
+    "tags": ["education", "vibe_motivation"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 26. Bình luận Tin tức Xã hội (Trí tuệ nhân tạo/AI)
+{
+    "content": "AI đang phát triển quá nhanh: Chúng ta nên sợ hãi hay tận dụng? 🤖🌐\n\nĐọc tin tức dạo này thấy đâu đâu cũng nói về ChatGPT, Midjourney, Sora... Nhiều người lo sợ AI sẽ cướp mất công việc. Quan điểm của mình là: AI không thay thế con người, nhưng người biết sử dụng AI chắc chắn sẽ thay thế người không biết. Thay vì lo lắng, mình dành 1 tiếng mỗi ngày để học cách viết prompt (câu lệnh) hiệu quả. Hiện tại AI đã giúp mình giảm 40% thời gian tìm kiếm tài liệu và lên outline bài viết. Bạn đã ứng dụng AI vào công việc của mình chưa? 💻🧠 #ArtificialIntelligence #TechNews #FutureOfWork",
+    "tags": ["news_society", "education", "tech_auto"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 27. Động lực học tập & Thi cử
+{
+    "content": "Gửi những ai đang cảm thấy chênh vênh trước kỳ thi quan trọng sắp tới 🌅📝\n\nMình biết bạn đang áp lực, thức khuya dậy sớm, đôi lúc muốn buông xuôi. Nhưng hãy nhớ lại lý do bạn bắt đầu. Những giọt mồ hôi hôm nay sẽ đổi lấy nụ cười rạng rỡ của ba mẹ ngày mai. Khi bạn cảm thấy mệt mỏi nhất, đó là lúc bạn đang leo dốc, và đỉnh núi sắp ở ngay trước mắt rồi. Đóng Facebook lại, uống một ngụm nước và làm tiếp đề toán còn dang dở đi nào! Bạn làm được mà, cố lên! 🔥💯 #Motivation #StudyHard #Inspiration",
+    "tags": ["vibe_motivation", "education", "vibe_mood"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 28. Góc nhìn Xã hội (Mạng xã hội & FOMO)
+{
+    "content": "Hội chứng FOMO: Tại sao chúng ta luôn cảm thấy mình đang thụt lùi so với bạn bè? 📱🏃‍♂️\n\nLướt mạng xã hội thấy bạn bè đứa thì tậu xe, đứa mua nhà, đứa đi du lịch châu Âu... tự dưng nhìn lại mình thấy thật thảm hại. Nhưng bạn quên mất rằng, mạng xã hội chỉ là 'sân khấu' nơi người ta phô diễn những gì đẹp nhất. Đằng sau bức ảnh chanh sả đó có thể là những khoản nợ tín dụng hay những đêm thức trắng chạy deadline. Hãy ngừng so sánh 'chương 1' của mình với 'chương 20' của người khác. Tập trung vào con đường của mình thôi! 🌻🧘‍♀️ #MentalHealth #FOMO #LifeLessons",
+    "tags": ["news_society", "vibe_mood", "education"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 29. Phát triển Tư duy (Growth Mindset)
+{
+    "content": "Tư duy Cố định (Fixed Mindset) vs Tư duy Phát triển (Growth Mindset): Bạn thuộc kiểu nào? 🌱🧠\n\nNgười có tư duy cố định tin rằng tài năng là bẩm sinh: 'Mình dốt toán từ bé, có học cũng thế thôi'. Ngược lại, người có tư duy phát triển tin rằng nỗ lực sẽ tạo ra kết quả: 'Bài này khó, nhưng nếu mình dành thêm thời gian, mình sẽ giải được'. Sự khác biệt nhỏ này quyết định việc bạn sẽ bỏ cuộc hay tiếp tục chiến đấu khi gặp khó khăn. Hãy rèn luyện cho não bộ tin rằng: Chưa biết không có nghĩa là không thể biết! 🚀💪 #GrowthMindset #Psychology #SelfImprovement",
+    "tags": ["education", "vibe_motivation"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 30. Chia sẻ Khóa học / Tài nguyên miễn phí
+{
+    "content": "Tổng hợp 3 nền tảng học Online chứng chỉ xịn (Coursera, edX) mà hoàn toàn MIỄN PHÍ! 🎓💻\n\nNhiều bạn nghĩ học lấy chứng chỉ của đại học top đầu thế giới tốn cả ngàn đô, nhưng thực ra có cách 'lách luật' hợp pháp nè:\n1. Coursera: Chọn khóa học, bấm vào nút 'Financial aid available' (Hỗ trợ tài chính) nho nhỏ bên cạnh nút mua. Điền đơn xin hỗ trợ đàng hoàng, 15 ngày sau họ sẽ cấp cho bạn học miễn phí 100%.\n2. edX: Tương tự, có phần Financial Assistance giảm đến 90% học phí.\n3. Google Digital Garage: Rất nhiều khóa học Marketing, Data cơ bản hoàn toàn free.\nLưu lại ngay và tranh thủ cuối tuần nâng cấp CV đi nào! 📑🔥 #FreeCourses #Education #CareerGrowth",
+    "tags": ["education", "tech_auto"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+
+--- Hệ "Fan Cứng Thể Thao" ---
+
+### 31. Cảm xúc đêm Chung kết Champions League
+{
+    "content": "Vỡ òa cảm xúc Champions League: Chiếc cúp tai voi đã tìm được chủ nhân xứng đáng! 🏆⚽️\n\nMột đêm không ngủ của các tín đồ túc cầu giáo toàn thế giới. Trận đấu nghẹt thở đến những phút bù giờ cuối cùng. Pha lội ngược dòng không tưởng khiến mình nhảy cẫng lên giữa đêm làm cả nhà thức giấc. Bóng đá là thế, luôn chứa đựng những bất ngờ và cảm xúc mãnh liệt mà không kịch bản phim nào viết ra được. Chúc mừng nhà vua mới của châu Âu! 👑🔥 #UCL #Football #ChampionsLeague #Sports",
+    "tags": ["sports", "entertainment", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 32. Preview Trận đấu ĐT Việt Nam
+{
+    "content": "Lên dây cót tinh thần tiếp lửa cho ĐT Việt Nam tại vòng loại World Cup! 🇻🇳⚽️\n\nTối nay 'Những chiến binh sao vàng' sẽ có trận đấu cực kỳ quan trọng. Dù đối thủ có mạnh đến đâu, mình vẫn tin vào tinh thần Việt Nam bất khuất. Dự đoán tỉ số tối nay 2-1 nghiêng về phía chúng ta. Anh em đã sẵn sàng cờ hoa chuẩn bị đi bão chưa nào? Việt Nam vô địch!!! 🇻🇳❤️ #VietnamFootball #WorldCupQualifiers #VFF #Sports",
+    "tags": ["sports", "news_society", "vibe_motivation"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 33. Đam mê tốc độ F1
+{
+    "content": "F1 Grand Prix: Tốc độ, khói bụi và tiếng gầm rú của những 'con quái vật' 🏎️💨\n\nXem đua xe F1 qua màn hình đã phê, được ngồi trực tiếp trên khán đài mới thấy nó khủng khiếp cỡ nào. Những pha vượt mặt ở góc cua hẹp, chiến thuật thay lốp (pit stop) chỉ trong 2 giây... tất cả tạo nên một bữa tiệc tốc độ đỉnh cao. Fan của Max Verstappen điểm danh cái nào! 🏎️🇳🇱 #F1 #Formula1 #Racing #TechAuto",
+    "tags": ["sports", "tech_auto", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 34. Siêu sao NBA (Steph Curry/LeBron James)
+{
+    "content": "NBA đêm qua: Khi những huyền thoại sống vẫn miệt mài tỏa sáng 🏀 v\n\nChứng kiến những cú ném 3 điểm 'không tưởng' từ giữa sân của Steph Curry hay những pha úp rổ uy lực của LeBron James ở tuổi 39, mình nhận ra giới hạn của con người là vô hạn. Đam mê và kỷ luật chính là chìa khóa giúp họ duy trì đỉnh cao suốt bao nhiêu năm qua. Bóng rổ không chỉ là môn thể thao, nó là nghệ thuật trình diễn! 🏀🔥 #NBA #Basketball #LeBronJames #Curry",
+    "tags": ["sports", "vibe_motivation", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 35. Drama thị trường chuyển nhượng
+{
+    "content": "Thị trường chuyển nhượng bóng đá: Những bản hợp đồng 'bom tấn' và những cú quay xe đi vào lòng đất 💣⚽️\n\nDạo này hóng tin chuyển nhượng còn hơn hóng biến showbiz. Hôm nay báo chí đưa tin Mbappe đã chốt xong xuôi, mai lại thấy tin Haaland chuẩn bị bay sang London kiểm tra y tế. Fan phong trào thì xem kết quả, fan cứng thì thức đêm để hóng từng dòng tweet của các chuyên gia chuyển nhượng. Anh em mong chờ cái tên nào về đội của mình nhất mùa hè này? 🧐💸 #TransferNews #FootballDrama #SportsNews",
+    "tags": ["sports", "entertainment", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 36. Động lực tập Gym / Thể hình
+{
+    "content": "Phòng Gym là nơi tôi đối mặt với phiên bản yếu đuối nhất của chính mình để trở nên mạnh mẽ hơn 💪🔥\n\nNhiều người hỏi sao lại cứ đày đọa bản thân dưới mức tạ nặng mỗi ngày? Câu trả lời đơn giản là vì cảm giác vượt qua được giới hạn của chính mình. Những giọt mồ hôi, những cơn đau cơ chính là minh chứng cho sự nỗ lực. Đừng đợi đến khi có hứng mới tập, hãy tập để tạo ra cảm hứng! Đi tập thôi anh em ơi! 🏋️‍♂️✨ #GymMotivation #Fitness #BodyBuilding #Sports",
+    "tags": ["sports", "vibe_motivation", "fashion_beauty"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 37. Tennis - Những trận đấu 5 set kịch tính
+{
+    "content": "Nghệ thuật quần vợt: Khi trận đấu kéo dài hơn 5 tiếng đồng hồ... 🎾 endurance\n\nXem một trận chung kết Grand Slam kéo dài 5 set mới thấy được bản lĩnh và ý chí sắt đá của các tay vợt. Từng đường bóng sắc lẹm, những cú ace xé gió và cả những giọt nước mắt khi chạm tay vào danh hiệu. Tennis là môn thể thao của sự cô độc nhưng đầy vinh quang. Fan của Nole hay Nadal vào đây đàm đạo đi! 🎾🏆 #Tennis #GrandSlam #Djokovic #Nadal",
+    "tags": ["sports", "vibe_motivation", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 38. Những khoảnh khắc hài hước trong thể thao (Meme)
+{
+    "content": "Góc tấu hài: Khi các ngôi sao thể thao bỗng dưng hóa 'nghệ sĩ hài' trên sân 🤣⚽️\n\nTừ những pha phản lưới nhà khó đỡ đến những cú trượt chân 'đi vào lòng đất' hay những biểu cảm meme để đời của các cầu thủ. Thể thao đôi khi cũng cần những giây phút giải trí nhẹ nhàng như thế này để giảm bớt căng thẳng. Anh em có nhớ pha xử lý nào của Harry Maguire mà khiến cả thế giới bật cười không? Comment nhắc lại kỉ niệm cái nào =))) #SportsMemes #FunnyMoments #FootballHumor",
+    "tags": ["sports", "vibe_funny", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 39. Công nghệ trong thể thao (VAR/Wearables)
+{
+    "content": "Công nghệ đang thay đổi diện mạo thể thao: VAR cứu cánh hay là kẻ giết chết cảm xúc? ⚽️🤖\n\nHôm nay ngồi tranh luận với mấy ông bạn về VAR. Người thì bảo VAR giúp công bằng hơn, người thì chê VAR làm gián đoạn trận đấu, mất hết cái chất kịch tính tự nhiên. Rồi cả những thiết bị đeo tay theo dõi nhịp tim, sải chân giúp VĐV tối ưu hóa bài tập. Thể thao thời đại 4.0 thực sự đã khác xưa rất nhiều. Anh em phe nào: Ủng hộ công nghệ hay giữ nguyên truyền thống? 🧐📱 #SportsTech #VAR #FootballNews #TechAuto",
+    "tags": ["sports", "tech_auto", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 40. Văn hóa xem thể thao cùng bạn bè
+{
+    "content": "Vibe xem bóng đá cùng hội anh em: Mồi ngon, bia lạnh và những tiếng hò reo vang dội 🍻⚽️\n\nCuối tuần chỉ cần bấy nhiêu thôi là đủ xả stress sau một tuần làm việc căng thẳng. Ngồi quán bia vỉa hè hay tụ tập tại nhà, cùng xem trận cầu tâm điểm, cùng chửi thề khi bỏ lỡ cơ hội và cùng ôm nhau hò hét khi đội nhà ghi bàn. Đó chính là sự kết nối kỳ diệu mà chỉ thể thao mới làm được. Tối nay có kèo nào không anh em ơi? 🤜🤛 #MatchDay #FootballVibes #SportsCommunity",
+    "tags": ["sports", "entertainment", "travel_nature"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+
+--- Hệ "Chúa Tể Meme" ---
+
+### 41. POV Sáng thứ 2 đi làm
+{
+    "content": "POV: Sáng thứ 2 dậy đi làm với tâm thế của một triệu phú, nhưng số dư tài khoản bảo 'Thôi ngủ tiếp đi em' 😴💸\n\nCái cảm giác đấu tranh tư tưởng giữa việc đi làm kiếm tiền trả nợ và việc ngủ nướng thêm 5 phút nó khốc liệt hơn cả chiến tranh thế giới. Bước chân vào công ty mà hồn vẫn đang ở quán trà đá đầu ngõ. Ai đó hãy nói với tôi là hôm nay đã là thứ 6 được không? Mệt mỏi quá trời ơi! 😂💼 #MondayMotivation #WorkLife #FunnyPOV #Meme",
+    "tags": ["vibe_funny", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 42. Drama Showbiz hóng biến
+{
+    "content": "Nửa đêm hóng drama showbiz: Khi cơn buồn ngủ không thắng nổi sự tò mò 👁️👄👁️🍿\n\nĐịnh đi ngủ sớm để giữ gìn nhan sắc, ai ngờ lướt Facebook thấy 'biến' căng đét. Thế là lại lọ mọ thức đến 3h sáng để đọc comment, soi từng cái ảnh, phân tích từng dòng status của chính chủ. Sáng dậy mắt thâm quầng như gấu trúc nhưng lòng thỏa mãn vì đã nắm thóp được sự tình. Nghề hóng biến đúng là gian nan vất vả mà lương lậu thì chả thấy đâu =))) #Drama #Showbiz #HóngBiến #Entertainment",
+    "tags": ["entertainment", "vibe_funny", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 43. Game thủ 'Gà' nhưng hay gáy
+{
+    "content": "Kỹ năng có hạn nhưng độ 'gáy' có thừa: Khi bạn chơi game để giải trí nhưng đồng đội lại chơi để thắng 🎮🤡\n\nCầm vị tướng khó nhất game, combo trượt hết nhưng cứ hễ team thắng là y như rằng chat tổng: 'Ez game', 'Gà quá'. Đồng đội gánh lòi bản họng mà mình vẫn tự tin như là MVP của trận đấu. Quan trọng không phải là bạn chơi hay hay dở, quan trọng là thần thái và độ dày của da mặt! Anh em team gánh tạ hay team tạ đâu hết rồi? 😂🕹️ #GamingMeme #NoobPlayer #FunnyGaming",
+    "tags": ["gaming", "vibe_funny", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 44. Kỳ vọng vs Thực tế (Mua hàng online)
+{
+    "content": "Kỳ vọng: Váy lụa thướt tha như tiên nữ. Thực tế: Nhận về cái giẻ lau bàn không hơn không kém 👗🧺😭\n\nBài học xương máu: Đừng bao giờ tin vào ảnh người mẫu mặc trên mạng. Lúc đặt thì hí hửng bao nhiêu, lúc nhận hàng thì muốn 'đăng xuất' bấy nhiêu. Mặc vào nhìn không khác gì cái bao tải đựng khoai tây. Từ nay xin hứa sẽ chung thủy với việc ra shop thử đồ, chứ mua online thế này đau tim quá các bác ạ! #OnlineShopping #ExpectationVsReality #Fail #Funny",
+    "tags": ["vibe_funny", "fashion_beauty"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 45. Tình bạn thân thiết (Dìm hàng nhau)
+{
+    "content": "Bạn thân là gì? Là đứa luôn có sẵn một kho ảnh dìm hàng của bạn để chờ ngày 'tống tiền' 📸😈\n\nSinh nhật mình, nó không đăng ảnh mình xinh đẹp lung linh đâu. Nó bới tận gốc rễ những tấm hình mình đang ăn, đang ngủ há hốc mồm, hay đang khóc lóc thảm thiết để post lên Facebook cho cả thế giới xem. Cay không cơ chứ! Nhưng thôi, vì nó cũng nắm giữ nhiều bí mật của mình nên đành ngậm đắng nuốt cay chờ ngày phục thù. Có ai có đứa bạn 'tốt' như thế không? Tag nó vào đây! 😂🤝 #BestFriend #DìmHàng #FunnyMoments",
+    "tags": ["vibe_funny", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 46. Nỗi khổ của Gen Z chạy deadline
+{
+    "content": "Deadline dí tận chân công trình nhưng vẫn ngồi lướt tóp tóp vì tin rằng 'Áp lực tạo ra kim cương' 💎🏃‍♂️💨\n\n9h sáng mai nộp báo cáo, mà giờ này vẫn đang ngồi xem video hướng dẫn nấu ăn cho người giàu dù trong túi còn đúng 20k. Càng gần deadline, khả năng tập trung càng... giảm sút. Chỉ khi đồng hồ điểm 12h đêm, bản năng sinh tồn mới trỗi dậy và biến mình thành một cỗ máy làm việc xuyên màn đêm. Gen Z chúng mình lạ lắm đúng không cả nhà? 😂📊 #GenZ #Deadline #Procrastination #Funny",
+    "tags": ["vibe_funny", "education", "news_society"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 47. Thú cưng tấu hài
+{
+    "content": "Khi con mèo nhà bạn tin rằng nó mới là chủ cái nhà này, còn bạn chỉ là con sen bưng bê phục vụ 🐈👑\n\nMình đang ngồi làm việc hì hục, nó thản nhiên đi ngang qua bàn phím, dẫm lên phím Delete rồi ngồi chễm chệ nhìn mình bằng ánh mắt khinh bỉ. 'Gào gào' hai tiếng là mình phải vắt chân lên cổ đi mở pate ngay lập tức. Quyền lực thật sự không nằm ở sếp, quyền lực nằm ở cái cục bông biết kêu meo meo kia kìa! 🤣🐾 #CatMeme #BossCat #FunnyPets",
+    "tags": ["pets", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 48. Chuyện tình cảm hài hước
+{
+    "content": "Người ta bảo 'Đúng người đúng thời điểm', nhưng với tôi toàn là 'Sai người, sai luôn cả thời điểm' 💔🤡\n\nNgười mình thích thì không thích mình. Người thích mình thì mình lại thấy... đáng sợ. Thôi thì dành cả thanh xuân để yêu bản thân và yêu đồ ăn vậy. Đồ ăn không bao giờ phản bội mình, chỉ có mình phản bội cân nặng thôi! 🍕❤️ Độc thân vui tính mãi đỉnh! #SingleLife #FunnyLove #FoodIsLove",
+    "tags": ["vibe_funny", "entertainment", "food_drink"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 49. Nấu ăn thất bại
+{
+    "content": "MasterChef tại gia: Định làm bánh bông lan trứng muối, kết quả ra quả than tổ ong đen xì 🎂🔥💀\n\nNhìn công thức trên mạng bảo dễ lắm, ai cũng làm được. Thế mà qua tay mình, cái lò nướng suýt nữa thì bốc hỏa. Miếng bánh cứng như đá, chọi chó chó còn chạy không kịp. Thôi, từ nay tôi xin chừa, cứ gọi Grab cho nó lành, chứ bếp núc kiểu này có ngày cháy nhà mất thôi! 😂🍳 #CookingFail #KitchenDisaster #Funny",
+    "tags": ["food_drink", "vibe_funny"],
+    "mediaIds": [],
+    "scope": "public"
+}
+
+### 50. Nỗi ám ảnh 'Xem sau' trên YouTube
+{
+    "content": "Danh sách 'Xem sau' trên YouTube của tôi: Nơi chứa đựng hàng ngàn kiến thức bổ ích mà tôi sẽ... không bao giờ xem 📺📂🗑️\n\nNào là 'Cách kiếm 1 tỷ đầu tiên', 'Học lập trình trong 24h', 'Bài tập bụng 6 múi'... Toàn là những thứ siêu phàm. Mỗi lần thấy clip hay là nhấn 'Save to Watch later' để an ủi bản thân là mình sẽ học. Nhưng thực tế là tôi lại bấm vào xem 'Video mèo kêu' suốt 3 tiếng đồng hồ. Cái danh sách đó giờ nó dài như sớ Táo Quân rồi anh em ạ! 😂📱 #YouTubeMeme #WatchLater #FunnyTruth",
+    "tags": ["vibe_funny", "education", "entertainment"],
+    "mediaIds": [],
+    "scope": "public"
+}

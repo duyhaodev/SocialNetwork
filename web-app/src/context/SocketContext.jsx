@@ -5,7 +5,7 @@ import { getAccessToken } from '../api/localStorageService';
 import { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, markConversationRead, fetchConversations } from '../store/chatSlice';
 import { receiveNotification, removeNotification, updateNotificationItem } from '../store/notificationsSlice';
 import { setOnlineUsers, updateUserStatus } from '../store/onlineUsersSlice';
-import { receiveIncomingCall, setCallInProgress, endCallAction } from '../store/callSlice';
+import { receiveIncomingCall, setCallInProgress, endCallAction, setAnotherTabBusy } from '../store/callSlice';
 import messageSound from '../assets/sounds/message-sound.wav';
 import notificationSound from '../assets/sounds/notification-sound.mp3';
 import { toast } from 'sonner';
@@ -19,11 +19,34 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.user); // Re-connect on login
+  const { callStatus } = useSelector((state) => state.call);
 
-  // We can track the current active conversation ID to auto-mark read
-  // However, tracking it in Redux is better. Let's assume we handle "mark read" in the UI components 
-  // or via a dedicated Redux state for "activeConversationId".
-  // For now, the global listener just updates the data.
+  // Cross-tab Synchronization using BroadcastChannel
+  useEffect(() => {
+    const channel = new BroadcastChannel('call_channel');
+
+    channel.onmessage = (event) => {
+      if (event.data.type === 'BUSY_STATUS') {
+        dispatch(setAnotherTabBusy(event.data.isBusy));
+      } else if (event.data.type === 'QUERY_BUSY_STATUS') {
+        // Khi tab khác hỏi "Có ai đang bận không?", nếu mình đang bận thì trả lời
+        if (callStatus !== 'IDLE') {
+          channel.postMessage({ type: 'BUSY_STATUS', isBusy: true });
+        }
+      }
+    };
+
+    // 1. Khi tab này thay đổi trạng thái cuộc gọi, báo cho các tab khác
+    const isBusy = callStatus !== 'IDLE';
+    channel.postMessage({ type: 'BUSY_STATUS', isBusy });
+
+    // 2. Khi vừa mount (mở tab mới), hỏi xem có tab nào đang bận không
+    channel.postMessage({ type: 'QUERY_BUSY_STATUS' });
+
+    return () => {
+      channel.close();
+    };
+  }, [callStatus, dispatch]);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -192,17 +215,17 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("call_rejected", (data) => {
       console.log("Call rejected:", data);
-      dispatch(endCallAction());
+      dispatch(endCallAction(data));
     });
 
     newSocket.on("call_cancelled", (data) => {
       console.log("Call cancelled:", data);
-      dispatch(endCallAction());
+      dispatch(endCallAction(data));
     });
 
     newSocket.on("call_ended", (data) => {
       console.log("Call ended:", data);
-      dispatch(endCallAction());
+      dispatch(endCallAction(data));
     });
 
     // Save socket instance

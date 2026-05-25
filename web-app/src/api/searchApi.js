@@ -5,7 +5,7 @@ export const searchApi = {
     axiosClient.get(`/search/all?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`),
 
   searchUsers(keyword) {
-    const url = `search/users?keyword=${encodeURIComponent(keyword)}`
+    const url = `/profile/users?keyword=${encodeURIComponent(keyword)}`
     return axiosClient.get(url)
   },
 

@@ -2,8 +2,10 @@ package com.DuyHao.profile_service.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
+import java.util.Map;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.neo4j.core.schema.CompositeProperty;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Property;
@@ -36,4 +38,7 @@ public class UserProfile {
 
     @Property("connectionsPrivacy")
     String connectionsPrivacy;
+
+    @CompositeProperty(prefix = "weights")
+    Map<String, Double> categoryWeights;
 }

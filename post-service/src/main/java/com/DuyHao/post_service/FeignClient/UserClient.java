@@ -16,4 +16,7 @@ public interface UserClient {
 
     @PostMapping("/internal/users/batch")
     List<UserResponse> getUsers(@RequestBody List<String> ids);
+
+    @GetMapping("/internal/users/{id}/preferences")
+    java.util.Map<String, Double> getUserPreferences(@PathVariable("id") String userId);
 }

@@ -1,0 +1,61 @@
+KẾ HOẠCH TRIỂN KHAI HỆ THỐNG RECOMMENDED FEED (GIAI ĐOẠN 1)
+
+1. TỔNG QUAN KIẾN TRÚC & PHƯƠNG PHÁP TIẾP CẬN
+- Mục tiêu: Xây dựng thuật toán Recommended Feed cá nhân hóa dựa trên Tags và Sở thích (Weights) của người dùng.
+- Phương pháp: Phát triển lặp (Iterative Development) với phương pháp Top-Down.
+  + Ở Giai đoạn 1, sử dụng Mock Data (Dữ liệu giả lập) nạp trực tiếp vào Database để kiểm chứng tính đúng đắn của Thuật toán lõi (Scoring & Ranking).
+  + Ở các giai đoạn sau, sẽ cắm các module tự động (AI Tagging, Event Tracking) vào mà không làm thay đổi cấu trúc thuật toán lõi.
+
+2. CÁC BƯỚC TRIỂN KHAI CHI TIẾT (GIAI ĐOẠN 1)
+
+BƯỚC 1: CHUẨN BỊ DỮ LIỆU BÀI VIẾT (POST-SERVICE)
+- Nhiệm vụ 1.1: Cập nhật Entity `Post.java` trong `post-service`. Thêm trường `tags` lưu trữ dưới dạng mảng (ARRAY hoặc JSONB trong PostgreSQL).
+  + Thêm annotation `@JdbcTypeCode(SqlTypes.JSON)` và `@Column(columnDefinition = "jsonb")`.
+- Nhiệm vụ 1.2: Tạo Mock Data cho bảng `posts` bằng script SQL trực tiếp trong DBMS (DBeaver/pgAdmin).
+  + Dữ liệu mẫu cần bao quát các chủ đề khác nhau (VD: Xe cộ, Du lịch, Âm nhạc...) và được gán `tags` tương ứng.
+
+BƯỚC 2: CHUẨN BỊ DỮ LIỆU SỞ THÍCH NGƯỜI DÙNG (PROFILE-SERVICE)
+- Nhiệm vụ 2.1: Cập nhật Entity User trong `profile-service` để lưu trữ hồ sơ sở thích.
+  + Thêm cấu trúc Key-Value (Map<String, Double>) lưu trọng số (từ 0.0 đến 1.0) cho từng danh mục.
+- Nhiệm vụ 2.2: Mở endpoint nội bộ trong `profile-service` để trả về sở thích của một User (`GET /internal/users/{id}/preferences`).
+- Nhiệm vụ 2.3: Cập nhật `UserClient.java` (Feign Client) bên `post-service` để gọi endpoint vừa tạo.
+- Nhiệm vụ 2.4: Tạo Mock Data trong DBMS cho các User khác nhau với cấu hình trọng số đối lập nhau (VD: User A cuồng Xe cộ, User B cuồng Du lịch).
+
+BƯỚC 3: THIẾT KẾ THUẬT TOÁN LÕI (RECOMMENDED FEED)
+- Nhiệm vụ 3.1: Xây dựng logic `getRecommendedFeed` trong `PostService.java`.
+- Quy trình thuật toán:
+  1. Fetch Preferences: Gọi Feign Client lấy trọng số sở thích của User đang request.
+  2. Candidate Generation: Truy xuất tập ứng viên (VD: 200 bài mới nhất trong tuần qua) từ Database để tối ưu hiệu năng.
+  3. Scoring: Lặp qua từng bài viết, tính tổng điểm bài viết dựa trên trọng số của user đối với các tags của bài viết đó. (Score = Sum(Weight(User, Tag_i))). Bài không có tag nhận điểm base thấp.
+  4. Ranking: Sắp xếp (Sort) tập ứng viên theo thứ tự điểm giảm dần.
+  5. Pagination: Áp dụng thuật toán phân trang in-memory bằng Java subList cho tập ứng viên đã sắp xếp.
+  6. Mapping: Trả về danh sách `PostResponse` tương tự luồng Feed hiện tại.
+
+BƯỚC 4: TÍCH HỢP & KIỂM THỬ GIAO DIỆN
+- Nhiệm vụ 4.1: Mở endpoint `/feed/recommended` trong `PostController.java`.
+- Nhiệm vụ 4.2: Dùng Postman hoặc Frontend gọi API với các Token User khác nhau. Xác minh danh sách bài viết trả về được cá nhân hóa đúng với Mock Data (Trọng số) đã nạp.
+
+3. LỘ TRÌNH MỞ RỘNG (DÀNH CHO GIAI ĐOẠN 2 & 3)
+Kiến trúc ở Giai đoạn 1 đảm bảo khả năng mở rộng (Pluggable) cho các tính năng tự động sau này:
+- AI Auto Tagging: Thay vì nhập tay tags, API `createPost` sẽ gửi nội dung sang `ai-service` chạy NLP module để tự sinh tags trước khi lưu DB.
+- Real-time Event Tracking: Thay vì sửa trọng số trong DB bằng tay, tích hợp RabbitMQ/Kafka để lắng nghe các event "Like", "View" từ `interaction-service`, từ đó tự động tính toán lại và cập nhật trọng số sở thích của user.
+
+4. PHỤ LỤC: DANH SÁCH 13 TAGS TIÊU CHUẨN (STANDARD TAGS)
+Hệ thống sử dụng bộ 13 tags cố định để phân loại bài viết và hồ sơ người dùng:
+
+Nhóm Chủ đề (Topics):
+1.  `tech_auto`: Công nghệ & Xe cộ
+2.  `entertainment`: Giải trí, âm nhạc, phim ảnh
+3.  `travel_nature`: Du lịch & Phong cảnh
+4.  `food_drink`: Ẩm thực
+5.  `sports`: Thể thao
+6.  `fashion_beauty`: Thời trang & Làm đẹp
+7.  `gaming`: Trò chơi điện tử
+8.  `education`: Giáo dục, kiến thức, kỹ năng
+9.  `news_society`: Tin tức xã hội, đời sống
+10. `pets`: Thú cưng
+
+Nhóm Cảm xúc/Vibe (Sentiments):
+11. `vibe_funny`: Hài hước, giải trí, meme
+12. `vibe_mood`: Tâm trạng, suy ngẫm, sâu sắc
+13. `vibe_motivation`: Truyền cảm hứng, động lực, tích cực

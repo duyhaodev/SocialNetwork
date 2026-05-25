@@ -11,7 +11,7 @@ import { SuggestedUsers } from "../../components/SuggestedUsers/SuggestedUsers.j
 import StoryBar from "../../components/Story/StoryBar.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchFeed,
+  fetchRecommendedFeed,
   createPost,
   selectPosts,
   selectPostsHasMore,
@@ -59,7 +59,7 @@ export function FeedPage() {
   const loadDelayRef = useRef(null);
 
   useEffect(() => {
-    dispatch(fetchFeed({ page: 0, size: 20 }))
+    dispatch(fetchRecommendedFeed({ page: 0, size: 20 }))
       .unwrap()
       .catch(() => toast.error("Failed to load feed"));
   }, [dispatch]);
@@ -80,7 +80,7 @@ export function FeedPage() {
         if (loadDelayRef.current) return;
 
         loadDelayRef.current = setTimeout(() => {
-          dispatch(fetchFeed({ page, size: 20 }))
+          dispatch(fetchRecommendedFeed({ page, size: 20 }))
             .unwrap()
             .catch(() => toast.error("Failed to load feed"));
           loadDelayRef.current = null;

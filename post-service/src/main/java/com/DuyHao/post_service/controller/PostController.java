@@ -20,8 +20,8 @@ public class PostController {
     @PostMapping("/posts")
     public ApiResponse<PostResponse> create(@AuthenticationPrincipal Jwt jwt, @RequestBody PostCreateRequest request) {
         String userId = jwt.getSubject();
-        PostResponse post =
-                postService.create(userId, request.getContent(), request.getRepostOfId(), request.getMediaIds());
+        PostResponse post = postService.create(
+                userId, request.getContent(), request.getRepostOfId(), request.getMediaIds(), request.getTags());
 
         return ApiResponse.<PostResponse>builder().result(post).build();
     }
@@ -42,6 +42,16 @@ public class PostController {
             @RequestParam(defaultValue = "20") int size) {
         String userId = jwt.getSubject();
         List<PostResponse> feed = postService.getFeed(userId, page, size);
+        return ApiResponse.<List<PostResponse>>builder().result(feed).build();
+    }
+
+    @GetMapping("/feed/recommended")
+    public ApiResponse<List<PostResponse>> recommendedFeed(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        List<PostResponse> feed = postService.getRecommendedFeed(userId, page, size);
         return ApiResponse.<List<PostResponse>>builder().result(feed).build();
     }
 

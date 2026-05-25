@@ -18,6 +18,7 @@ import { ImageViewer } from "../../../components/ImageViewer/ImageViewer";
 
 export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage, revokedMessage, editedMessage, reactionUpdate }) {
   const { profile } = useSelector(state => state.user);
+  const { isAnotherTabBusy, callStatus } = useSelector(state => state.call);
   const dispatch = useDispatch();
   const socket = useSocket();
   const [messages, setMessages] = useState([]);
@@ -340,14 +341,18 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
           {conversation ? (
             <div className="flex items-center gap-2">
               <button
-                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
+                className={`p-2 rounded-lg transition-colors ${ (isAnotherTabBusy || callStatus !== 'IDLE') ? 'text-gray-600 cursor-not-allowed' : 'hover:bg-[#1a1a1a]'}`}
                 onClick={() => handleInitiateCall('AUDIO')}
+                disabled={isAnotherTabBusy || callStatus !== 'IDLE'}
+                title={isAnotherTabBusy ? "Bạn đang có cuộc gọi ở tab khác" : (callStatus !== 'IDLE' ? "Bạn đang trong cuộc gọi" : "Cuộc gọi thoại")}
               >
                 <Phone className="w-5 h-5" />
               </button>
               <button
-                className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors"
+                className={`p-2 rounded-lg transition-colors ${ (isAnotherTabBusy || callStatus !== 'IDLE') ? 'text-gray-600 cursor-not-allowed' : 'hover:bg-[#1a1a1a]'}`}
                 onClick={() => handleInitiateCall('VIDEO')}
+                disabled={isAnotherTabBusy || callStatus !== 'IDLE'}
+                title={isAnotherTabBusy ? "Bạn đang có cuộc gọi ở tab khác" : (callStatus !== 'IDLE' ? "Bạn đang trong cuộc gọi" : "Cuộc gọi video")}
               >
                 <Video className="w-5 h-5" />
               </button>
@@ -394,22 +399,9 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                     ) : (
                       <div className="relative group flex flex-col items-inherit">
                         <div className={`flex items-center gap-2 ${msg.isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                          {/* Message Content Bubble */}
-                          {msg.content && !msg.content.startsWith("📞 Cuộc gọi") && (
-                            <div
-                              title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
-                              className={`px-4 py-2 rounded-2xl break-words relative ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#0095f6] text-white" : "bg-[#262626] text-white"}`}
-                            >
-                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                              {msg.isEdited && (
-                                <span className="text-[9px] opacity-60 block mt-1">(đã chỉnh sửa)</span>
-                              )}
-                            </div>
-                          )}
-
                           {/* Controls (Smile, Pencil, Revoke) */}
                           {!msg.content?.startsWith("📞 Cuộc gọi") && (
-                            <div className={`flex items-center gap-1 transition-opacity duration-200 ${showEmojiPickerFor === msg.id ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'}`}>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={() => setShowEmojiPickerFor(msg.id === showEmojiPickerFor ? null : msg.id)}
                                 className={`p-1.5 bg-[#1a1a1a] rounded-full hover:text-yellow-500 ${showEmojiPickerFor === msg.id ? 'text-yellow-500 opacity-100' : 'text-gray-400'}`}
@@ -438,6 +430,19 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                                     <RotateCcw size={14} />
                                   </button>
                                 </>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Message Content Bubble */}
+                          {msg.content && !msg.content.startsWith("📞 Cuộc gọi") && (
+                            <div
+                              title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
+                              className={`px-4 py-2 rounded-2xl break-words relative ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#0095f6] text-white" : "bg-[#262626] text-white"}`}
+                            >
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              {msg.isEdited && (
+                                <span className="text-[9px] opacity-60 block mt-1">(đã chỉnh sửa)</span>
                               )}
                             </div>
                           )}
@@ -503,7 +508,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
 
                         {/* Reactions Display */}
                         {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                          <div className={`flex flex-wrap gap-1 -mt-3 mb-1 relative z-10 ${msg.isMe ? 'justify-end pr-2' : 'justify-start pl-2'}`}>
+                          <div className={`flex flex-wrap gap-1 mt-1 ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                             {Object.entries(
                               Object.values(msg.reactions).reduce((acc, emoji) => {
                                 acc[emoji] = (acc[emoji] || 0) + 1;
@@ -513,7 +518,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                               <button
                                 key={emoji}
                                 onClick={() => handleReact(msg.id, emoji)}
-                                className={`flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded-full px-1.5 py-0.5 text-[10px] shadow-sm hover:bg-[#262626] transition-colors ${msg.reactions?.[profile?.id || profile?.userId] === emoji ? 'border-blue-500/50 bg-[#1e293b]' : ''}`}
+                                className={`flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded-full px-1.5 py-0.5 text-[10px] hover:bg-[#262626] transition-colors ${msg.reactions?.[profile?.id || profile?.userId] === emoji ? 'border-blue-500/50 bg-blue-500/10' : ''}`}
                               >
                                 <span>{emoji}</span>
                                 {count > 1 && <span className="font-medium">{count}</span>}

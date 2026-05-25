@@ -6,12 +6,12 @@ import repostApi from "../api/repostApi";
 // 1. ASYNC THUNKS (API CALLS)
 // ==========================================
 
-// Load bảng tin chính (Feed)
-export const fetchFeed = createAsyncThunk(
-  "posts/fetchFeed",
+// Load bảng tin gợi ý (Recommended Feed)
+export const fetchRecommendedFeed = createAsyncThunk(
+  "posts/fetchRecommendedFeed",
   async ({ page = 0, size = 20 }, { rejectWithValue }) => {
     try {
-      const res = await postApi.getFeed({ page, size });
+      const res = await postApi.getRecommendedFeed({ page, size });
       // Lấy result từ ApiResponse { code, result, message }
       const data = res?.result || [];
       return { page, size, data };
@@ -53,8 +53,8 @@ export const toggleRepost = createAsyncThunk(
   async (postId, { rejectWithValue }) => {
     try {
       // Đổi postApi.repost thành repostApi.toggle
-      const res = await repostApi.toggle(postId); 
-      return res.result; 
+      const res = await repostApi.toggle(postId);
+      return res.result;
     } catch (err) {
       // Log lỗi ra đây để Hào nhìn thấy ở tab Console
       console.error("Lỗi khi gọi API Repost:", err);
@@ -223,12 +223,12 @@ const postsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchFeed
-      .addCase(fetchFeed.pending, (state) => {
+      // fetchRecommendedFeed
+      .addCase(fetchRecommendedFeed.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchFeed.fulfilled, (state, action) => {
+      .addCase(fetchRecommendedFeed.fulfilled, (state, action) => {
         const { page, size, data } = action.payload;
         if (page === 0) {
           state.items = data;
@@ -239,7 +239,7 @@ const postsSlice = createSlice({
         state.loading = false;
         state.hasMore = data.length === size;
       })
-      .addCase(fetchFeed.rejected, (state, action) => {
+      .addCase(fetchRecommendedFeed.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -261,63 +261,63 @@ const postsSlice = createSlice({
       .addCase(deletePost.fulfilled, (state, action) => {
         const { postId } = action.payload;
         const filterFn = (p) => p.id !== postId && p.repostOfId !== postId;
-        
+
         state.items = state.items.filter(filterFn);
         state.myPosts = state.myPosts.filter(filterFn);
         state.userPosts = state.userPosts.filter(filterFn);
         state.myReposts = state.myReposts.filter(filterFn);
         state.userReposts = state.userReposts.filter(filterFn);
-        
+
         if (state.postDetail?.id === postId || state.postDetail?.repostOfId === postId) {
           state.postDetail = null;
         }
       })
 
       // repostPost
-      .addCase(toggleRepost.pending, (state) => { 
-        state.reposting = true; 
+      .addCase(toggleRepost.pending, (state) => {
+        state.reposting = true;
       })
       .addCase(toggleRepost.fulfilled, (state, action) => {
-          state.reposting = false;
-          const result = action.payload; 
-          const originalPostId = action.meta.arg; // ID của bài mà User nhấn nút
+        state.reposting = false;
+        const result = action.payload;
+        const originalPostId = action.meta.arg; // ID của bài mà User nhấn nút
 
-          // 1. Hàm cập nhật số lượng & trạng thái (Dùng cho Like/Repost đồng bộ)
-          const updateGlobalStats = (p) => {
-              // Logic: Nếu ID bài này là bài gốc, HOẶC nó là bài vỏ trỏ về bài gốc đó
-              const isTarget = p.id === originalPostId || 
-                               p.repostOfId === originalPostId ||
-                               (p.repostOfId && p.repostOfId === (action.payload.post?.repostOfId));
-              
-              if (isTarget) {
-                  p.repostedByCurrentUser = result.reposted;
-                  p.repostCount = result.repostCount;
-              }
-          };
+        // 1. Hàm cập nhật số lượng & trạng thái (Dùng cho Like/Repost đồng bộ)
+        const updateGlobalStats = (p) => {
+          // Logic: Nếu ID bài này là bài gốc, HOẶC nó là bài vỏ trỏ về bài gốc đó
+          const isTarget = p.id === originalPostId ||
+            p.repostOfId === originalPostId ||
+            (p.repostOfId && p.repostOfId === (action.payload.post?.repostOfId));
 
-          // 2. Quét sạch tất cả các mảng để đồng bộ số lượng
-          [state.items, state.myPosts, state.userPosts, state.myReposts, state.userReposts, state.searchPosts]
-            .forEach(list => list.forEach(updateGlobalStats));
-            
-          if (state.postDetail) updateGlobalStats(state.postDetail);
-
-          // 3. Xử lý Thêm/Xóa bài viết hiển thị (UI logic)
-          if (result.reposted && result.post) {
-              // Thêm bài mới vào đầu Feed và đầu danh sách Repost của tôi
-              state.items.unshift(result.post);
-              state.myReposts.unshift(result.post);
-          } else if (!result.reposted && result.deletedRepostId) {
-              // Hủy Repost: Xóa bài vỏ khỏi TẤT CẢ các danh sách hiển thị
-              const filterId = result.deletedRepostId;
-              const filterFn = (p) => p.id !== filterId;
-
-              state.items = state.items.filter(filterFn);
-              state.myPosts = state.myPosts.filter(filterFn);
-              state.userPosts = state.userPosts.filter(filterFn);
-              state.myReposts = state.myReposts.filter(filterFn);
-              state.userReposts = state.userReposts.filter(filterFn);
-              state.searchPosts = state.searchPosts.filter(filterFn);
+          if (isTarget) {
+            p.repostedByCurrentUser = result.reposted;
+            p.repostCount = result.repostCount;
           }
+        };
+
+        // 2. Quét sạch tất cả các mảng để đồng bộ số lượng
+        [state.items, state.myPosts, state.userPosts, state.myReposts, state.userReposts, state.searchPosts]
+          .forEach(list => list.forEach(updateGlobalStats));
+
+        if (state.postDetail) updateGlobalStats(state.postDetail);
+
+        // 3. Xử lý Thêm/Xóa bài viết hiển thị (UI logic)
+        if (result.reposted && result.post) {
+          // Thêm bài mới vào đầu Feed và đầu danh sách Repost của tôi
+          state.items.unshift(result.post);
+          state.myReposts.unshift(result.post);
+        } else if (!result.reposted && result.deletedRepostId) {
+          // Hủy Repost: Xóa bài vỏ khỏi TẤT CẢ các danh sách hiển thị
+          const filterId = result.deletedRepostId;
+          const filterFn = (p) => p.id !== filterId;
+
+          state.items = state.items.filter(filterFn);
+          state.myPosts = state.myPosts.filter(filterFn);
+          state.userPosts = state.userPosts.filter(filterFn);
+          state.myReposts = state.myReposts.filter(filterFn);
+          state.userReposts = state.userReposts.filter(filterFn);
+          state.searchPosts = state.searchPosts.filter(filterFn);
+        }
       })
       .addCase(toggleRepost.rejected, (state, action) => {
         state.reposting = false;

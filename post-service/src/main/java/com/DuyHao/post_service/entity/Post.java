@@ -2,9 +2,12 @@ package com.DuyHao.post_service.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Setter
 @Getter
@@ -33,6 +36,10 @@ public class Post {
 
     @Column(length = 20)
     String scope;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    List<String> tags;
 
     @Column(name = "created_at")
     LocalDateTime createdAt;

@@ -170,4 +170,11 @@ public class UserProfileRepositoryService {
                 .map(userProfileMapper::toUserProfileResponse)
                 .toList();
     }
+
+    public java.util.Map<String, Double> getUserPreferences(String userId) {
+        UserProfile userProfile = userProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Profile not found!"));
+        return userProfile.getCategoryWeights();
+    }
 }

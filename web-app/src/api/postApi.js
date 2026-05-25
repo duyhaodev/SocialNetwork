@@ -29,6 +29,16 @@ const postApi = {
   },
 
   /**
+   * 3.1 LẤY BẢNG TIN GỢI Ý (RECOMMENDED FEED)
+   * Backend dùng: @GetMapping("/feed/recommended")
+   */
+  getRecommendedFeed({ page = 0, size = 20 } = {}) {
+    return axiosClient.get("/post/feed/recommended", {
+      params: { page, size }
+    });
+  },
+
+  /**
    * 4. LẤY BÀI VIẾT CỦA MÌNH
    * Backend dùng: @GetMapping("/posts/profile")
    */

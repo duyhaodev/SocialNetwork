@@ -68,4 +68,9 @@ public class InternalUserProfileController {
     public List<UserProfileResponse> getTopFollowers(@RequestParam int limit) {
         return userProfileRepositoryService.getTopFollowers(limit);
     }
+
+    @GetMapping("/internal/users/{id}/preferences")
+    public java.util.Map<String, Double> getUserPreferences(@PathVariable("id") String id) {
+        return userProfileRepositoryService.getUserPreferences(id);
+    }
 }

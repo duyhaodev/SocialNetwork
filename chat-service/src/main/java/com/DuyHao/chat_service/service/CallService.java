@@ -11,10 +11,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -32,6 +34,16 @@ public class CallService {
     public CallResponse initiateCall(CallRequest request) {
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
         
+        // Busy Check: Caller
+        if (!callRepository.findActiveSessionsByUserId(currentUserId).isEmpty()) {
+            throw new RuntimeException("You are already in another call session");
+        }
+
+        // Busy Check: Callee
+        if (!callRepository.findActiveSessionsByUserId(request.getCalleeId()).isEmpty()) {
+            throw new RuntimeException("User is busy in another call");
+        }
+
         // 1. Check online status
         Boolean isOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, request.getCalleeId());
         
@@ -75,6 +87,19 @@ public class CallService {
         if ("IN_PROGRESS".equals(session.getStatus()) || "COMPLETED".equals(session.getStatus()) || 
             "REJECTED".equals(session.getStatus()) || "MISSED".equals(session.getStatus())) {
             return toCallResponse(session);
+        }
+
+        // Busy Check before starting
+        boolean isCallerBusy = callRepository.findActiveSessionsByUserId(session.getCallerId()).stream()
+                .anyMatch(s -> !s.getId().equals(callId));
+        boolean isCalleeBusy = callRepository.findActiveSessionsByUserId(session.getCalleeId()).stream()
+                .anyMatch(s -> !s.getId().equals(callId));
+
+        if (isCallerBusy || isCalleeBusy) {
+            session.setStatus("REJECTED");
+            session.setEndTime(LocalDateTime.now());
+            callRepository.save(session);
+            throw new RuntimeException("One of the parties is now busy in another call");
         }
 
         session.setStatus("IN_PROGRESS");
@@ -172,6 +197,38 @@ public class CallService {
         redisPublisherService.publish(rtToCaller);
 
         return toCallResponse(session);
+    }
+
+    @Scheduled(fixedRate = 60000) // Run every minute
+    public void cleanupZombieSessions() {
+        log.info("Starting cleanup of zombie call sessions...");
+        List<CallSession> activeSessions = callRepository.findAllByStatusIn(List.of("RINGING", "IN_PROGRESS"));
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        for (CallSession session : activeSessions) {
+            try {
+                // 1. RINGING Timeout (2 minutes)
+                if ("RINGING".equals(session.getStatus()) && session.getCreatedAt().plusMinutes(2).isBefore(now)) {
+                    log.info("Cleaning up RINGING session {} due to timeout", session.getId());
+                    cancelCall(session.getId());
+                    continue;
+                }
+
+                // 2. IN_PROGRESS but both users offline
+                if ("IN_PROGRESS".equals(session.getStatus())) {
+                    Boolean isCallerOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, session.getCallerId());
+                    Boolean isCalleeOnline = redisTemplate.opsForSet().isMember(ONLINE_USERS_KEY, session.getCalleeId());
+                    
+                    if (Boolean.FALSE.equals(isCallerOnline) && Boolean.FALSE.equals(isCalleeOnline)) {
+                        log.info("Cleaning up IN_PROGRESS session {} because both users are offline", session.getId());
+                        endCall(session.getId());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error cleaning up session {}: {}", session.getId(), e.getMessage());
+            }
+        }
     }
 
     private void saveCallLogMessage(CallSession session) {

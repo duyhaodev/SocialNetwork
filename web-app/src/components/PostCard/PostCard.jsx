@@ -416,6 +416,19 @@ useEffect(() => {
               {post.content}
             </p>
 
+            {post.tags && post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+                {post.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-all cursor-pointer"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* PHẦN MEDIA */}
             {mediaCount > 0 && (
               <div className="mt-3 flex justify-center">
