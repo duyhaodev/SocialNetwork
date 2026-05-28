@@ -34,3 +34,6 @@ app:
     ipinfo-token: e9580fb14a1286
     # test chạy localhost
     dev-fallback-ip: 113.161.80.1
+
+deepl:
+  api-key: 12e45efd-869f-4b58-8043-aaf7689aa828:fx

@@ -64,6 +64,7 @@ export function FeedPage() {
       .catch(() => toast.error("Failed to load feed"));
   }, [dispatch]);
 
+
   useEffect(() => {
     if (!hasMore) return;
     if (loading) return;

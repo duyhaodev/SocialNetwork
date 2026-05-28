@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Globe } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ImageViewer } from "../ImageViewer/ImageViewer.jsx";
 import likeApi from "@/api/likeApi";
 import repostApi from "@/api/repostApi";
+import postApi from "@/api/postApi";
 import { useSelector, useDispatch } from "react-redux";
 import { toggleRepost , syncLikeByOriginalId, deletePost } from "@/store/postsSlice";
 import { toast } from "sonner";
@@ -19,6 +20,15 @@ import ConfirmDeleteModal from "../Modals/ConfirmDeleteModal";
 import { Trash2, Link } from "lucide-react";
 import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 import { LikersTooltip } from "../LikersTooltip/LikersTooltip";
+import { franc } from "franc";
+
+// Map mã ngôn ngữ DeepL → tên tiếng Việt
+const LANG_NAMES = {
+  EN: "Anh", JA: "Nhật", KO: "Hàn", ZH: "Trung",
+  FR: "Pháp", DE: "Đức", ES: "Tây Ban Nha", IT: "Ý",
+  RU: "Nga", PT: "Bồ Đào Nha", NL: "Hà Lan", PL: "Ba Lan",
+  TH: "Thái", ID: "Indonesia", AR: "Ả Rập",
+};
 
 export function PostCard({ post, onProfileClick, onPostClick }) {
 
@@ -76,6 +86,40 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
   const [reposting, setReposting] = useState(false);
   const [repostMenuOpen, setRepostMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+
+  // ====== TRANSLATE ======
+  const [translatedText, setTranslatedText] = useState(null);
+  const [detectedLang, setDetectedLang] = useState(null);
+  const [translating, setTranslating] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+
+  // Detect ngôn ngữ bằng franc — hiện nút dịch nếu không phải tiếng Việt
+  const isNonVietnamese = useMemo(() => {
+    const content = isRepost ? post.originalContent : post.content;
+    if (!content || content.trim().length < 10) return false;
+    const lang = franc(content);
+    return lang !== "vie" && lang !== "und";
+  }, [post.content, post.originalContent, isRepost]);
+
+  const handleTranslate = async () => {
+    // Nếu đã có bản dịch thì toggle hiện/ẩn
+    if (translatedText) {
+      setShowTranslation((v) => !v);
+      return;
+    }
+    // Chưa có thì gọi API
+    setTranslating(true);
+    try {
+      const res = await postApi.translate(isRepost ? post.originalContent : post.content);
+      setTranslatedText(res?.result?.translatedText);
+      setDetectedLang(res?.result?.detectedSourceLang);
+      setShowTranslation(true);
+    } catch (err) {
+      toast.error("Dịch thất bại, thử lại sau");
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   useEffect(() => {
     setIsLiked( post.liked ?? post.likedByCurrentUser ?? post.isLikedByCurrentUser ?? false);
@@ -413,8 +457,37 @@ useEffect(() => {
           {/* Content + media */}
           <div className="mb-3">
             <p className="whitespace-pre-wrap">
-              {post.content}
+              {isRepost ? post.originalContent : post.content}
             </p>
+
+            {/* Bản dịch — hiện khi user bấm dịch */}
+            {showTranslation && translatedText && (
+              <div className="mt-3 rounded-xl bg-muted/40 border border-border/50 px-3 py-2.5">
+                <p className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">{translatedText}</p>
+                {detectedLang && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <span className="text-xs text-muted-foreground">
+                      Đã dịch từ tiếng {LANG_NAMES[detectedLang] ?? detectedLang}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Nút dịch — chỉ hiện nếu franc detect không phải tiếng Việt */}
+            {isNonVietnamese && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleTranslate(); }}
+                disabled={translating}
+                className="mt-2 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-40"
+              >
+                {translating
+                  ? "Đang dịch..."
+                  : showTranslation
+                  ? "Xem bản gốc"
+                  : "Dịch bài viết"}
+              </button>
+            )}
 
             {/* PHẦN MEDIA */}
             {mediaCount > 0 && (

@@ -124,7 +124,18 @@ export function Sidebar({ currentPage }) {
     <div className="hidden md:flex w-64 h-screen border-r border-border bg-background flex flex-col sticky top-0">
       {/* Logo */}
       <div className="p-6">
-        <h1 className="text-2xl font-bold">Threads</h1>
+        <h1
+          className="text-2xl font-bold cursor-pointer hover:opacity-70 transition-opacity"
+          onClick={() => {
+            if (window.location.pathname === "/feed") {
+              window.location.reload();
+            } else {
+              navigate("/feed");
+            }
+          }}
+        >
+          Threads
+        </h1>
       </div>
 
       {/* Navigation */}

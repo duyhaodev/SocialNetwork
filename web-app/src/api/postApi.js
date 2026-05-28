@@ -59,6 +59,11 @@ const postApi = {
       params: { city, page, size },
     });
   },
+
+  // Dịch nội dung bài viết sang tiếng Việt qua DeepL
+  translate(text) {
+    return axiosClient.post("/post/posts/translate", { text });
+  },
 };
 
 export default postApi;
