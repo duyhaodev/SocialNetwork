@@ -2,8 +2,10 @@ package com.DuyHao.post_service.controller;
 
 import com.DuyHao.post_service.dto.ApiResponse;
 import com.DuyHao.post_service.dto.request.PostCreateRequest;
+import com.DuyHao.post_service.dto.request.TranslateRequest;
 import com.DuyHao.post_service.dto.response.LocalFeedResponse;
 import com.DuyHao.post_service.dto.response.PostResponse;
+import com.DuyHao.post_service.dto.response.TranslateResponse;
 import com.DuyHao.post_service.service.PostService;
 import com.DuyHao.post_service.service.TranslateService;
 import java.util.List;

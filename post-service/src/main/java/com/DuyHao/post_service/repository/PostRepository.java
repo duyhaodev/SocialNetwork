@@ -49,6 +49,8 @@ public interface PostRepository extends JpaRepository<Post, String> {
             nativeQuery = true)
     List<Object[]> findTopTrendingTags(int limit);
 
-    @Query(value = "SELECT * FROM posts WHERE tags @> CAST(:tagJson AS jsonb) ORDER BY created_at DESC", nativeQuery = true)
+    @Query(
+            value = "SELECT * FROM posts WHERE tags @> CAST(:tagJson AS jsonb) ORDER BY created_at DESC",
+            nativeQuery = true)
     List<Post> findByTag(String tagJson, Pageable pageable);
 }
