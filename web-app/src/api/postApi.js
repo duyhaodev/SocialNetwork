@@ -1,27 +1,17 @@
 import axiosClient from "./axiosClient";
 
 const postApi = {
-  /**
-   * 1. TẠO BÀI VIẾT
-   * Backend dùng: @RequestBody PostCreateRequest (JSON)
-   * Payload: { content: string, repostOfId: string, mediaIds: string[] }
-   */
+  // Tạo bài viết
   create(payload) {
     return axiosClient.post("/post/posts", payload);
   },
 
-  /**
-   * 2. XÓA BÀI VIẾT
-   * Backend dùng: @DeleteMapping("/posts/{postId}")
-   */
+  // Xóa bài viết
   deletePost(postId) {
     return axiosClient.delete(`/post/posts/${postId}`);
   },
 
-  /**
-   * 3. LẤY BẢNG TIN (FEED)
-   * Backend dùng: @GetMapping("/feed")
-   */
+  // Lấy bảng tin chính (Feed)
   getFeed({ page = 0, size = 20 } = {}) {
     return axiosClient.get("/post/feed", {
       params: { page, size }
@@ -42,48 +32,51 @@ const postApi = {
    * 4. LẤY BÀI VIẾT CỦA MÌNH
    * Backend dùng: @GetMapping("/posts/profile")
    */
+  // Lấy bài viết của mình
   getMyPosts() {
     return axiosClient.get("/post/posts/profile");
   },
 
-  /**
-   * 5. LẤY BÀI VIẾT CỦA USER KHÁC
-   * Backend dùng: @GetMapping("/posts/profile/{username}")
-   */
+  // Lấy bài viết của user khác
   getUserPosts(username) {
     return axiosClient.get(`/post/posts/profile/${username}`);
   },
 
-  /**
-   * 6. LẤY CHI TIẾT 1 BÀI VIẾT
-   * Backend dùng: @GetMapping("/posts/{postId}")
-   */
+  // Lấy chi tiết 1 bài viết
   getPostById(postId) {
     return axiosClient.get(`/post/posts/${postId}`);
   },
 
-  /**
-   * 7. LẤY DANH SÁCH REPOST CỦA MÌNH
-   * Backend dùng: @GetMapping("/posts/profile/reposts")
-   */
+  // Lấy danh sách repost của mình
   getMyReposts() {
     return axiosClient.get("/post/posts/profile/reposts");
   },
 
-  /**
-   * 8. LẤY DANH SÁCH REPOST CỦA USER KHÁC
-   * Backend dùng: @GetMapping("/posts/profile/{username}/reposts")
-   */
+  // Lấy danh sách repost của user khác
   getUserReposts(username) {
     return axiosClient.get(`/post/posts/profile/${username}/reposts`);
   },
 
-  /**
-   * 9. LẤY THÔNG TIN USER QUA USERNAME
-   * (Thường endpoint này nằm ở Identity/Profile Service)
-   */
+  // Lấy thông tin user qua username
   getUserByUsername(username) {
     return axiosClient.get(`/profile/users/${username}`);
+  },
+
+  // Lấy tên tỉnh/thành từ IP của client (gọi 1 lần khi đăng nhập để hiển thị tên tab Local Feed)
+  resolveCity() {
+    return axiosClient.get("/post/feed/resolve-city");
+  },
+
+  // Lấy feed bài viết theo tỉnh/thành (isFallback: true nếu tỉnh chưa có bài sẽ lây toàn quốc)
+  getLocalFeed({ city, page = 0, size = 20 } = {}) {
+    return axiosClient.get("/post/feed/local", {
+      params: { city, page, size },
+    });
+  },
+
+  // Dịch nội dung bài viết sang tiếng Việt qua DeepL
+  translate(text) {
+    return axiosClient.post("/post/posts/translate", { text });
   },
 };
 

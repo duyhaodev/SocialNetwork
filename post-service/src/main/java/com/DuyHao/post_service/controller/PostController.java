@@ -2,8 +2,12 @@ package com.DuyHao.post_service.controller;
 
 import com.DuyHao.post_service.dto.ApiResponse;
 import com.DuyHao.post_service.dto.request.PostCreateRequest;
+import com.DuyHao.post_service.dto.request.TranslateRequest;
+import com.DuyHao.post_service.dto.response.LocalFeedResponse;
 import com.DuyHao.post_service.dto.response.PostResponse;
+import com.DuyHao.post_service.dto.response.TranslateResponse;
 import com.DuyHao.post_service.service.PostService;
+import com.DuyHao.post_service.service.TranslateService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,13 +19,27 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    private final TranslateService translateService;
 
     // ==================== CREATE POST ====================
     @PostMapping("/posts")
-    public ApiResponse<PostResponse> create(@AuthenticationPrincipal Jwt jwt, @RequestBody PostCreateRequest request) {
+    public ApiResponse<PostResponse> create(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody PostCreateRequest request,
+            @RequestHeader(value = "X-Client-IP", required = false) String xClientIp,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String xForwardedFor,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+
         String userId = jwt.getSubject();
+        // Lấy IP thật: ưu tiên X-Client-IP (Gateway inject), fallback X-Forwarded-For, rồi remoteAddr
+        String clientIp = postService.extractClientIp(xClientIp, xForwardedFor, httpRequest.getRemoteAddr());
         PostResponse post = postService.create(
-                userId, request.getContent(), request.getRepostOfId(), request.getMediaIds(), request.getTags());
+                userId,
+                request.getContent(),
+                request.getRepostOfId(),
+                request.getMediaIds(),
+                request.getTags(),
+                clientIp);
 
         return ApiResponse.<PostResponse>builder().result(post).build();
     }
@@ -53,6 +71,32 @@ public class PostController {
         String userId = jwt.getSubject();
         List<PostResponse> feed = postService.getRecommendedFeed(userId, page, size);
         return ApiResponse.<List<PostResponse>>builder().result(feed).build();
+    }
+
+    // ==================== LOCAL FEED ====================
+    @GetMapping("/feed/local")
+    public ApiResponse<LocalFeedResponse> localFeed(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam String city,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        PostService.LocalFeedResult result = postService.getLocalFeed(city, userId, page, size);
+        return ApiResponse.<LocalFeedResponse>builder()
+                .result(new LocalFeedResponse(result.posts(), result.isFallback(), city))
+                .build();
+    }
+
+    // Dịch IP của client thành tên tỉnh/thành phố
+    @GetMapping("/feed/resolve-city")
+    public ApiResponse<String> resolveCity(
+            @RequestHeader(value = "X-Client-IP", required = false) String xClientIp,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String xForwardedFor,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        // Lấy IP thật: ưu tiên X-Client-IP (Gateway inject), fallback X-Forwarded-For, rồi remoteAddr
+        String clientIp = postService.extractClientIp(xClientIp, xForwardedFor, httpRequest.getRemoteAddr());
+        String city = postService.resolveCity(clientIp);
+        return ApiResponse.<String>builder().result(city).build();
     }
 
     // ==================== PROFILE ====================
@@ -104,5 +148,13 @@ public class PostController {
         String userId = jwt.getSubject();
         PostResponse post = postService.getPostById(postId, userId);
         return ApiResponse.<PostResponse>builder().result(post).build();
+    }
+
+    // ==================== TRANSLATE ====================
+    @PostMapping("/posts/translate")
+    public ApiResponse<TranslateResponse> translate(
+            @RequestBody TranslateRequest request, @AuthenticationPrincipal Jwt jwt) {
+        TranslateResponse result = translateService.translate(request);
+        return ApiResponse.<TranslateResponse>builder().result(result).build();
     }
 }

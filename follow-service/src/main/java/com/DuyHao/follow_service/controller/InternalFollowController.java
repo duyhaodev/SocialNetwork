@@ -1,12 +1,12 @@
 package com.DuyHao.follow_service.controller;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.*;
 
 import com.DuyHao.follow_service.service.FollowService;
-import java.util.List;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/internal/follow")
@@ -23,9 +23,7 @@ public class InternalFollowController {
 
     // Kiểm tra userId có follow targetId không
     @GetMapping("/is-following")
-    public boolean isFollowing(
-            @RequestParam String followerId,
-            @RequestParam String followingId) {
+    public boolean isFollowing(@RequestParam String followerId, @RequestParam String followingId) {
         return followService.isFollowing(followerId, followingId);
     }
 }

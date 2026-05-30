@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import authApi from "../api/authApi";
 import userApi from "../api/userApi";
 import { getAccessToken, removeToken, setToken } from "../api/localStorageService";
+import postApi from "../api/postApi";
 
 export const login = createAsyncThunk(
   "user/login",
@@ -47,13 +48,29 @@ export const verifyToken = createAsyncThunk(
 
 export const fetchMyInfo = createAsyncThunk(
   "user/fetchMyInfo",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       const res = await userApi.getMyInfo();
       if (!res || res.code !== 1000) return rejectWithValue(res || "FETCH_MYINFO_FAILED");
+      // Sau khi có profile thì lấy city luôn
+      dispatch(fetchCity());
       return res.result;
     } catch (e) {
       return rejectWithValue(e.response?.data || e.message || "FETCH_MYINFO_ERROR");
+    }
+  }
+);
+
+// Lấy tên tỉnh/thành từ IP, gọi tự động sau khi đăng nhập
+export const fetchCity = createAsyncThunk(
+  "user/fetchCity",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await postApi.resolveCity();
+      if (!res || res.code !== 1000) return rejectWithValue("FETCH_CITY_FAILED");
+      return res.result; // "Ho Chi Minh City" | "Hanoi" | "Unknown"
+    } catch (e) {
+      return rejectWithValue(e.response?.data || e.message || "FETCH_CITY_ERROR");
     }
   }
 );
@@ -81,6 +98,7 @@ const userSlice = createSlice({
   initialState: {
     token: null,
     profile: null,
+    city: null,       // tên tỉnh/thành từ IP (dùng cho tab Local Feed)
     loading: false,
     error: null,
     isAuthenticated: false,
@@ -93,6 +111,7 @@ const userSlice = createSlice({
     logout(state) {
       state.token = null;
       state.profile = null;
+      state.city = null;
       state.isAuthenticated = false;
       state.error = null;
       removeToken();
@@ -147,6 +166,11 @@ const userSlice = createSlice({
         state.error = action.payload || action.error?.message;
       })
 
+      // fetch city từ IP
+      .addCase(fetchCity.fulfilled, (state, action) => {
+        state.city = action.payload;
+      })
+
       // logout
       .addCase(logoutUser.pending, (state) => {
         state.loading = true;
@@ -175,3 +199,4 @@ export default userSlice.reducer;
 // Selectors
 export const selectUser = (state) => state.user.profile;
 export const selectIsAuthenticated = (state) => state.user.isAuthenticated;
+export const selectCity = (state) => state.user.city;

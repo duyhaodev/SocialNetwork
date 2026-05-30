@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { format, parse, isValid } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -126,6 +126,7 @@ export function EditProfileDialog({ open, onOpenChange }) {
               Cancel
             </Button>
             <DialogTitle className="text-base font-semibold">Edit Profile</DialogTitle>
+            <DialogDescription className="sr-only">Edit your profile information</DialogDescription>
             <div className="w-[52px]" /> 
           </div>
         </DialogHeader>

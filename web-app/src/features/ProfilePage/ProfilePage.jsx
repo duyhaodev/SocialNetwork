@@ -5,16 +5,19 @@ import { useDispatch, useSelector } from "react-redux";
 import { Button } from "../../components/ui/button.js";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
-import { MoreHorizontal, Share, Verified, ArrowLeft, ChevronDown, UserMinus, Users, UserCheck } from "lucide-react";
+import { MoreHorizontal, Share, Verified, ArrowLeft, ChevronDown, UserMinus, Users, UserCheck, BookOpen, UserCircle } from "lucide-react";
 import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import { ImageViewer } from "../../components/ImageViewer/ImageViewer.jsx";
 import {AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,} from "../../components/ui/alert-dialog.js";
 import {fetchMyPosts, selectMyPosts, selectMyPostsLoading, fetchUserPosts, selectUserPosts, selectUserPostsLoading, fetchMyReposts, fetchUserReposts, selectMyReposts, selectMyRepostsLoading, selectUserReposts, selectUserRepostsLoading,} from "../../store/postsSlice";
-import { fetchMyInfo } from "../../store/userSlice";
+import { fetchMyInfo, selectUser } from "../../store/userSlice";
+import { fetchMyStories, selectMyStories } from "../../store/storySlice";
 import postApi from "../../api/postApi";
 import followApi from "../../api/followApi";
+import storyApi from "../../api/storyApi";
 import { EditProfileDialog } from "./EditProfileDialog.jsx";
 import SpotifyView from "../../components/SpotifySection/SpotifyView";
+import StoryViewer from "../../components/Story/StoryViewer";
 import { toast } from "sonner";
 
 export function ProfilePage() {
@@ -56,6 +59,15 @@ export function ProfilePage() {
   // mở avatar bằng ImageViewer
   const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
 
+  // story của user đang xem profile
+  const [userStories, setUserStories] = useState([]);
+  const [storyViewerOpen, setStoryViewerOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef(null);
+
+  // story của chính mình
+  const myStories = useSelector(selectMyStories);
+
   // mở dialog Edit profile
   const [editOpen, setEditOpen] = useState(false);
   const isOwnProfile = !cleanUsername || cleanUsername === profile.username;
@@ -88,6 +100,7 @@ export function ProfilePage() {
   if (isOwnProfile) {
     dispatch(fetchMyPosts());
     dispatch(fetchMyReposts());
+    dispatch(fetchMyStories());
     dispatch(fetchMyInfo()); // refresh follower/following count
     return;
   }
@@ -115,6 +128,36 @@ export function ProfilePage() {
 }, [dispatch, isOwnProfile, cleanUsername, location.key]);
   
   
+
+  // Fetch story công khai của user khi xem profile người khác
+  useEffect(() => {
+    if (isOwnProfile || !otherProfile?.userId) {
+      setUserStories([]);
+      return;
+    }
+    storyApi.getUserStories(otherProfile.userId)
+      .then((res) => {
+        const stories = res?.result || [];
+        console.log("[ProfilePage] userStories fetched:", stories.length, stories);
+        setUserStories(stories);
+      })
+      .catch((err) => {
+        console.error("[ProfilePage] getUserStories error:", err);
+        setUserStories([]);
+      });
+  }, [isOwnProfile, otherProfile?.userId]);
+
+  // Đóng avatar menu khi click ngoài
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target)) {
+        setAvatarMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [avatarMenuOpen]);
 
   // Hàm khi click vào avatar/username trong PostCard
   const handleProfileClick = (username) => {
@@ -260,27 +303,84 @@ export function ProfilePage() {
               <p className="mb-4">{user.bio}</p>
             )}
           </div>
-          <button
-            className="p-0 rounded-full cursor-pointer hover:opacity-80 transition"
-            onClick={() => {
-              if (user?.avatar) setAvatarViewerOpen(true);
-            }}
-            title="Xem ảnh đại diện"
-          >
-            <Avatar className="w-20 h-20 ml-4">
-              <AvatarImage
-                src={user?.avatar || "/default-avatar.png"}
-                alt={user?.displayName}
-                style={{ objectFit: "cover" }}
-                onError={(e) => {
-                  e.currentTarget.src = "/default-avatar.png";
-                }}
-              />
-              <AvatarFallback className="text-2xl">
-                {user?.displayName?.charAt(0) || "U"}
-              </AvatarFallback>
-            </Avatar>
-          </button>
+          {/* Avatar — có vòng gradient nếu có story */}
+          <div ref={avatarMenuRef} className="relative ml-4">
+            {(() => {
+              const hasStory = isOwnProfile
+                ? myStories.length > 0
+                : userStories.length > 0;
+
+              const handleAvatarClick = () => {
+                if (hasStory) {
+                  setAvatarMenuOpen((o) => !o);
+                } else if (user?.avatar) {
+                  setAvatarViewerOpen(true);
+                }
+              };
+
+              return (
+                <button
+                  className="p-0 rounded-full cursor-pointer hover:opacity-80 transition"
+                  onClick={handleAvatarClick}
+                  title={hasStory ? "Xem tin" : "Xem ảnh đại diện"}
+                >
+                  {hasStory ? (
+                    <div
+                      className="rounded-full p-[3px]"
+                      style={{ background: "linear-gradient(to top right, #f9ce34, #ee2a7b, #6228d7)" }}
+                    >
+                      <div className="rounded-full p-[2px] bg-background">
+                        <Avatar className="w-20 h-20">
+                          <AvatarImage
+                            src={user?.avatar || "/default-avatar.png"}
+                            alt={user?.displayName}
+                            style={{ objectFit: "cover" }}
+                            onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+                          />
+                          <AvatarFallback className="text-2xl">
+                            {user?.displayName?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                  ) : (
+                    <Avatar className="w-20 h-20">
+                      <AvatarImage
+                        src={user?.avatar || "/default-avatar.png"}
+                        alt={user?.displayName}
+                        style={{ objectFit: "cover" }}
+                        onError={(e) => { e.currentTarget.src = "/default-avatar.png"; }}
+                      />
+                      <AvatarFallback className="text-2xl">
+                        {user?.displayName?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </button>
+              );
+            })()}
+
+            {/* Dropdown: Xem tin / Xem ảnh đại diện */}
+            {avatarMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 z-30 w-52 rounded-2xl border border-border bg-card shadow-xl overflow-hidden">
+                <button
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-sm font-semibold hover:bg-accent transition-colors"
+                  onClick={() => { setAvatarMenuOpen(false); setStoryViewerOpen(true); }}
+                >
+                  <BookOpen className="w-5 h-5 shrink-0" />
+                  Xem tin
+                </button>
+                <div className="h-px bg-border" />
+                <button
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-sm font-semibold hover:bg-accent transition-colors"
+                  onClick={() => { setAvatarMenuOpen(false); if (user?.avatar) setAvatarViewerOpen(true); }}
+                >
+                  <UserCircle className="w-5 h-5 shrink-0" />
+                  Xem ảnh đại diện
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats followers / following */}
@@ -506,12 +606,28 @@ export function ProfilePage() {
         index={0}
       />
 
+      {/* StoryViewer — xem story của user */}
+      {storyViewerOpen && (isOwnProfile ? myStories.length > 0 : userStories.length > 0) && (
+        <StoryViewer
+          groups={[{
+            userId: user?.userId,
+            fullName: user?.displayName,
+            avatarUrl: user?.avatar,
+            stories: isOwnProfile ? myStories : userStories, //truyền myStories nếu own profile, userStories nếu người khác
+          }]}
+          startIndex={0}
+          onClose={() => setStoryViewerOpen(false)}
+        />
+      )}
+
       {/* Dialog Edit Profile riêng */}
       <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} />
 
       {/* Unfollow confirmation dialog */}
       <AlertDialog open={unfollowDialogOpen} onOpenChange={setUnfollowDialogOpen}>
         <AlertDialogContent className="w-fit min-w-[200px] rounded-2xl p-0 overflow-hidden gap-0">
+          <AlertDialogTitle className="sr-only">Unfollow</AlertDialogTitle>
+          <AlertDialogDescription className="sr-only">Confirm unfollow action</AlertDialogDescription>
           {/* Header — avatar + name */}
           <div className="flex flex-col items-center gap-2 px-4 pt-4 pb-3">
             <Avatar style={{ width: 48, height: 48, minWidth: 48, minHeight: 48 }} className="shrink-0 ring-2 ring-border">

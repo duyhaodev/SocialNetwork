@@ -16,8 +16,10 @@ public class UserProfileResponse {
     String username;
     String firstName;
     String lastName;
+
     @JsonFormat(pattern = "dd-MM-yyyy")
     LocalDate dob;
+
     String city;
     String avatarUrl;
     String bio;

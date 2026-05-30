@@ -56,6 +56,10 @@ public class Story {
     @Column(name = "music_start_ms")
     Integer musicStartMs;
 
+    // Kiểu chữ: normal | title | compact | stylish
+    @Column(name = "font_id", length = 20)
+    String fontId;
+
     @Column(length = 20)
     @Builder.Default
     String scope = "PUBLIC";

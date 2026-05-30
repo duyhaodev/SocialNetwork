@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Search, Play, Pause, Music } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { searchMusic, selectMusicResults, selectMusicLoading, clearMusicResults } from "../../store/storySlice";
@@ -11,11 +11,26 @@ export default function MusicPicker({ onSelect, onClose }) {
     const [query, setQuery] = useState("");
     const [playingUrl, setPlayingUrl] = useState(null);
     const audioRef = useRef(null);
+    const debounceRef = useRef(null);
+
+    // Debounce: chờ 500ms sau khi ngừng gõ rồi mới tìm
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+
+        if (!query.trim()) {
+            dispatch(clearMusicResults());
+            return;
+        }
+
+        debounceRef.current = setTimeout(() => {
+            dispatch(searchMusic(query.trim()));
+        }, 500);
+
+        return () => clearTimeout(debounceRef.current);
+    }, [query, dispatch]);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        if (!query.trim()) return;
-        dispatch(searchMusic(query.trim()));
     };
 
     const handlePlay = (previewUrl) => {

@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button.js";
 import { Textarea } from "../../components/ui/textarea.js";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar.js";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
 import { Image, Smile, AtSign, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover.js";
 import EmojiPicker from "emoji-picker-react";
 import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import { SuggestedUsers } from "../../components/SuggestedUsers/SuggestedUsers.jsx";
 import StoryBar from "../../components/Story/StoryBar.jsx";
+import { LocalFeedTab } from "./LocalFeedTab.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchRecommendedFeed,
@@ -19,6 +21,7 @@ import {
   selectPostsCreating,
   selectPostsPage,
 } from "../../store/postsSlice";
+import { selectCity } from "../../store/userSlice";
 import { toast } from "sonner";
 import mediaApi from "../../api/mediaApi";
 import aiApi from "../../api/aiApi";
@@ -32,12 +35,15 @@ export function FeedPage() {
   const profile = useSelector((s) => s.user.profile) ?? {};
   const displayName = profile.fullName ?? "User";
   const avatarUrl = profile.avatarUrl;
+  const city = useSelector(selectCity);
 
   const posts = useSelector(selectPosts);
   const hasMore = useSelector(selectPostsHasMore);
   const loading = useSelector(selectPostsLoading);
   const creating = useSelector(selectPostsCreating);
   const page = useSelector(selectPostsPage);
+
+  // Tab: "forYou" | "local" — quản lý bởi Tabs component, không cần state thủ công
 
   // Vị trí chèn suggestion card — random 3-7, cố định trong session
   const [insertAfter] = useState(() => Math.floor(Math.random() * 5) + 10);
@@ -63,6 +69,7 @@ export function FeedPage() {
       .unwrap()
       .catch(() => toast.error("Failed to load feed"));
   }, [dispatch]);
+
 
   useEffect(() => {
     if (!hasMore) return;
@@ -309,11 +316,14 @@ export function FeedPage() {
         `}
       </style>
 
-      <div className="border-b border-border p-4 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-        <h2 className="text-xl font-semibold">Home</h2>
+      {/* Header sticky */}
+      <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="px-4 py-4">
+          <h2 className="text-xl font-semibold">Home</h2>
+        </div>
       </div>
 
-      {/* Phần đăng post */}
+      {/* Compose box — luôn hiển thị */}
       <div className="border-b border-border p-4">
         <div className="flex gap-3">
           <Avatar className="w-10 h-10 flex-shrink-0">
@@ -346,15 +356,10 @@ export function FeedPage() {
                   <span className="text-xs text-muted-foreground">
                     {mediaFiles.length} media selected
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleRemoveAll}
-                    className="text-xs text-red-400 hover:underline"
-                  >
+                  <button type="button" onClick={handleRemoveAll} className="text-xs text-red-400 hover:underline">
                     Remove all
                   </button>
                 </div>
-
                 <div className="w-full max-w-full rounded-2xl border border-border/40 bg-black/20 overflow-hidden">
                   <div
                     ref={mediaScrollRef}
@@ -364,32 +369,14 @@ export function FeedPage() {
                     onDragStart={(e) => e.preventDefault()}
                   >
                     {mediaFiles.map((m, idx) => (
-                      <div
-                        key={idx}
-                        className="relative group flex-shrink-0 max-w-[150px] aspect-[3/4] rounded-xl overflow-hidden"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveOne(idx)}
-                          className="absolute top-2 right-2 z-20 bg-black/60 hover:bg-black/80 rounded-full p-1"
-                        >
+                      <div key={idx} className="relative group flex-shrink-0 max-w-[150px] aspect-[3/4] rounded-xl overflow-hidden">
+                        <button type="button" onClick={() => handleRemoveOne(idx)} className="absolute top-2 right-2 z-20 bg-black/60 hover:bg-black/80 rounded-full p-1">
                           <X className="w-4 h-4 text-white" />
                         </button>
-
                         {m.kind === "video" ? (
-                          <video
-                            src={m.preview}
-                            preload="metadata"
-                            draggable={false}
-                            className="block w-full h-full object-cover"
-                          />
+                          <video src={m.preview} preload="metadata" draggable={false} className="block w-full h-full object-cover" />
                         ) : (
-                          <img
-                            src={m.preview}
-                            alt="preview"
-                            draggable={false}
-                            className="block w-full h-full object-cover"
-                          />
+                          <img src={m.preview} alt="preview" draggable={false} className="block w-full h-full object-cover" />
                         )}
                       </div>
                     ))}
@@ -398,14 +385,7 @@ export function FeedPage() {
               </div>
             )}
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              className="hidden"
-              onChange={onFileChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={onFileChange} />
 
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-4">
@@ -418,7 +398,6 @@ export function FeedPage() {
                 >
                   <Image className="w-5 h-5" />
                 </Button>
-
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -432,14 +411,7 @@ export function FeedPage() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-64 p-0 border-0">
-                    <EmojiPicker
-                      theme="dark"
-                      emojiStyle="native"
-                      skinTonesDisabled
-                      searchDisabled
-                      previewConfig={{ showPreview: false }}
-                      onEmojiClick={handleEmojiClick}
-                    />
+                    <EmojiPicker theme="dark" emojiStyle="native" skinTonesDisabled searchDisabled previewConfig={{ showPreview: false }} onEmojiClick={handleEmojiClick} />
                   </PopoverContent>
                 </Popover>
 
@@ -453,17 +425,9 @@ export function FeedPage() {
                   <AtSign className="w-5 h-5" />
                 </Button>
               </div>
-
               <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">
-                  {newPost.length}/500
-                </span>
-                <Button
-                  type="button"
-                  onClick={handleCreatePost}
-                  disabled={creating || isPosting || (!newPost.trim() && mediaFiles.length === 0)}
-                  size="sm"
-                >
+                <span className="text-sm text-muted-foreground">{newPost.length}/500</span>
+                <Button type="button" onClick={handleCreatePost} disabled={creating || isPosting || (!newPost.trim() && mediaFiles.length === 0)} size="sm">
                   {(creating || isPosting) ? "Posting..." : "Post"}
                 </Button>
               </div>
@@ -472,65 +436,84 @@ export function FeedPage() {
         </div>
       </div>
 
-      {/* Story Bar — dưới phần đăng post */}
+      {/* Story Bar — luôn hiển thị */}
       <div className="border-b border-border px-4 py-3">
         <StoryBar />
       </div>
 
-      <div>
-        {posts.map((post, index) => {
-          const username = post.username ?? post.user?.username ?? "unknown";
-          const fullName = post.fullName ?? post.user?.fullName ?? "User";
-          const avatarUrl = post.avatarUrl ?? post.user?.avatarUrl;
-          const createdAt = post.createdAt ?? post.created_time ?? post.created_at;
+      {/* Tabs — nằm dưới Story, giống ProfilePage */}
+      <Tabs defaultValue="forYou">
+        <TabsList className="w-full rounded-none border-b border-border bg-transparent h-auto p-0">
+          <TabsTrigger
+            value="forYou"
+            className="flex-1 rounded-none py-3 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:shadow-none bg-transparent"
+          >
+            For You
+          </TabsTrigger>
+          <TabsTrigger
+            value="local"
+            className="flex-1 rounded-none py-3 text-sm font-medium data-[state=active]:border-b-2 data-[state=active]:border-foreground data-[state=active]:shadow-none bg-transparent"
+          >
+            {city && city !== "Unknown" ? `Local Feed · ${city}` : "Local Feed"}
+          </TabsTrigger>
+        </TabsList>
 
-          const mediaList = Array.isArray(post.mediaUrls)
-            ? post.mediaUrls
-            : [];
+        {/* Tab For You */}
+        <TabsContent value="forYou" className="mt-0">
+          <div>
+            {posts.map((post, index) => {
+              const username = post.username ?? post.user?.username ?? "unknown";
+              const fullName = post.fullName ?? post.user?.fullName ?? "User";
+              const avatarUrl = post.avatarUrl ?? post.user?.avatarUrl;
+              const createdAt = post.createdAt ?? post.created_time ?? post.created_at;
+              const mediaList = Array.isArray(post.mediaUrls) ? post.mediaUrls : [];
 
-          return (
-            <div key={post.id}>
-              {/* Chèn suggestion card sau bài thứ insertAfter */}
-              {index === insertAfter && !suggestionDismissed && (
-                <SuggestedUsers onDismiss={() => setSuggestionDismissed(true)} />
-              )}
-              <PostCard
-                post={{
-                  ...post,
-                  username,
-                  fullName,
-                  avatarUrl,
-                  createdAt,
-                  mediaList,
-                }}
-                onProfileClick={handleProfileClick}
-                onPostClick={(id) => navigate(`/post/${id}`)}
-              />
-            </div>
-          );
-        })}
-      </div>
+              return (
+                <div key={post.id}>
+                  {index === insertAfter && !suggestionDismissed && (
+                    <SuggestedUsers onDismiss={() => setSuggestionDismissed(true)} />
+                  )}
+                  <PostCard
+                    post={{ ...post, username, fullName, avatarUrl, createdAt, mediaList }}
+                    onProfileClick={handleProfileClick}
+                    onPostClick={(id) => navigate(`/post/${id}`)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div className="p-4 text-center">
+            {loading && hasMore && <span className="text-muted-foreground text-sm">Loading...</span>}
+            {hasMore && <div ref={loadMoreRef} className="h-1" />}
+            {!hasMore && !loading && <span className="text-muted-foreground text-sm">No more posts</span>}
+          </div>
+        </TabsContent>
 
-      <div className="p-4 text-center">
-        {loading && hasMore && (
-          <span className="text-muted-foreground text-sm">Loading...</span>
-        )}
-        {hasMore && <div ref={loadMoreRef} className="h-1" />}
-        {!hasMore && !loading && (
-          <span className="text-muted-foreground text-sm">No more posts</span>
-        )}
-      </div>
+        <div className="p-4 text-center">
+          {loading && hasMore && (
+            <span className="text-muted-foreground text-sm">Loading...</span>
+          )}
+          {hasMore && <div ref={loadMoreRef} className="h-1" />}
+          {!hasMore && !loading && (
+            <span className="text-muted-foreground text-sm">No more posts</span>
+          )}
+        </div>
 
-      <ModerationWarning
-        open={showModWarning}
-        result={moderationResult}
-        onClose={() => setShowModWarning(false)}
-        onPostAnyway={() => {
-          setShowModWarning(false);
-          setModerationResult(null);
-          doPost();
-        }}
-      />
-    </div>
+        <ModerationWarning
+          open={showModWarning}
+          result={moderationResult}
+          onClose={() => setShowModWarning(false)}
+          onPostAnyway={() => {
+            setShowModWarning(false);
+            setModerationResult(null);
+            doPost();
+          }}
+        />
+        {/* Tab Local Feed */}
+        <TabsContent value="local" className="mt-0">
+          <LocalFeedTab city={city} />
+        </TabsContent>
+      </Tabs>
+    </div >
   );
 }

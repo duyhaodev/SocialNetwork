@@ -55,6 +55,7 @@ public class StoryService {
                 .musicAlbumArt(request.getMusicAlbumArt())
                 .musicPreviewUrl(request.getMusicPreviewUrl())
                 .musicStartMs(request.getMusicStartMs())
+                .fontId(request.getFontId())
                 .scope(request.getScope() != null ? request.getScope() : "PUBLIC")
                 .build();
 

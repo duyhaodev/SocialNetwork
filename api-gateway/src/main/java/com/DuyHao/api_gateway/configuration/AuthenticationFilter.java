@@ -55,21 +55,25 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         log.debug("token:{}", token);
 
         String path = exchange.getRequest().getURI().getPath();
+
         return identityService.introspect(token)
                 .doOnError(t -> log.error("[INTROSPECT FAIL] path={} err={}", path, t.getMessage()))
                 .flatMap(introspectResponse -> {
-                    if (introspectResponse.getResult() != null && introspectResponse.getResult().isValid())
-                        return chain.filter(exchange)
+                    if (introspectResponse.getResult() != null && introspectResponse.getResult().isValid()) {
+                        // Inject X-Client-IP để downstream services dùng cho GeoIP
+                        ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                                .header("X-Client-IP", extractClientIp(exchange.getRequest()))
+                                .build();
+                        return chain.filter(exchange.mutate().request(mutatedRequest).build())
                                 .doOnError(t -> log.error("[FORWARD FAIL] path={} err={}", path, t.getMessage()));
-                    else {
+                    } else {
                         log.warn("[INTROSPECT INVALID] path={}", path);
                         return unauthenticated(exchange.getResponse());
                     }
                 })
                 .onErrorResume(throwable -> {
-                    // Nếu là forward fail thì client đã nhận response rồi (hoặc gateway sẽ trả lỗi gateway).
-                    // Chỉ trả 1401 khi introspect thực sự fail.
-                    if (throwable.getMessage() != null && throwable.getMessage().contains("Connection refused")
+                    if (throwable.getMessage() != null
+                            && throwable.getMessage().contains("Connection refused")
                             && !throwable.getMessage().contains("8080")) {
                         // Connection refused tới service khác (không phải identity) = service down
                         log.error("[BACKEND DOWN] path={} err={}", path, throwable.getMessage());
@@ -107,5 +111,21 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         return Arrays.stream(publicEndpoints)
                 .anyMatch(path::matches);
+    }
+
+    /**
+     * Lấy IP thật của client từ X-Forwarded-For (lấy IP đầu tiên).
+     * Fallback về remoteAddress nếu không có header.
+     */
+    private String extractClientIp(ServerHttpRequest request) {
+        List<String> forwarded = request.getHeaders().get("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isEmpty()) {
+            // X-Forwarded-For có thể là "client, proxy1, proxy2" → lấy IP đầu tiên
+            return forwarded.getFirst().split(",")[0].trim();
+        }
+        if (request.getRemoteAddress() != null) {
+            return request.getRemoteAddress().getAddress().getHostAddress();
+        }
+        return "";
     }
 }

@@ -10,6 +10,33 @@ import MusicPicker from "./MusicPicker";
 import MusicWaveform from "./MusicWaveform";
 import { toast } from "sonner";
 
+const FONTS = [
+    {
+        id: "normal",
+        label: "Bình thường",
+        style: { fontFamily: "sans-serif", fontWeight: 700, fontStyle: "normal" },
+        preview: "Aa",
+    },
+    {
+        id: "title",
+        label: "Tiêu đề",
+        style: { fontFamily: "'Georgia', serif", fontWeight: 700, fontStyle: "normal" },
+        preview: "Aa",
+    },
+    {
+        id: "compact",
+        label: "Gọn gàng",
+        style: { fontFamily: "'Courier New', monospace", fontWeight: 500, fontStyle: "normal" },
+        preview: "Aa",
+    },
+    {
+        id: "stylish",
+        label: "Kiểu cách",
+        style: { fontFamily: "'Georgia', serif", fontWeight: 400, fontStyle: "italic" },
+        preview: "Aa",
+    },
+];
+
 const BACKGROUNDS = [
     "linear-gradient(135deg, #1877f2, #0a5dc2)",
     "linear-gradient(135deg, #f093fb, #f5576c)",
@@ -33,6 +60,7 @@ export default function StoryTextEditor({ onClose, onBack }) {
 
     const [text, setText] = useState("");
     const [background, setBackground] = useState(BACKGROUNDS[0]);
+    const [selectedFont, setSelectedFont] = useState(FONTS[0]);
     const [scope, setScope] = useState("PUBLIC");
     const [showMusicPicker, setShowMusicPicker] = useState(false);
     const [selectedMusic, setSelectedMusic] = useState(null);
@@ -49,6 +77,7 @@ export default function StoryTextEditor({ onClose, onBack }) {
             mediaType: "TEXT",
             textContent: text.trim(),
             backgroundColor: background,
+            fontId: selectedFont.id,
             scope,
             musicTitle: selectedMusic?.title || null,
             musicArtist: selectedMusic?.artist || null,
@@ -88,6 +117,32 @@ export default function StoryTextEditor({ onClose, onBack }) {
                                     className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${background === bg ? "ring-2 ring-white ring-offset-1 ring-offset-[#1e1e1e] scale-110" : ""}`}
                                     style={{ background: bg }}
                                 />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Kiểu chữ */}
+                    <div>
+                        <p className="text-white/40 text-xs font-medium uppercase tracking-wider mb-3">Kiểu chữ</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {FONTS.map((font) => (
+                                <button
+                                    key={font.id}
+                                    onClick={() => setSelectedFont(font)}
+                                    className={`flex flex-col items-center justify-center gap-1 py-2.5 rounded-lg border transition-all ${
+                                        selectedFont.id === font.id
+                                            ? "border-primary bg-primary/10 text-white"
+                                            : "border-[#2a2a2a] bg-[#1a1a1a] text-white/50 hover:border-white/20 hover:text-white/80"
+                                    }`}
+                                >
+                                    <span
+                                        className="text-lg leading-none"
+                                        style={font.style}
+                                    >
+                                        {font.preview}
+                                    </span>
+                                    <span className="text-[10px] font-medium">{font.label}</span>
+                                </button>
                             ))}
                         </div>
                     </div>
@@ -175,6 +230,7 @@ export default function StoryTextEditor({ onClose, onBack }) {
                                     overflow: "hidden",
                                     height: "auto",
                                     minHeight: "2rem",
+                                    ...selectedFont.style,
                                 }}
                                 rows={1}
                                 onInput={(e) => {

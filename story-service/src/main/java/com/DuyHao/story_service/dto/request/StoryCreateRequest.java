@@ -20,6 +20,7 @@ public class StoryCreateRequest {
     private String musicAlbumArt;
     private String musicPreviewUrl;
     private Integer musicStartMs;
+    private String fontId;
 
     private String scope;
 }

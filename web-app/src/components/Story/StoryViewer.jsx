@@ -14,6 +14,17 @@ const TICK = 100;
 const DEFAULT_DURATION = 5000;   // 5s không có nhạc
 const MUSIC_DURATION = 15000;    // 15s có nhạc
 
+const FONT_STYLES = {
+    normal:  { fontFamily: "sans-serif",             fontWeight: 700, fontStyle: "normal" },
+    title:   { fontFamily: "'Georgia', serif",        fontWeight: 700, fontStyle: "normal" },
+    compact: { fontFamily: "'Courier New', monospace",fontWeight: 500, fontStyle: "normal" },
+    stylish: { fontFamily: "'Georgia', serif",        fontWeight: 400, fontStyle: "italic" },
+};
+
+function getFontStyle(fontId) {
+    return FONT_STYLES[fontId] || FONT_STYLES.normal;
+}
+
 export default function StoryViewer({ groups, startIndex, onClose }) {
     const dispatch = useDispatch();
     const currentUser = useSelector(selectUser);
@@ -212,7 +223,12 @@ export default function StoryViewer({ groups, startIndex, onClose }) {
                     )}
                     {currentStory.mediaType === "TEXT" && (
                         <div className="w-full h-full flex items-center justify-center p-10" style={{ background: currentStory.backgroundColor || "#1a1a2e" }}>
-                            <p className="text-white text-2xl font-bold text-center break-words leading-relaxed">{currentStory.textContent}</p>
+                            <p
+                                className="text-white text-2xl text-center break-words leading-relaxed"
+                                style={getFontStyle(currentStory.fontId)}
+                            >
+                                {currentStory.textContent}
+                            </p>
                         </div>
                     )}
 

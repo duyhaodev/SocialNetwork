@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
@@ -38,6 +38,36 @@ export default function StoryBar() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [viewerState, setViewerState] = useState(null);
 
+    // Drag to scroll
+    const scrollRef = useRef(null);
+    const isDragging = useRef(false);
+    const startX = useRef(0);
+    const scrollLeft = useRef(0);
+
+    const onMouseDown = (e) => {
+        isDragging.current = false;
+        startX.current = e.pageX - scrollRef.current.offsetLeft;
+        scrollLeft.current = scrollRef.current.scrollLeft;
+        scrollRef.current.style.cursor = "grabbing";
+        scrollRef.current.addEventListener("mousemove", onMouseMove);
+        scrollRef.current.addEventListener("mouseup", onMouseUp);
+        scrollRef.current.addEventListener("mouseleave", onMouseUp);
+    };
+
+    const onMouseMove = (e) => {
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = x - startX.current;
+        if (Math.abs(walk) > 3) isDragging.current = true;
+        scrollRef.current.scrollLeft = scrollLeft.current - walk;
+    };
+
+    const onMouseUp = () => {
+        scrollRef.current.style.cursor = "grab";
+        scrollRef.current.removeEventListener("mousemove", onMouseMove);
+        scrollRef.current.removeEventListener("mouseup", onMouseUp);
+        scrollRef.current.removeEventListener("mouseleave", onMouseUp);
+    };
+
     useEffect(() => {
         dispatch(fetchFeedStories());
         dispatch(fetchMyStories());
@@ -55,11 +85,16 @@ export default function StoryBar() {
 
     return (
         <>
-            <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+            <div
+                ref={scrollRef}
+                className="flex gap-3 overflow-x-auto pb-2 select-none"
+                style={{ scrollbarWidth: "none", cursor: "grab" }}
+                onMouseDown={onMouseDown}
+            >
 
                 {/* Card "Tạo tin" */}
                 <button
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={() => { if (!isDragging.current) setShowCreateModal(true); }}
                     className="relative flex-shrink-0 w-28 h-44 rounded-xl overflow-hidden border border-border bg-muted hover:border-primary/50 transition-colors group"
                 >
                     {/* Nửa trên: avatar */}
@@ -94,12 +129,12 @@ export default function StoryBar() {
                 {/* Card "Tin của bạn" */}
                 {myStories.length > 0 && (
                     <button
-                        onClick={() => openViewer(
+                        onClick={() => { if (isDragging.current) return; openViewer(
                             [{ userId: currentUser?.userId, username: currentUser?.username,
                                fullName: currentUser?.fullName, avatarUrl: currentUser?.avatarUrl,
                                stories: myStories, hasUnviewed: false }],
                             0
-                        )}
+                        ); }}
                         className="relative flex-shrink-0 w-28 h-44 rounded-xl overflow-hidden border border-primary/50 group"
                     >
                         {/* Ảnh nền */}
@@ -130,7 +165,7 @@ export default function StoryBar() {
                 {feedGroups.map((group, index) => (
                     <button
                         key={group.userId}
-                        onClick={() => openViewer(feedGroups, index)}
+                        onClick={() => { if (!isDragging.current) openViewer(feedGroups, index); }}
                         className="relative flex-shrink-0 w-28 h-44 rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-colors group"
                     >
                         {/* Ảnh nền */}

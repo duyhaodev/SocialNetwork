@@ -31,6 +31,7 @@ public class StoryResponse {
     String musicAlbumArt;
     String musicPreviewUrl;
     Integer musicStartMs;
+    String fontId;
 
     String scope;
     LocalDateTime createdAt;

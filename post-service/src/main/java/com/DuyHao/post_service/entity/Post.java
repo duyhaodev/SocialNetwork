@@ -20,7 +20,8 @@ import org.hibernate.type.SqlTypes;
         name = "posts",
         indexes = {
             @Index(name = "idx_user_created", columnList = "user_id, created_at"),
-            @Index(name = "idx_repost_of", columnList = "repost_of_id")
+            @Index(name = "idx_repost_of", columnList = "repost_of_id"),
+            @Index(name = "idx_city_created", columnList = "city, created_at")
         })
 public class Post {
 
@@ -46,6 +47,9 @@ public class Post {
 
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
+
+    @Column(length = 100)
+    String city;
 
     // Repost
     @ManyToOne(fetch = FetchType.LAZY)

@@ -120,6 +120,8 @@ function UserCard({ user, currentUserId, onProfileClick, mutualCount }) {
           className="w-fit min-w-[200px] rounded-2xl p-0 overflow-hidden gap-0"
           onClick={(e) => e.stopPropagation()}
         >
+          <AlertDialogTitle className="sr-only">Unfollow</AlertDialogTitle>
+          <AlertDialogDescription className="sr-only">Confirm unfollow action</AlertDialogDescription>
           <div className="flex flex-col items-center gap-2 px-4 pt-4 pb-3">
             <Avatar style={{ width: 48, height: 48, minWidth: 48, minHeight: 48 }} className="shrink-0 ring-2 ring-border">
               <AvatarImage src={user.avatarUrl} style={{ objectFit: "cover" }} />

@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Globe } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { ImageViewer } from "../ImageViewer/ImageViewer.jsx";
 import likeApi from "@/api/likeApi";
 import repostApi from "@/api/repostApi";
+import postApi from "@/api/postApi";
 import { useSelector, useDispatch } from "react-redux";
-import { toggleRepost , syncLikeByOriginalId, deletePost } from "@/store/postsSlice";
+import { toggleRepost, syncLikeByOriginalId, deletePost } from "@/store/postsSlice";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -14,11 +15,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import {formatTimeAgo} from "../../utils/dateUtils.js"
+import { formatTimeAgo } from "../../utils/dateUtils.js"
 import ConfirmDeleteModal from "../Modals/ConfirmDeleteModal";
 import { Trash2, Link } from "lucide-react";
 import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 import { LikersTooltip } from "../LikersTooltip/LikersTooltip";
+import { franc } from "franc";
+
+// Map mã ngôn ngữ DeepL → tên tiếng Việt
+const LANG_NAMES = {
+  EN: "Anh", JA: "Nhật", KO: "Hàn", ZH: "Trung",
+  FR: "Pháp", DE: "Đức", ES: "Tây Ban Nha", IT: "Ý",
+  RU: "Nga", PT: "Bồ Đào Nha", NL: "Hà Lan", PL: "Ba Lan",
+  TH: "Thái", ID: "Indonesia", AR: "Ả Rập",
+};
 
 export function PostCard({ post, onProfileClick, onPostClick }) {
 
@@ -51,10 +61,10 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
   // list media
   const mediaList = Array.isArray(post.mediaUrls)
     ? post.mediaUrls.map((url, idx) => ({
-        id: idx,
-        mediaUrl: url,
-        mediaType: url?.includes(".mp4") ? "video" : "image",
-      }))
+      id: idx,
+      mediaUrl: url,
+      mediaType: url?.includes(".mp4") ? "video" : "image",
+    }))
     : [];
 
   const mediaCount = mediaList.length;
@@ -77,52 +87,86 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
   const [repostMenuOpen, setRepostMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
+  // ====== TRANSLATE ======
+  const [translatedText, setTranslatedText] = useState(null);
+  const [detectedLang, setDetectedLang] = useState(null);
+  const [translating, setTranslating] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+
+  // Detect ngôn ngữ bằng franc — hiện nút dịch nếu không phải tiếng Việt
+  const isNonVietnamese = useMemo(() => {
+    const content = isRepost ? post.originalContent : post.content;
+    if (!content || content.trim().length < 10) return false;
+    const lang = franc(content);
+    return lang !== "vie" && lang !== "und";
+  }, [post.content, post.originalContent, isRepost]);
+
+  const handleTranslate = async () => {
+    // Nếu đã có bản dịch thì toggle hiện/ẩn
+    if (translatedText) {
+      setShowTranslation((v) => !v);
+      return;
+    }
+    // Chưa có thì gọi API
+    setTranslating(true);
+    try {
+      const res = await postApi.translate(isRepost ? post.originalContent : post.content);
+      setTranslatedText(res?.result?.translatedText);
+      setDetectedLang(res?.result?.detectedSourceLang);
+      setShowTranslation(true);
+    } catch (err) {
+      toast.error("Dịch thất bại, thử lại sau");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   useEffect(() => {
-    setIsLiked( post.liked ?? post.likedByCurrentUser ?? post.isLikedByCurrentUser ?? false);
+    setIsLiked(post.liked ?? post.likedByCurrentUser ?? post.isLikedByCurrentUser ?? false);
     setLikes(post.likeCount ?? 0);
   }, [post.liked, post.likedByCurrentUser, post.isLikedByCurrentUser, post.likeCount]);
 
   const handleLike = async () => {
-  if (liking) return;
-  const id = originalPostId;
-  if (!id) return;
+    if (liking) return;
+    const id = originalPostId;
+    if (!id) return;
 
-  const prevLiked = isLiked;
-  const prevLikes = likes;
-  const nextLiked = !isLiked;
-  const nextLikes = nextLiked
-    ? prevLikes + 1
-    : Math.max(0, prevLikes - 1);
+    const prevLiked = isLiked;
+    const prevLikes = likes;
+    const nextLiked = !isLiked;
+    const nextLikes = nextLiked
+      ? prevLikes + 1
+      : Math.max(0, prevLikes - 1);
 
-  // optimistic UI
-  setIsLiked(nextLiked);
-  setLikes(nextLikes);
-  setLiking(true);
+    // optimistic UI
+    setIsLiked(nextLiked);
+    setLikes(nextLikes);
+    setLiking(true);
 
-  try {
-    const res = await likeApi.togglePost(id);
+    try {
+      const res = await likeApi.togglePost(id);
 
-    if (typeof res?.liked === "boolean" && typeof res?.likeCount === "number") {
-      setIsLiked(res.liked);
-      setLikes(res.likeCount);
-      dispatch(
-        syncLikeByOriginalId({
-          originalId: id,
-          liked: res.liked,
-          likeCount: res.likeCount,
-        })
-      );
+      if (typeof res?.liked === "boolean" && typeof res?.likeCount === "number") {
+        setIsLiked(res.liked);
+        setLikes(res.likeCount);
+        dispatch(
+          syncLikeByOriginalId({
+            originalId: id,
+            liked: res.liked,
+            likeCount: res.likeCount,
+          })
+        );
+      }
+    } catch (err) {
+      console.error("Toggle like failed:", err);
+      setIsLiked(prevLiked);
+      setLikes(prevLikes);
+    } finally {
+      setLiking(false);
     }
-  } catch (err) {
-    console.error("Toggle like failed:", err);
-    setIsLiked(prevLiked);
-    setLikes(prevLikes);
-  } finally {
-    setLiking(false);
-  }
-};
+  };
 
-useEffect(() => {
+  useEffect(() => {
     setIsReposted(post.repostedByCurrentUser ?? false);
     setReposts(post.repostCount ?? 0);
   }, [post.repostedByCurrentUser, post.repostCount]);
@@ -138,43 +182,43 @@ useEffect(() => {
     setRepostMenuOpen(false);
 
     try {
-        const result = await dispatch(toggleRepost(id)).unwrap();
-        setIsReposted(result.reposted);
-        setReposts(result.repostCount);
+      const result = await dispatch(toggleRepost(id)).unwrap();
+      setIsReposted(result.reposted);
+      setReposts(result.repostCount);
 
-        toast.success(result.reposted ? "Post reposted" : "Repost removed");
+      toast.success(result.reposted ? "Post reposted" : "Repost removed");
 
     } catch (err) {
-        console.error("Repost action failed:", err);
-        toast.error(err || "Failed to process repost");
-        
-        // 5. Rollback nếu lỗi
-        setIsReposted(prevReposted);
-        setReposts(prevReposts);
+      console.error("Repost action failed:", err);
+      toast.error(err || "Failed to process repost");
+
+      // 5. Rollback nếu lỗi
+      setIsReposted(prevReposted);
+      setReposts(prevReposts);
     }
-};
+  };
 
   const handleDeletePost = async () => {
-  const id = post.id ?? post.postId;
-  if (!id) return;
+    const id = post.id ?? post.postId;
+    if (!id) return;
 
-  try {
-    await dispatch(deletePost(id)).unwrap();
-    toast.success("Post deleted");
-    setOpenDelete(false);  
-  } catch (err) {
-    console.error("Delete post failed:", err);
-    toast.error("Failed to delete post, please try again");
-  }
-};
+    try {
+      await dispatch(deletePost(id)).unwrap();
+      toast.success("Post deleted");
+      setOpenDelete(false);
+    } catch (err) {
+      console.error("Delete post failed:", err);
+      toast.error("Failed to delete post, please try again");
+    }
+  };
 
 
   const formatNumber = (num) =>
     num >= 1_000_000
       ? (num / 1_000_000).toFixed(1) + "M"
       : num >= 1_000
-      ? (num / 1_000).toFixed(1) + "K"
-      : String(num);
+        ? (num / 1_000).toFixed(1) + "K"
+        : String(num);
 
   // Hàm mở trang chi tiết bài viết
   const handleOpenPost = () => {
@@ -253,7 +297,7 @@ useEffect(() => {
         entries.forEach((entry) => {
           const el = entry.target;
           if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
-            el.play().catch(() => {});
+            el.play().catch(() => { });
           } else {
             el.pause();
           }
@@ -309,11 +353,12 @@ useEffect(() => {
           <button
             className="hover:underline"
             onClick={(e) => {
-              e.stopPropagation();       
-              onProfileClick?.(baseUsername); }}>
+              e.stopPropagation();
+              onProfileClick?.(baseUsername);
+            }}>
             {reposterName}
-          </button> 
-            reposted
+          </button>
+          reposted
         </div>
       )}
 
@@ -382,9 +427,9 @@ useEffect(() => {
                     <DropdownMenuItem
                       className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
                       onClick={() => {
-                      setOpenDelete(true);
-                      setMoreMenuOpen(false);
-                    }}
+                        setOpenDelete(true);
+                        setMoreMenuOpen(false);
+                      }}
 
                     >
                       <div className="flex items-center gap-2">
@@ -413,7 +458,7 @@ useEffect(() => {
           {/* Content + media */}
           <div className="mb-3">
             <p className="whitespace-pre-wrap">
-              {post.content}
+              {isRepost ? post.originalContent : post.content}
             </p>
 
             {post.tags && post.tags.length > 0 && (
@@ -427,6 +472,35 @@ useEffect(() => {
                   </span>
                 ))}
               </div>
+            )}
+
+            {/* Bản dịch — hiện khi user bấm dịch */}
+            {showTranslation && translatedText && (
+              <div className="mt-3 rounded-xl bg-muted/40 border border-border/50 px-3 py-2.5">
+                <p className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">{translatedText}</p>
+                {detectedLang && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <span className="text-xs text-muted-foreground">
+                      Đã dịch từ tiếng {LANG_NAMES[detectedLang] ?? detectedLang}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Nút dịch — chỉ hiện nếu franc detect không phải tiếng Việt */}
+            {isNonVietnamese && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleTranslate(); }}
+                disabled={translating}
+                className="mt-2 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-40"
+              >
+                {translating
+                  ? "Đang dịch..."
+                  : showTranslation
+                    ? "Xem bản gốc"
+                    : "Dịch bài viết"}
+              </button>
             )}
 
             {/* PHẦN MEDIA */}
@@ -555,14 +629,12 @@ useEffect(() => {
               }}
             >
               <Heart
-                className={`w-5 h-5 ${
-                  isLiked ? "text-red-500 fill-red-500" : "group-hover:text-red-500"
-                }`}
+                className={`w-5 h-5 ${isLiked ? "text-red-500 fill-red-500" : "group-hover:text-red-500"
+                  }`}
               />
               <span
-                className={`ml-1 text-sm ${
-                  isLiked ? "text-red-500" : "text-muted-foreground group-hover:text-red-500"
-                }`}
+                className={`ml-1 text-sm ${isLiked ? "text-red-500" : "text-muted-foreground group-hover:text-red-500"
+                  }`}
               >
                 {formatNumber(likes)}
               </span>
@@ -596,16 +668,14 @@ useEffect(() => {
                   aria-label="Repost"
                 >
                   <Repeat2
-                    className={`w-5 h-5 ${
-                      isReposted ? "text-green-500" : "group-hover:text-green-500"
-                    }`}
+                    className={`w-5 h-5 ${isReposted ? "text-green-500" : "group-hover:text-green-500"
+                      }`}
                   />
                   <span
-                    className={`ml-1 text-sm ${
-                      isReposted
-                        ? "text-green-500"
-                        : "text-muted-foreground group-hover:text-green-500"
-                    }`}
+                    className={`ml-1 text-sm ${isReposted
+                      ? "text-green-500"
+                      : "text-muted-foreground group-hover:text-green-500"
+                      }`}
                   >
                     {formatNumber(reposts)}
                   </span>
@@ -626,9 +696,8 @@ useEffect(() => {
                       {isReposted ? "Remove Repost" : "Repost"}
                     </span>
                     <Repeat2
-                      className={`w-4 h-4 ${
-                        isReposted ? "text-red-500" : "text-muted-foreground"
-                      }`}
+                      className={`w-4 h-4 ${isReposted ? "text-red-500" : "text-muted-foreground"
+                        }`}
                     />
                   </div>
                 </DropdownMenuItem>
