@@ -15,11 +15,35 @@ export const useWebRTC = (callData, callStatus, onPeerDisconnect) => {
     const originalVideoTrack = useRef(null); // Lưu lại camera khi share màn hình
     const [isScreenSharing, setIsScreenSharing] = useState(false);
     
-    // STUN servers của Google giúp tìm IP Public để vượt tường lửa (NAT)
+    // STUN + TURN servers để đảm bảo kết nối hoạt động trong mọi điều kiện mạng
     const rtcConfig = {
         iceServers: [
+            // STUN của Google — kết nối trực tiếp khi cùng mạng
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
+            { urls: 'stun:stun1.l.google.com:19302' },
+            // STUN của Metered
+            { urls: 'stun:stun.relay.metered.ca:80' },
+            // TURN của Metered — relay khi không kết nối trực tiếp được (khác mạng, tường lửa)
+            {
+                urls: 'turn:global.relay.metered.ca:80',
+                username: '58dd567257c348ff3cef8670',
+                credential: 'JYid+Q93W2TVLWaZ',
+            },
+            {
+                urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+                username: '58dd567257c348ff3cef8670',
+                credential: 'JYid+Q93W2TVLWaZ',
+            },
+            {
+                urls: 'turn:global.relay.metered.ca:443',
+                username: '58dd567257c348ff3cef8670',
+                credential: 'JYid+Q93W2TVLWaZ',
+            },
+            {
+                urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+                username: '58dd567257c348ff3cef8670',
+                credential: 'JYid+Q93W2TVLWaZ',
+            },
         ]
     };
     

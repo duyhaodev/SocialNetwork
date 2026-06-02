@@ -208,8 +208,8 @@ public class CallService {
         
         for (CallSession session : activeSessions) {
             try {
-                // 1. RINGING Timeout (2 minutes)
-                if ("RINGING".equals(session.getStatus()) && session.getCreatedAt().plusMinutes(2).isBefore(now)) {
+                // 1. RINGING Timeout (70 giây = 60s frontend timeout + 10s buffer)
+                if ("RINGING".equals(session.getStatus()) && session.getCreatedAt().plusSeconds(70).isBefore(now)) {
                     log.info("Cleaning up RINGING session {} due to timeout", session.getId());
                     cancelCall(session.getId());
                     continue;

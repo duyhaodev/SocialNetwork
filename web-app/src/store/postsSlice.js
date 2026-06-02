@@ -205,6 +205,9 @@ const postsSlice = createSlice({
     loadingTagPosts: false,
     tagPage: 0,
     tagHasMore: true,
+
+    // Timestamp tăng mỗi khi có bài được tạo hoặc xóa — dùng để trigger refresh LocalFeedTab
+    lastMutatedAt: 0,
   },
   reducers: {
     resetFeed(state) {
@@ -291,6 +294,7 @@ const postsSlice = createSlice({
       .addCase(createPost.fulfilled, (state, action) => {
         state.items = [action.payload, ...state.items];
         state.creating = false;
+        state.lastMutatedAt = Date.now();
       })
       .addCase(createPost.rejected, (state, action) => {
         state.creating = false;
@@ -311,6 +315,7 @@ const postsSlice = createSlice({
         if (state.postDetail?.id === postId || state.postDetail?.repostOfId === postId) {
           state.postDetail = null;
         }
+        state.lastMutatedAt = Date.now();
       })
 
       // repostPost
@@ -444,6 +449,7 @@ export const selectPostsCreating = (state) => state.posts.creating;
 export const selectPostsHasMore = (state) => state.posts.hasMore;
 export const selectPostsPage = (state) => state.posts.page;
 export const selectPostsError = (state) => state.posts.error;
+export const selectLastMutatedAt = (state) => state.posts.lastMutatedAt;
 
 // Trending Tags
 export const selectTrendingTags = (state) => state.posts.trendingTags;

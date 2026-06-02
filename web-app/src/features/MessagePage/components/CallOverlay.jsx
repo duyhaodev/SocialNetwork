@@ -35,12 +35,20 @@ export const CallOverlay = () => {
     };
 
     const handleCancel = useCallback(async () => {
+        // Thử gọi API hủy cuộc gọi, nếu fail thì thử lại 1 lần
         try {
             await messageApi.cancelCall(callData.id);
-            dispatch(endCallAction(callData));
         } catch (error) {
-            console.error("Failed to cancel call:", error);
+            console.warn("Hủy cuộc gọi lần 1 thất bại, thử lại...", error);
+            try {
+                await messageApi.cancelCall(callData.id);
+            } catch (retryError) {
+                // Cả 2 lần đều fail, server sẽ tự dọn session sau timeout
+                console.error("Hủy cuộc gọi thất bại sau 2 lần:", retryError);
+            }
         }
+        // Dù API thành công hay fail, vẫn tắt UI
+        dispatch(endCallAction(callData));
     }, [callData, dispatch]);
 
     const handleEndCall = useCallback(async () => {
@@ -52,12 +60,17 @@ export const CallOverlay = () => {
         }
     }, [callData, dispatch]);
 
-    const handlePeerDisconnectLocal = useCallback(() => {
-        if (callStatus === 'IN_PROGRESS' || callStatus === 'CALLING') {
-            console.log("Ending call due to peer disconnection");
-            dispatch(endCallAction());
+    const handlePeerDisconnectLocal = useCallback(async () => {
+        if (callStatus === 'IN_PROGRESS' && callData?.id) {
+            try {
+                await messageApi.endCall(callData.id); // Báo server đóng session
+            } catch (error) {
+                console.error("Kết thúc cuộc gọi thất bại khi peer mất kết nối:", error);
+            }
         }
-    }, [callStatus, dispatch]);
+        // Dù API thành công hay fail, vẫn tắt UI
+        dispatch(endCallAction());
+    }, [callStatus, callData, dispatch]);
 
     const {
         localVideoRef,
@@ -83,6 +96,9 @@ export const CallOverlay = () => {
                     url = `${baseUrl}/chat/calls/cancel/${callData.id}`;
                 } else if (callStatus === 'IN_PROGRESS') {
                     url = `${baseUrl}/chat/calls/end/${callData.id}`;
+                } else if (callStatus === 'INCOMING') {
+                    // Callee đóng tab khi chuông đang reo → tự động từ chối
+                    url = `${baseUrl}/chat/calls/reject/${callData.id}`;
                 }
 
                 if (url) {

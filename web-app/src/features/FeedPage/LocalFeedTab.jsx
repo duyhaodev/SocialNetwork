@@ -1,12 +1,15 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import postApi from "../../api/postApi";
 import { toast } from "sonner";
 import { MapPin } from "lucide-react";
+import { selectLastMutatedAt } from "../../store/postsSlice";
 
 export function LocalFeedTab({ city }) {
   const navigate = useNavigate();
+  const lastMutatedAt = useSelector(selectLastMutatedAt);
 
   // State riêng, không dùng chung Redux với global feed
   const [posts, setPosts] = useState([]);
@@ -22,8 +25,9 @@ export function LocalFeedTab({ city }) {
 
   // Fetch bài theo city
   const fetchLocalFeed = useCallback(
-    async (pageNum) => {
-      if (!city || city === "Unknown" || loading) return;
+    async (pageNum, { force = false } = {}) => {
+      if (!city || city === "Unknown") return;
+      if (!force && loading) return;
       setLoading(true);
       try {
         const res = await postApi.getLocalFeed({ city, page: pageNum, size: SIZE });
@@ -51,6 +55,15 @@ export function LocalFeedTab({ city }) {
       fetchLocalFeed(0);
     }
   }, [city, initialized, fetchLocalFeed]);
+
+  // Refresh khi có bài mới được đăng hoặc xóa
+  useEffect(() => {
+    if (!initialized || !lastMutatedAt) return;
+    setPosts([]);
+    setPage(0);
+    setHasMore(true);
+    fetchLocalFeed(0, { force: true });
+  }, [lastMutatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Infinite scroll
   useEffect(() => {
@@ -123,7 +136,7 @@ export function LocalFeedTab({ city }) {
         {loading && <span className="text-muted-foreground text-sm">Đang tải...</span>}
         {hasMore && !loading && <div ref={loadMoreRef} className="h-1" />}
         {!hasMore && !loading && posts.length > 0 && (
-          <span className="text-muted-foreground text-sm">Đã hết bài viết</span>
+          <span className="text-muted-foreground text-sm">No more posts</span>
         )}
         {!loading && posts.length === 0 && (
           <span className="text-muted-foreground text-sm">Chưa có bài viết nào</span>

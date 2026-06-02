@@ -43,7 +43,8 @@ export function FeedPage() {
   const creating = useSelector(selectPostsCreating);
   const page = useSelector(selectPostsPage);
 
-  // Tab: "forYou" | "local" — quản lý bởi Tabs component, không cần state thủ công
+  // Tab: "forYou" | "local"
+  const [activeTab, setActiveTab] = useState("forYou");
 
   // Vị trí chèn suggestion card — random 3-7, cố định trong session
   const [insertAfter] = useState(() => Math.floor(Math.random() * 5) + 10);
@@ -60,6 +61,9 @@ export function FeedPage() {
 
   // FIX: trạng thái posting ngay lập tức
   const [isPosting, setIsPosting] = useState(false);
+
+  // Trigger refresh cho LocalFeedTab khi đăng/xóa bài
+  const [localRefreshKey, setLocalRefreshKey] = useState(0);
 
   const loadMoreRef = useRef(null);
   const loadDelayRef = useRef(null);
@@ -264,6 +268,7 @@ export function FeedPage() {
         setNewPost("");
         setModerationResult(null);
         handleRemoveAll();
+        setLocalRefreshKey((k) => k + 1);
       } else {
         toast.error(action.payload?.message || "Post failed");
       }
@@ -336,7 +341,8 @@ export function FeedPage() {
               placeholder="What's new?"
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
-              className="min-h-[80px] max-h-[96px] overflow-y-auto resize-none text-base w-full"
+              className="min-h-[80px] max-h-[200px] overflow-y-auto resize-none text-base w-full [field-sizing:normal] break-words"
+              style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
               maxLength={500}
             />
 
@@ -442,7 +448,7 @@ export function FeedPage() {
       </div>
 
       {/* Tabs — nằm dưới Story, giống ProfilePage */}
-      <Tabs defaultValue="forYou">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full rounded-none border-b border-border bg-transparent h-auto p-0">
           <TabsTrigger
             value="forYou"
@@ -458,8 +464,8 @@ export function FeedPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab For You */}
-        <TabsContent value="forYou" className="mt-0">
+        {/* Tab For You — ẩn bằng CSS thay vì unmount */}
+        <div className={activeTab === "forYou" ? "" : "hidden"}>
           <div>
             {posts.map((post, index) => {
               const username = post.username ?? post.user?.username ?? "unknown";
@@ -487,16 +493,11 @@ export function FeedPage() {
             {hasMore && <div ref={loadMoreRef} className="h-1" />}
             {!hasMore && !loading && <span className="text-muted-foreground text-sm">No more posts</span>}
           </div>
-        </TabsContent>
+        </div>
 
-        <div className="p-4 text-center">
-          {loading && hasMore && (
-            <span className="text-muted-foreground text-sm">Loading...</span>
-          )}
-          {hasMore && <div ref={loadMoreRef} className="h-1" />}
-          {!hasMore && !loading && (
-            <span className="text-muted-foreground text-sm">No more posts</span>
-          )}
+        {/* Tab Local Feed — ẩn bằng CSS thay vì unmount */}
+        <div className={activeTab === "local" ? "" : "hidden"}>
+          <LocalFeedTab city={city} />
         </div>
 
         <ModerationWarning
@@ -509,10 +510,6 @@ export function FeedPage() {
             doPost();
           }}
         />
-        {/* Tab Local Feed */}
-        <TabsContent value="local" className="mt-0">
-          <LocalFeedTab city={city} />
-        </TabsContent>
       </Tabs>
     </div >
   );
