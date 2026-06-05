@@ -27,13 +27,13 @@ export const fetchMyStories = createAsyncThunk(
     }
 );
 
-// Lấy kho lưu trữ
+// Lấy kho lưu trữ (infinite scroll — giống pattern postsSlice)
 export const fetchArchive = createAsyncThunk(
     "stories/fetchArchive",
-    async (_, { rejectWithValue }) => {
+    async ({ page = 0, size = 20 } = {}, { rejectWithValue }) => {
         try {
-            const res = await storyApi.getArchive();
-            return res?.result || [];
+            const res = await storyApi.getArchive(page, size);
+            return { data: res?.result || [], page, size };
         } catch (err) {
             return rejectWithValue(err?.message || "Không thể tải kho lưu trữ");
         }
@@ -110,6 +110,8 @@ const storySlice = createSlice({
         archive: [],
         loadingArchive: false,
         archiveError: null,
+        archivePage: 0,
+        archiveHasMore: true,
 
         // Tạo story
         creating: false,
@@ -121,10 +123,15 @@ const storySlice = createSlice({
         musicError: null,
     },
     reducers: {
-        // Xóa kết quả tìm nhạc khi đóng modal
         clearMusicResults(state) {
             state.musicResults = [];
             state.musicError = null;
+        },
+        resetArchive(state) {
+            state.archive = [];
+            state.archivePage = 0;
+            state.archiveHasMore = true;
+            state.archiveError = null;
         },
     },
     extraReducers: (builder) => {
@@ -159,10 +166,19 @@ const storySlice = createSlice({
             // fetchArchive
             .addCase(fetchArchive.pending, (state) => {
                 state.loadingArchive = true;
+                state.archiveError = null;
             })
             .addCase(fetchArchive.fulfilled, (state, action) => {
+                const { data, page, size } = action.payload;
                 state.loadingArchive = false;
-                state.archive = action.payload;
+                // page 0 = fresh load → reset; page > 0 = append
+                if (page === 0) {
+                    state.archive = data;
+                } else {
+                    state.archive = [...state.archive, ...data];
+                }
+                state.archivePage = page + 1;
+                state.archiveHasMore = data.length === size;
             })
             .addCase(fetchArchive.rejected, (state, action) => {
                 state.loadingArchive = false;
@@ -214,7 +230,7 @@ const storySlice = createSlice({
     },
 });
 
-export const { clearMusicResults } = storySlice.actions;
+export const { clearMusicResults, resetArchive } = storySlice.actions;
 export default storySlice.reducer;
 
 
@@ -226,6 +242,8 @@ export const selectMyStoriesLoading = (state) => state.stories.loadingMine;
 
 export const selectArchive = (state) => state.stories.archive;
 export const selectArchiveLoading = (state) => state.stories.loadingArchive;
+export const selectArchivePage = (state) => state.stories.archivePage;
+export const selectArchiveHasMore = (state) => state.stories.archiveHasMore;
 
 export const selectStoriesCreating = (state) => state.stories.creating;
 export const selectStoriesCreateError = (state) => state.stories.createError;

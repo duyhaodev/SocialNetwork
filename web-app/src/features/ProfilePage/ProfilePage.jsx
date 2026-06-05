@@ -147,7 +147,6 @@ export function ProfilePage() {
       });
   }, [isOwnProfile, otherProfile?.userId]);
 
-  // Đóng avatar menu khi click ngoài
   useEffect(() => {
     if (!avatarMenuOpen) return;
     const handleClickOutside = (e) => {
@@ -527,7 +526,7 @@ export function ProfilePage() {
 
       {/* Tabs Threads / Replies / Reposts */}
       <Tabs defaultValue="threads" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-12 bg-transparent border-b border-border rounded-none">
+        <TabsList className="grid w-full h-12 bg-transparent border-b border-border rounded-none grid-cols-2">
           <TabsTrigger
             value="threads"
             className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
@@ -596,6 +595,7 @@ export function ProfilePage() {
             </div>
           )}
         </TabsContent>
+
       </Tabs>
 
       {/* ImageViewer để xem ảnh đại diện */}
@@ -613,7 +613,7 @@ export function ProfilePage() {
             userId: user?.userId,
             fullName: user?.displayName,
             avatarUrl: user?.avatar,
-            stories: isOwnProfile ? myStories : userStories, //truyền myStories nếu own profile, userStories nếu người khác
+            stories: isOwnProfile ? myStories : userStories,
           }]}
           startIndex={0}
           onClose={() => setStoryViewerOpen(false)}

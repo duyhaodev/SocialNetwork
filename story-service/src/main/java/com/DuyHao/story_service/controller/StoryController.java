@@ -41,7 +41,6 @@ public class StoryController {
     }
 
     // ==================== FEED ====================
-    // Lấy stories của những người mình follow (chưa hết hạn)
     @GetMapping("/stories/feed")
     public ApiResponse<List<StoryResponse>> getFeed(
             @AuthenticationPrincipal Jwt jwt) {
@@ -52,7 +51,6 @@ public class StoryController {
     }
 
     // ==================== STORY CỦA MÌNH ====================
-    // Lấy stories đang active của chính mình
     @GetMapping("/stories/mine")
     public ApiResponse<List<StoryResponse>> getMyStories(
             @AuthenticationPrincipal Jwt jwt) {
@@ -62,13 +60,15 @@ public class StoryController {
                 .build();
     }
 
-    // Kho lưu trữ — stories đã hết hạn của mình
+    // ==================== KHO LƯU TRỮ (phân trang) ====================
     @GetMapping("/stories/archive")
     public ApiResponse<List<StoryResponse>> getArchive(
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         String userId = jwt.getSubject();
         return ApiResponse.<List<StoryResponse>>builder()
-                .result(storyService.getArchive(userId))
+                .result(storyService.getArchive(userId, page, size))
                 .build();
     }
 

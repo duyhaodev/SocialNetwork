@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Home, Search, Heart, User, Edit, Menu } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Home, Search, Heart, User, Edit, Menu, Archive } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../ui/button.js";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar.js";
 import { useSelector, useDispatch } from "react-redux";
@@ -20,6 +20,7 @@ import {
 export function Sidebar({ currentPage }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
 
   const { profile, loading } = useSelector((state) => state.user);
   const open = useSelector(selectComposerOpen);
@@ -38,6 +39,7 @@ export function Sidebar({ currentPage }) {
     { id: "search", label: "Search", icon: Search, path: "/search" },
     { id: "activity", label: "Activity", icon: Heart, path: "/activity" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
+    { id: "story/archive", label: "Archive", icon: Archive, path: "/story/archive" },
   ];
 
   const handleLogout = async () => {
@@ -143,7 +145,9 @@ export function Sidebar({ currentPage }) {
         <div className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPage === item.id;
+            const isActive = location.pathname === item.path
+              || location.pathname.startsWith(item.path + "/")
+              || (item.id !== "story/archive" && currentPage === item.id);
 
             return (
               <Button

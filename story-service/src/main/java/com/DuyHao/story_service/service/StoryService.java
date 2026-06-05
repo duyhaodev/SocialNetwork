@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -143,9 +144,9 @@ public class StoryService {
     }
 
     // ==================== KHO LƯU TRỮ ====================
-    public List<StoryResponse> getArchive(String userId) {
+    public List<StoryResponse> getArchive(String userId, int page, int size) {
         List<Story> stories = storyRepository
-                .findByUserIdAndArchivedTrueOrderByCreatedAtDesc(userId);
+                .findArchivedByUserId(userId, PageRequest.of(page, size));
 
         UserProfileResponse user = profileClient.getUserById(userId);
 

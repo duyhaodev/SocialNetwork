@@ -23,6 +23,7 @@ import { VerifyAccountPage } from "./features/VerifyAccountPage/VerifyAccountPag
 import { ForgotPasswordPage } from "./features/ForgotPasswordPage/ForgotPasswordPage.jsx";
 import CallOverlay from "./features/MessagePage/components/CallOverlay.jsx";
 import CreateStoryPage from "./features/StoryPage/CreateStoryPage.jsx";
+import StoryArchivePage from "./features/StoryPage/StoryArchivePage.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -87,6 +88,7 @@ export default function App() {
               <Route path="connections/:username" element={<ConnectionsPage />} />
               <Route path="post/:postId" element={<PostDetailPage />} />
               <Route path="tag/:tagName" element={<TagFeedPage />} />
+              <Route path="story/archive" element={<StoryArchivePage />} />
             </Route>
           </Route>
 

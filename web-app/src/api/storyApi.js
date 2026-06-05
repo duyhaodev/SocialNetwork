@@ -22,9 +22,9 @@ const storyApi = {
         return axios.get("/story/stories/mine");
     },
 
-    // Kho lưu trữ — stories đã hết hạn của mình
-    getArchive: () => {
-        return axios.get("/story/stories/archive");
+    // Kho lưu trữ — stories đã hết hạn của mình (phân trang)
+    getArchive: (page = 0, size = 20) => {
+        return axios.get("/story/stories/archive", { params: { page, size } });
     },
 
     // Stories của user khác

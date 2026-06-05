@@ -3,9 +3,11 @@ package com.DuyHao.story_service.repository;
 import com.DuyHao.story_service.entity.Story;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +17,9 @@ public interface StoryRepository extends JpaRepository<Story, String> {
     // Lấy stories đang active của 1 user
     List<Story> findByUserIdAndArchivedFalseAndExpiresAtAfterOrderByCreatedAtDesc( String userId, LocalDateTime now);
 
-    // Lấy stories đã archive của 1 user
-    List<Story> findByUserIdAndArchivedTrueOrderByCreatedAtDesc(String userId);
+    // Lấy stories đã archive của 1 user (có phân trang)
+    @Query("SELECT s FROM Story s WHERE s.userId = :userId AND s.archived = true ORDER BY s.createdAt DESC")
+    List<Story> findArchivedByUserId(@Param("userId") String userId, Pageable pageable);
 
     // Lấy stories active của nhiều user (dùng cho feed)
     @Query("""

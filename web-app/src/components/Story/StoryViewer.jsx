@@ -25,12 +25,12 @@ function getFontStyle(fontId) {
     return FONT_STYLES[fontId] || FONT_STYLES.normal;
 }
 
-export default function StoryViewer({ groups, startIndex, onClose }) {
+export default function StoryViewer({ groups, startIndex, initialStoryIndex = 0, onClose }) {
     const dispatch = useDispatch();
     const currentUser = useSelector(selectUser);
 
     const [groupIndex, setGroupIndex] = useState(startIndex);
-    const [storyIndex, setStoryIndex] = useState(0);
+    const [storyIndex, setStoryIndex] = useState(initialStoryIndex);
     const [progress, setProgress] = useState(0);
     const [paused, setPaused] = useState(false);
     const [muted, setMuted] = useState(false);

@@ -109,24 +109,19 @@ export default function StoryBar() {
                             <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/10" />
                         )}
                     </div>
-
                     {/* Gradient overlay dưới */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-
-                    {/* Nút + nằm ở ranh giới giữa ảnh và phần dưới */}
+                    {/* Nút + */}
                     <div className="absolute left-1/2 -translate-x-1/2" style={{ top: "calc(65% - 18px)" }}>
                         <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center ring-4 ring-background shadow-lg">
                             <Plus className="w-5 h-5 text-primary-foreground" />
                         </div>
                     </div>
-
                     {/* Label */}
                     <div className="absolute bottom-3 left-0 right-0 text-center">
                         <span className="text-white text-xs font-semibold drop-shadow">Tạo tin</span>
                     </div>
                 </button>
-
-                {/* Card "Tin của bạn" */}
                 {myStories.length > 0 && (
                     <button
                         onClick={() => { if (isDragging.current) return; openViewer(
