@@ -6,10 +6,6 @@ spring:
           uri: http://identity-service:8080
           predicates:
             - Path=/identity/**
-
-app:
-  identity:
-    url: http://identity-service:8080/identity
         - id: profile-service
           uri: http://profile-service:8081
           predicates:
@@ -54,3 +50,7 @@ app:
           uri: http://story-service:8091
           predicates:
             - Path=/story/**
+
+app:
+  identity:
+    url: http://identity-service:8080/identity
