@@ -1,0 +1,13 @@
+spring:
+  data:
+    redis:
+      host: redis
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://identity-service:8080/identity
+rt-service:
+  socket:
+    host: "0.0.0.0"
+    port: 8089

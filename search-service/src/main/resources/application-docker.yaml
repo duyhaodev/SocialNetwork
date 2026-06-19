@@ -1,0 +1,4 @@
+app:
+  service:
+    profile: http://profile-service:8081/profile
+    post: http://post-service:8085/post

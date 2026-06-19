@@ -1,0 +1,6 @@
+spring:
+  neo4j:
+    uri: bolt://neo4j:7687
+app:
+  service:
+    media: http://media-service:8086

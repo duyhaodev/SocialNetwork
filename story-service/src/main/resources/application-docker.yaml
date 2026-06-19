@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/STORY
+app:
+  service:
+    profile: http://profile-service:8081/profile
+    follow: http://follow-service:8084/follow
+    media: http://media-service:8086

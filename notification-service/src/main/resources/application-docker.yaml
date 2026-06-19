@@ -1,0 +1,6 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:root@mongodb:27017/notification-service?authSource=admin
+    redis:
+      host: redis
