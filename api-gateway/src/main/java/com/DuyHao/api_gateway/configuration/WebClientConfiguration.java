@@ -42,10 +42,9 @@ public class WebClientConfiguration {
     @Bean
     CorsWebFilter corsWebFilter(){
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(List.of(
+        corsConfiguration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
-                "https://social-network-ruddy-two.vercel.app",
                 "https://*.vercel.app"
         ));
         corsConfiguration.setAllowedHeaders(List.of("*"));
