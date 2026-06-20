@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { fetchPostById, selectPostDetail, selectPostDetailLoading, selectPostDetailError, } from "../../store/postsSlice"; // đường dẫn tuỳ cấu trúc của bạn
+import { fetchPostById, selectPostDetail, selectPostDetailLoading, selectPostDetailError } from "../../store/postsSlice";
 
 export function PostDetailPage() {
   const { postId } = useParams();
@@ -79,7 +79,7 @@ export function PostDetailPage() {
       <PostCard post={post} onProfileClick={handleProfileClick} />
 
       {/* Comment */}
-      <PostComments postId={post.repostOfId ?? post.id} onProfileClick={handleProfileClick} onCommentCreated={() => dispatch(fetchPostById(post.id))}/>
+      <PostComments postId={post.repostOfId ?? post.id} onProfileClick={handleProfileClick} />
     </div>
   );
 }

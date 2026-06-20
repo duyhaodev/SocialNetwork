@@ -451,7 +451,7 @@ export function FeedPage() {
       {/* Tabs — nằm dưới Story, giống ProfilePage */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex justify-center w-full border-b border-border/40 py-3 bg-background/50 backdrop-blur-sm sticky top-14 md:top-0 z-10">
-          <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[320px] grid grid-cols-2 relative overflow-hidden">
+          <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-auto max-w-[420px] grid grid-cols-2 relative overflow-hidden">
             <TabsTrigger
               value="forYou"
               className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none"

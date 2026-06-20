@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { format, parse, isValid } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronsUpDown, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/dialog";
@@ -28,6 +28,8 @@ export function EditProfileDialog({ open, onOpenChange }) {
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
+  const [citySearch, setCitySearch] = useState("");
+  const [cityOpen, setCityOpen] = useState(false);
   const [dob, setDob] = useState("");
   const [spotifyLink, setSpotifyLink] = useState("");
   const [connectionsPrivacy, setConnectionsPrivacy] = useState("EVERYONE");
@@ -232,11 +234,60 @@ export function EditProfileDialog({ open, onOpenChange }) {
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">City</label>
-            <Input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="bg-white/5 border border-white/10 focus:border-white/20 focus:bg-white/10 transition-all h-10.5 rounded-xl text-sm"
-            />
+            <Popover open={cityOpen} onOpenChange={(o) => { setCityOpen(o); if (!o) setCitySearch(""); }}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-xl h-10.5 px-3 text-sm text-white"
+                >
+                  <span className={city ? "text-white" : "text-zinc-400"}>{city || "Chọn tỉnh/thành phố"}</span>
+                  <ChevronsUpDown className="w-4 h-4 text-zinc-400 shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0 bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden" style={{ width: "var(--radix-popover-trigger-width)" }}>
+                <div className="p-2 border-b border-white/10">
+                  <input
+                    autoFocus
+                    value={citySearch}
+                    onChange={(e) => setCitySearch(e.target.value)}
+                    placeholder="Tìm tỉnh/thành phố..."
+                    className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-zinc-400 outline-none focus:border-white/20"
+                  />
+                </div>
+                <div 
+                  className="max-h-52 overflow-y-auto py-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/30"
+                  onWheel={(e) => e.stopPropagation()}
+                >
+                  {[
+                    "An Giang", "Bà Rịa - Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu",
+                    "Bắc Ninh", "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước",
+                    "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng",
+                    "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp",
+                    "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh",
+                    "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên",
+                    "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lâm Đồng",
+                    "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An",
+                    "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình",
+                    "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng",
+                    "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa",
+                    "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh",
+                    "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+                  ]
+                    .filter(c => c.toLowerCase().includes(citySearch.toLowerCase()))
+                    .map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => { setCity(c); setCityOpen(false); setCitySearch(""); }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+                      >
+                        {c}
+                        {city === c && <Check className="w-4 h-4 text-white shrink-0" />}
+                      </button>
+                    ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-1">

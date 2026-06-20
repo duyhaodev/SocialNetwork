@@ -21,7 +21,7 @@ export function MessagesPage({ onBack }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const shouldShowBack = Boolean(onBack || location.state?.fromPopup);
+  const shouldShowBack = true;
   const handleBack = onBack ? onBack : () => navigate(-1);
 
   // Sync ref with state

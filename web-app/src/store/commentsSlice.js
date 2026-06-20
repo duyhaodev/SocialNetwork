@@ -36,7 +36,10 @@ export const createComment = createAsyncThunk(
         mediaIds: mediaIds || []
       });
 
-      dispatch(syncCommentCount({ postId, delta: +1 }));
+      // Chỉ tăng commentCount cho top-level comment, không tăng cho reply
+      if (!parentId) {
+        dispatch(syncCommentCount({ postId, delta: +1 }));
+      }
 
       return { postId, data: res?.data?.result || res?.result };
     } catch (err) {
@@ -167,8 +170,11 @@ const commentsSlice = createSlice({
         state.submittingByPostId[postId] = false;
         if (data) {
           commentsAdapter.upsertOne(state, data);
-          const list = state.byPostId[postId] || [];
-          state.byPostId[postId] = [data.id, ...list];
+          // Chỉ thêm vào top-level list nếu không phải reply
+          if (!data.parentId) {
+            const list = state.byPostId[postId] || [];
+            state.byPostId[postId] = [data.id, ...list];
+          }
         }
       })
       .addCase(toggleCommentLike.fulfilled, (state, action) => {
