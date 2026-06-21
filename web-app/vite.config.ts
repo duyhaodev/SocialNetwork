@@ -14,7 +14,11 @@ export default defineConfig({
       name: 'generate-version',
       buildStart() {
         const version = process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString();
-        fs.writeFileSync('./public/version.json', JSON.stringify({ version }));
+        const publicDir = path.resolve(__dirname, 'public');
+        if (!fs.existsSync(publicDir)) {
+          fs.mkdirSync(publicDir, { recursive: true });
+        }
+        fs.writeFileSync(path.join(publicDir, 'version.json'), JSON.stringify({ version }));
       },
     },
   ],
