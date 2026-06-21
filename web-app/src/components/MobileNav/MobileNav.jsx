@@ -64,7 +64,7 @@ export function MobileNav() {
           className="text-xl font-bold cursor-pointer"
           onClick={() => navigate("/feed")}
         >
-          Threads
+          HKThreads.
         </h1>
         <button
           onClick={() => setDrawerOpen(true)}

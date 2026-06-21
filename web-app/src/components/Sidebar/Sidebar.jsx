@@ -136,7 +136,7 @@ export function Sidebar({ currentPage }) {
             }
           }}
         >
-          Threads
+          HKThreads.
         </h1>
       </div>
 

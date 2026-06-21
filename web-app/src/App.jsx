@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useVersionCheck } from "./hooks/useVersionCheck.jsx";
 import { LoginPage } from "./features/LoginPage/LoginPage.jsx";
 import { FeedPage } from "./features/FeedPage/FeedPage.jsx";
 import { ProfilePage } from "./features/ProfilePage/ProfilePage.jsx";
@@ -29,8 +28,6 @@ import StoryArchivePage from "./features/StoryPage/StoryArchivePage.jsx";
 export default function App() {
   const dispatch = useDispatch();
   const { loading, isAuthenticated } = useSelector((state) => state.user);
-
-  useVersionCheck();
 
   // Set dark mode by default and verify token on initial load
   useEffect(() => {
