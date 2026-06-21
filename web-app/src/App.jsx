@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useVersionCheck } from "./hooks/useVersionCheck";
+import { useVersionCheck } from "./hooks/useVersionCheck.jsx";
 import { LoginPage } from "./features/LoginPage/LoginPage.jsx";
 import { FeedPage } from "./features/FeedPage/FeedPage.jsx";
 import { ProfilePage } from "./features/ProfilePage/ProfilePage.jsx";
