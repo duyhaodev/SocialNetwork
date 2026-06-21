@@ -65,8 +65,8 @@ export function useVersionCheck() {
       }
     };
 
-    // Check lần đầu sau 1 phút
-    const timeout = setTimeout(check, 60_000);
+    // Check lần đầu sau 10 giây
+    const timeout = setTimeout(check, 10_000);
     // Sau đó check mỗi 5 phút
     const interval = setInterval(check, 5 * 60_000);
 
