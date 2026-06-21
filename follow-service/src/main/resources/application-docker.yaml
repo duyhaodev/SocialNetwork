@@ -5,3 +5,4 @@ spring:
 app:
   service:
     profile: http://profile-service:8081/profile
+    notification: http://notification-service:8082/notification

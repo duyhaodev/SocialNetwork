@@ -11,3 +11,4 @@ server:
 app:
   service:
     profile: http://localhost:8081/profile
+    notification: http://localhost:8082/notification
