@@ -100,9 +100,11 @@ export function MessagesPage({ onBack }) {
 
         const created = {
           id: conv.id,
+          partnerId: conv.partnerId || user.userId,
           user: {
             displayName: conv.conversationName || (user.fullName || user.userName),
             avatar: conv.conversationAvatar || user.avatarUrl,
+            userId: conv.partnerId || user.userId,
           },
           lastMessage: conv.lastMessageContent || "Bắt đầu cuộc trò chuyện",
           unread: conv.unread || false,
@@ -134,8 +136,10 @@ export function MessagesPage({ onBack }) {
     const adaptedConv = {
         ...conv,
         user: {
+            ...conv.user,
             displayName: conv.conversationName || conv.user?.displayName,
-            avatar: conv.conversationAvatar || conv.user?.avatar
+            avatar: conv.conversationAvatar || conv.user?.avatar,
+            userId: conv.user?.userId || conv.partnerId,
         }
     };
     
