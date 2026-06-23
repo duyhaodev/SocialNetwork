@@ -531,18 +531,6 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
                       className="w-44 bg-card/95 border border-border/50 text-[14px] font-semibold p-1 rounded-xl shadow-lg backdrop-blur-md"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <DropdownMenuItem
-                        className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-md px-3 py-2 flex items-center gap-2"
-                        onClick={() => {
-                          const link = `${window.location.origin}/post/${postId}/comment/${c.id}`;
-                          navigator.clipboard.writeText(link);
-                          toast.success("Đã sao chép liên kết bình luận");
-                        }}
-                      >
-                        <Link className="w-4 h-4 text-foreground" />
-                        Copy link
-                      </DropdownMenuItem>
-
                       {(c.userId === currentUserId || c.username === profile.username) && (
                         <DropdownMenuItem
                           className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-md px-3 py-2"
