@@ -59,7 +59,7 @@ export function PostTranslation({ isNonVietnamese, content }) {
         {translating
           ? "Đang dịch..."
           : showTranslation
-          ? "Xem bản gốc"
+          ? "Ẩn bản dịch"
           : "Dịch bài đăng"}
       </button>
     </div>

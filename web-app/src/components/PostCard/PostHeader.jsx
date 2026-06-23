@@ -122,26 +122,26 @@ export function PostHeader({
               className="w-44 bg-card border border-border/50 text-[14px] p-1 rounded-xl shadow-lg backdrop-blur-md bg-card/95"
             >
               <DropdownMenuItem
-                className="cursor-pointer hover:bg-muted focus:bg-muted rounded-lg px-3 py-2 transition-colors"
+                className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-lg px-3 py-2 transition-colors"
                 onClick={handleCopyLink}
               >
                 <div className="flex items-center gap-2 w-full text-foreground">
-                  <Link className="w-4 h-4" />
-                  <span className="font-medium">Sao chép liên kết</span>
+                  <Link className="w-4 h-4 text-foreground" />
+                  <span className="font-medium">Copy link</span>
                 </div>
               </DropdownMenuItem>
 
               {canDelete && (
                 <DropdownMenuItem
-                  className="cursor-pointer hover:bg-destructive/10 focus:bg-destructive/10 rounded-lg px-3 py-2 transition-colors"
+                  className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-lg px-3 py-2 transition-colors"
                   onClick={() => {
                     onDeleteClick?.();
                     setMoreMenuOpen(false);
                   }}
                 >
-                  <div className="flex items-center gap-2 w-full text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                    <span className="font-medium">Xóa bài đăng</span>
+                  <div className="flex items-center gap-2 w-full text-red-500">
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <span className="font-medium">Delete post</span>
                   </div>
                 </DropdownMenuItem>
               )}

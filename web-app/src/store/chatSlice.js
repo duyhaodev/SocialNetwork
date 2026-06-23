@@ -137,6 +137,17 @@ const chatSlice = createSlice({
     removeConversation: (state, action) => {
         const conversationId = action.payload;
         state.conversations = state.conversations.filter(c => c.id !== conversationId);
+    },
+
+    updateConversationAvatar: (state, action) => {
+        const { conversationId, avatarUrl } = action.payload;
+        const index = state.conversations.findIndex(c => c.id === conversationId);
+        if (index !== -1) {
+            state.conversations[index] = {
+                ...state.conversations[index],
+                conversationAvatar: avatarUrl
+            };
+        }
     }
   },
   extraReducers: (builder) => {
@@ -167,5 +178,5 @@ const chatSlice = createSlice({
   },
 });
 
-export const { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, receiveReactionUpdate, setConversationReadLocal, addNewConversation, removeConversation } = chatSlice.actions;
+export const { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, receiveReactionUpdate, setConversationReadLocal, addNewConversation, removeConversation, updateConversationAvatar } = chatSlice.actions;
 export default chatSlice.reducer;

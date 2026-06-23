@@ -179,6 +179,16 @@ public class StreakService {
     }
 
     // ==================== SCHEDULED JOBS ====================
+
+    /**
+     * Chạy khi server vừa start — xử lý các streak đã expired trong thời gian server tắt.
+     */
+    @jakarta.annotation.PostConstruct
+    public void checkExpiredStreaksOnStartup() {
+        log.info("[STREAK] Server startup — kiểm tra streak expired...");
+        resetExpiredStreaks();
+    }
+
     @Scheduled(cron = "0 0 0 * * *")
     public void resetExpiredStreaks() {
         LocalDate today = LocalDate.now(VIETNAM_ZONE);

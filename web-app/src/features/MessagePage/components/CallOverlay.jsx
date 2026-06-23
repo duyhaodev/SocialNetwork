@@ -139,7 +139,7 @@ export const CallOverlay = () => {
             if (callData?.id) {
                 const token = getAccessToken();
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                const baseUrl = 'http://localhost:8888';
+                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888';
 
                 let url = null;
                 if (callStatus === 'CALLING') {

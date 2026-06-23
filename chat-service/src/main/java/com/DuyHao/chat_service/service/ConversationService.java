@@ -168,6 +168,55 @@ public class ConversationService {
         return false;
     }
 
+    public ConversationResponse updateGroupAvatar(String conversationId, String avatarUrl) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        if (!"GROUP".equals(conversation.getType())) {
+            throw new RuntimeException("Cannot update avatar of a DIRECT conversation");
+        }
+
+        boolean isParticipant = conversation.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+        if (!isParticipant) throw new RuntimeException("Access denied");
+
+        conversation.setAvatarUrl(avatarUrl);
+        conversationRepository.save(conversation);
+
+        // Push realtime tới tất cả thành viên trong nhóm
+        redisPublisherService.publish(RealtimeMessage.builder()
+                .toRoomId(conversationId)
+                .type("group_avatar_updated")
+                .payload(java.util.Map.of("conversationId", conversationId, "avatarUrl", avatarUrl))
+                .build());
+
+        return toConversationResponse(conversation, currentUserId, false);
+    }
+
+    public List<UserProfileResponse> getMembers(String conversationId) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        boolean isParticipant = conversation.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+        if (!isParticipant) throw new RuntimeException("Access denied");
+
+        return conversation.getParticipants().stream()
+                .map(p -> {
+                    try {
+                        return profileClient.getProfile(p.getUserId());
+                    } catch (Exception e) {
+                        return UserProfileResponse.builder()
+                                .userId(p.getUserId())
+                                .fullName("Unknown")
+                                .build();
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
     public ConversationResponse addParticipants(String conversationId, List<String> userIds) {
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
         Conversation conversation = conversationRepository.findById(conversationId)
@@ -197,7 +246,21 @@ public class ConversationService {
                         .build()));
 
         conversationRepository.save(conversation);
-        return toConversationResponse(conversation, currentUserId, false);
+
+        // Push event "group_created" tới user mới được thêm để họ fetch conversations và join room
+        ConversationResponse response = toConversationResponse(conversation, currentUserId, false);
+        userIds.stream()
+                .filter(id -> !existingUserIds.contains(id))
+                .forEach(id -> {
+                    RealtimeMessage notify = RealtimeMessage.builder()
+                            .toRoomId(id)
+                            .type("group_created")
+                            .payload(response)
+                            .build();
+                    redisPublisherService.publish(notify);
+                });
+
+        return response;
     }
 
     public ConversationResponse removeParticipant(String conversationId, String userId) {

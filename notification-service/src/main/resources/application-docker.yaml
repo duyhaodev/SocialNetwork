@@ -1,0 +1,11 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:root@mongodb:27017/notification-service?authSource=admin
+    redis:
+      host: redis
+
+app:
+  service:
+    profile: http://profile-service:8081/profile
+    follow: http://follow-service:8084/follow

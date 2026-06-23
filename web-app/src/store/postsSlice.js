@@ -270,6 +270,7 @@ const postsSlice = createSlice({
       .addCase(fetchRecommendedFeed.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.hasMore = false;
       })
 
       // createPost

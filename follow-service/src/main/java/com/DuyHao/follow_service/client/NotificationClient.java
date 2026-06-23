@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "notification-service", url = "http://localhost:8082")
+@FeignClient(name = "notification-service", url = "${app.service.notification}")
 public interface NotificationClient {
 
     @PostMapping("/notification/internal/notifications/follow")

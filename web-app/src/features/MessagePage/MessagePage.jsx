@@ -4,7 +4,7 @@ import { messageApi } from "../../api/messageApi";
 import { ConversationSidebar } from "./components/ConversationSidebar";
 import { ChatWindow } from "./components/ChatWindow";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchConversations, markConversationRead, receiveSocketMessage, addNewConversation } from "../../store/chatSlice";
+import { fetchConversations, markConversationRead, receiveSocketMessage, addNewConversation, updateConversationAvatar } from "../../store/chatSlice";
 import { useSocket } from "../../context/SocketContext";
 
 
@@ -21,7 +21,7 @@ export function MessagesPage({ onBack }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const shouldShowBack = Boolean(onBack || location.state?.fromPopup);
+  const shouldShowBack = true;
   const handleBack = onBack ? onBack : () => navigate(-1);
 
   // Sync ref with state
@@ -150,6 +150,28 @@ export function MessagesPage({ onBack }) {
       dispatch(markConversationRead(conv.id));
     }
   };
+
+  // Lắng nghe group_avatar_updated để update selectedConversation header ngay lập tức
+  useEffect(() => {
+    if (!socket) return;
+    const handleGroupAvatarUpdated = (data) => {
+      if (!data?.conversationId || !data?.avatarUrl) return;
+      dispatch(updateConversationAvatar({ conversationId: data.conversationId, avatarUrl: data.avatarUrl }));
+      // Nếu đang mở đúng nhóm đó → update header ngay
+      setSelectedConversation(prev => {
+        if (prev?.id === data.conversationId) {
+          return {
+            ...prev,
+            conversationAvatar: data.avatarUrl,
+            user: { ...prev.user, avatar: data.avatarUrl }
+          };
+        }
+        return prev;
+      });
+    };
+    socket.on("group_avatar_updated", handleGroupAvatarUpdated);
+    return () => socket.off("group_avatar_updated", handleGroupAvatarUpdated);
+  }, [socket, dispatch]);
 
   // Callback khi rời nhóm — deselect conversation hiện tại, select cái tiếp theo nếu có
   const handleLeaveGroup = (conversationId, nextConversation) => {

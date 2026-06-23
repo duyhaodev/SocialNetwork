@@ -36,6 +36,7 @@ export const createComment = createAsyncThunk(
         mediaIds: mediaIds || []
       });
 
+      // Tăng commentCount cho cả top-level comment lẫn reply (backend tính cả hai)
       dispatch(syncCommentCount({ postId, delta: +1 }));
 
       return { postId, data: res?.data?.result || res?.result };
@@ -167,8 +168,11 @@ const commentsSlice = createSlice({
         state.submittingByPostId[postId] = false;
         if (data) {
           commentsAdapter.upsertOne(state, data);
-          const list = state.byPostId[postId] || [];
-          state.byPostId[postId] = [data.id, ...list];
+          // Chỉ thêm vào top-level list nếu không phải reply
+          if (!data.parentId) {
+            const list = state.byPostId[postId] || [];
+            state.byPostId[postId] = [data.id, ...list];
+          }
         }
       })
       .addCase(toggleCommentLike.fulfilled, (state, action) => {

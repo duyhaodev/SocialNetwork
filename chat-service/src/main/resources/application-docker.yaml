@@ -1,0 +1,10 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:root@mongodb:27017/chat-service?authSource=admin
+    redis:
+      host: redis
+app:
+  service:
+    profile: http://profile-service:8081/profile
+    media: http://media-service:8086

@@ -48,13 +48,13 @@ export function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Threads</h1>
+          <h1 className="text-4xl font-bold mb-2">HKThreads.</h1>
           <p className="text-muted-foreground">Create your account</p>
         </div>
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Sign up for Threads</CardTitle>
+            <CardTitle>Sign up for HKThreads</CardTitle>
             <CardDescription>Fill in your details to register</CardDescription>
           </CardHeader>
           <CardContent>

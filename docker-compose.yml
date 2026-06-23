@@ -1,0 +1,300 @@
+services:
+
+  # ─────────────────────────────────────────────
+  # DATABASES
+  # ─────────────────────────────────────────────
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: identity_service
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin123
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5
+    container_name: neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/12345678
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ─────────────────────────────────────────────
+  # SPRING BOOT SERVICES
+  # ─────────────────────────────────────────────
+
+  identity-service:
+    build: ./identity-service
+    container_name: identity-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/identity_service
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "123456"
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  profile-service:
+    build: ./profile-service
+    container_name: profile-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_NEO4J_URI: bolt://neo4j:7687
+      SPRING_NEO4J_AUTHENTICATION_USERNAME: neo4j
+      SPRING_NEO4J_AUTHENTICATION_PASSWORD: "12345678"
+      APP_SERVICE_MEDIA: http://media-service:8086
+    depends_on:
+      neo4j:
+        condition: service_healthy
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://root:root@mongodb:27017/notification-service?authSource=admin
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  chat-service:
+    build: ./chat-service
+    container_name: chat-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://root:root@mongodb:27017/chat-service?authSource=admin
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+      APP_SERVICE_MEDIA: http://media-service:8086
+      RT_SERVICE_REDIS_CHANNEL: realtime-topic
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  follow-service:
+    build: ./follow-service
+    container_name: follow-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://root:root@mongodb:27017/follow-service?authSource=admin
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  post-service:
+    build: ./post-service
+    container_name: post-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/POST
+      SPRING_DATASOURCE_USERNAME: admin123
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+      APP_SERVICE_MEDIA: http://media-service:8086
+      APP_SERVICE_INTERACTION: http://interaction-service:8087/interaction
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  media-service:
+    build: ./media-service
+    container_name: media-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/MEDIA
+      SPRING_DATASOURCE_USERNAME: admin123
+      SPRING_DATASOURCE_PASSWORD: admin123
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  interaction-service:
+    build: ./interaction-service
+    container_name: interaction-service
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/INTERACTION
+      SPRING_DATASOURCE_USERNAME: admin123
+      SPRING_DATASOURCE_PASSWORD: admin123
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+      APP_SERVICE_MEDIA: http://media-service:8086
+      APP_SERVICE_POST: http://post-service:8085/post
+      APP_SERVICE_NOTIFICATION: http://notification-service:8082/notification
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  realtime-service:
+    build: ./realtime-service
+    container_name: realtime-service
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+      - "8089:8089"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      RT_SERVICE_SOCKET_HOST: "0.0.0.0"
+      RT_SERVICE_SOCKET_PORT: "8089"
+      RT_SERVICE_REDIS_CHANNEL: realtime-topic
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  search-service:
+    build: ./search-service
+    container_name: search-service
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+      APP_SERVICE_POST: http://post-service:8085/post
+
+  story-service:
+    build: ./story-service
+    container_name: story-service
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/STORY
+      SPRING_DATASOURCE_USERNAME: admin123
+      SPRING_DATASOURCE_PASSWORD: admin123
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+      APP_SERVICE_FOLLOW: http://follow-service:8084/follow
+      APP_SERVICE_MEDIA: http://media-service:8086
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-service:
+    build: ./ai-service
+    container_name: ai-service
+    restart: unless-stopped
+    ports:
+      - "8092:8092"
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    depends_on:
+      - identity-service
+      - profile-service
+      - notification-service
+      - chat-service
+      - follow-service
+      - post-service
+      - media-service
+      - interaction-service
+      - realtime-service
+      - search-service
+      - story-service
+      - ai-service
+
+# ─────────────────────────────────────────────
+# VOLUMES
+# ─────────────────────────────────────────────
+
+volumes:
+  mysql_data:
+  postgres_data:
+  mongo_data:
+  neo4j_data:

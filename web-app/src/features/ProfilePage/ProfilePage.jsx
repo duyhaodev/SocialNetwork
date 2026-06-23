@@ -167,7 +167,13 @@ export function ProfilePage() {
 
   // Back lại feed
   const handleBack = () => {
-    navigate("/feed");
+    // Có history trong cùng SPA → lùi 1 bước
+    if (location.key !== "default") {
+      navigate(-1);
+    } else {
+      // Mở tab mới / vào thẳng URL profile → fallback về feed
+      navigate("/feed");
+    }
   };
 
   // Close friends menu when clicking outside

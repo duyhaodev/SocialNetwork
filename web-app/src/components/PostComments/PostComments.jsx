@@ -11,7 +11,7 @@ import { fetchCommentsByPost, createComment as createCommentThunk, selectComment
 import { toggleCommentLike, deleteComment, fetchReplies } from "@/store/commentsSlice";
 import {formatTimeAgo} from "../../utils/dateUtils.js"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "../ui/dropdown-menu";
-import { Trash2 } from "lucide-react";
+import { Trash2, Link } from "lucide-react";
 import CommentForm from "./CommentForm";
 import { ReplyView } from "./ReplyView";
 import mediaApi from "../../api/mediaApi";
@@ -116,7 +116,6 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
       };
 
       await dispatch(createCommentThunk(payload)).unwrap();
-      dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
       onCommentCreated?.();
     } catch (err) {
       console.error("Lỗi tạo comment:", err);
@@ -151,7 +150,6 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
       };
 
       await dispatch(createCommentThunk(payload)).unwrap();
-      dispatch(fetchCommentsByPost({ postId, page: 0, size: PAGE_SIZE }));
       setReplyTo(null);
     } catch (err) {
       console.error("Lỗi tạo reply:", err);
@@ -530,23 +528,12 @@ export function PostComments({ postId, onProfileClick, onCommentCreated }) {
                     <DropdownMenuContent
                       align="end"
                       sideOffset={8}
-                      className="w-44 bg-[#1e1e1e] border-[#2a2a2a] text-[15px] font-semibold p-1"
+                      className="w-44 bg-card/95 border border-border/50 text-[14px] font-semibold p-1 rounded-xl shadow-lg backdrop-blur-md"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <DropdownMenuItem
-                        className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
-                        onClick={() => {
-                          const link = `${window.location.origin}/post/${postId}/comment/${c.id}`;
-                          navigator.clipboard.writeText(link);
-                          toast.success("Đã sao chép liên kết bình luận");
-                        }}
-                      >
-                        Copy link
-                      </DropdownMenuItem>
-
                       {(c.userId === currentUserId || c.username === profile.username) && (
                         <DropdownMenuItem
-                          className="cursor-pointer hover:bg-[#2a2a2a] focus:bg-[#2a2a2a] rounded-md px-3 py-2"
+                          className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-md px-3 py-2"
                           onClick={() => handleDeleteComment(c.id)}
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />

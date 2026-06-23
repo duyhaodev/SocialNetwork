@@ -14,11 +14,24 @@ export default function EmojiPickerButton({ onSelectEmoji, className }) {
   const updatePosition = () => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
+    const pickerHeight = 350;
+    const pickerWidth = 300;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
 
-    setPos({
-      top: rect.bottom + 8,
-      left: rect.right - 300,
-    });
+    // Mở lên trên nếu không đủ chỗ phía dưới
+    const spaceBelow = viewportHeight - rect.bottom;
+    const top = spaceBelow >= pickerHeight + 8
+      ? rect.bottom + 8
+      : rect.top - pickerHeight - 8;
+
+    // Ưu tiên mở sang phải, fallback sang trái nếu tràn viewport
+    const spaceRight = viewportWidth - rect.left;
+    const left = spaceRight >= pickerWidth + 8
+      ? rect.left
+      : Math.max(8, rect.right - pickerWidth);
+
+    setPos({ top, left: Math.max(8, left) });
   };
 
   useEffect(() => {

@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/INTERACTION
+app:
+  service:
+    profile: http://profile-service:8081/profile
+    media: http://media-service:8086
+    post: http://post-service:8085/post
+    notification: http://notification-service:8082/notification

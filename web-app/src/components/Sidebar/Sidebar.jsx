@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Home, Search, Heart, User, Edit, Menu, Archive } from "lucide-react";
+import { Home, Search, Heart, User, Edit, Menu, Archive, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../ui/button.js";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar.js";
@@ -76,7 +76,7 @@ export function Sidebar({ currentPage }) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full justify-start h-auto p-0"
+            className="w-full justify-start h-auto p-0 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
           >
             <div className="flex items-center w-full p-3">
               <Avatar className="w-10 h-10 mr-3">
@@ -107,15 +107,17 @@ export function Sidebar({ currentPage }) {
         >
           <DropdownMenuItem
             onClick={() => navigate("/profile")}
-            className="cursor-pointer text-foreground hover:bg-muted focus:bg-muted rounded-lg px-3 py-2 transition-colors font-medium"
+            className="cursor-pointer text-foreground hover:bg-muted focus:bg-muted rounded-lg px-3 py-2 transition-colors font-medium text-[15px]"
           >
-            Xem trang cá nhân
+            <User className="w-4 h-4 mr-2 shrink-0 text-foreground" />
+            View profile
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleLogout}
-            className="cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive focus:bg-destructive/10 focus:text-destructive rounded-lg px-3 py-2 transition-colors font-medium"
+            className="cursor-pointer text-red-500 hover:text-red-500 hover:bg-muted focus:bg-muted focus:text-red-500 data-[highlighted]:bg-muted data-[highlighted]:text-red-500 rounded-lg px-3 py-2 transition-colors font-medium text-[15px]"
           >
-            Đăng xuất
+            <LogOut className="w-4 h-4 mr-2 shrink-0 text-red-500" />
+            Log out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -136,7 +138,7 @@ export function Sidebar({ currentPage }) {
             }
           }}
         >
-          Threads
+          HKThreads.
         </h1>
       </div>
 

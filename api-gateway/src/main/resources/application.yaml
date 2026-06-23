@@ -8,6 +8,9 @@ spring:
   application:
     name: api-gateway
 
+  codec:
+    max-in-memory-size: 20MB
+
   cloud:
     gateway:
       httpclient:
@@ -69,3 +72,7 @@ management:
     web:
       exposure:
         include: "*"
+
+app:
+  identity:
+    url: http://localhost:8080/identity

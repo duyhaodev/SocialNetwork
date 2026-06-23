@@ -54,6 +54,16 @@ export const messageApi = {
         return axiosClient.post(url, userIds);
     },
 
+    getMembers(conversationId) {
+        const url = `chat/conversations/${conversationId}/members`;
+        return axiosClient.get(url);
+    },
+
+    updateGroupAvatar(conversationId, avatarUrl) {
+        const url = `chat/conversations/${conversationId}/avatar`;
+        return axiosClient.put(url, { avatarUrl });
+    },
+
     removeParticipant(conversationId, userId) {
         const url = `chat/conversations/${conversationId}/participants/${userId}`;
         return axiosClient.delete(url);

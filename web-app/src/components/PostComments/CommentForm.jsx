@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Image as ImageIcon, X } from "lucide-react";
+import { Image as ImageIcon, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import EmojiPickerButton from "../EmojiPickerButton/EmojiPickerButton";
 
@@ -192,6 +192,7 @@ export default function CommentForm({
                   }
                   value={commentContent}
                   onChange={(e) => setCommentContent(e.target.value)}
+                  autoFocus={isReply}
                   className="
                     min-h-[40px]
                     w-full
@@ -338,7 +339,9 @@ export default function CommentForm({
                     disabled={submitting}
                     className="h-7 px-4 text-[12px] rounded-full"
                   >
-                    Post
+                    {submitting ? (
+                      <><Loader2 className="w-3 h-3 animate-spin mr-1" />Posting...</>
+                    ) : "Post"}
                   </Button>
                 </div>
               </div>

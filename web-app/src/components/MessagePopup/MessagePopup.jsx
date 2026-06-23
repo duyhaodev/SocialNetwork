@@ -38,7 +38,7 @@ export function MessagePopup() {
     <>
       {/* Floating Message Button */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50">
           <button
             onClick={() => setIsOpen(true)}
             className="relative bg-[#1a1a1a] hover:bg-[#252525] text-white rounded-full px-5 py-3 flex items-center gap-3 shadow-lg border border-[#333] transition-all"

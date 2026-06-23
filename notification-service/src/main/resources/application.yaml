@@ -15,3 +15,8 @@ spring:
 rt-service:
   redis:
     channel: realtime-topic
+
+app:
+  service:
+    profile: http://localhost:8081/profile
+    follow: http://localhost:8084/follow

@@ -3,6 +3,7 @@ package com.DuyHao.chat_service.controller;
 import com.DuyHao.chat_service.dto.ApiResponse;
 import com.DuyHao.chat_service.dto.request.ConversationRequest;
 import com.DuyHao.chat_service.dto.response.ConversationResponse;
+import com.DuyHao.chat_service.dto.response.UserProfileResponse;
 import com.DuyHao.chat_service.service.ConversationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,22 @@ public class ConversationController {
     ApiResponse<Boolean> markAsRead(@PathVariable String conversationId) {
         return ApiResponse.<Boolean>builder()
                 .result(conversationService.markAsRead(conversationId))
+                .build();
+    }
+
+    @GetMapping("/{conversationId}/members")
+    ApiResponse<List<UserProfileResponse>> getMembers(@PathVariable String conversationId) {
+        return ApiResponse.<List<UserProfileResponse>>builder()
+                .result(conversationService.getMembers(conversationId))
+                .build();
+    }
+
+    @PutMapping("/{conversationId}/avatar")
+    ApiResponse<ConversationResponse> updateAvatar(
+            @PathVariable String conversationId,
+            @RequestBody java.util.Map<String, String> body) {
+        return ApiResponse.<ConversationResponse>builder()
+                .result(conversationService.updateGroupAvatar(conversationId, body.get("avatarUrl")))
                 .build();
     }
 

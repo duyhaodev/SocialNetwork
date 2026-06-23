@@ -44,7 +44,7 @@ export default function App() {
 
   // While verifying token, show a loader to prevent route flashing
   // We only want to show this initial loading screen if a token exists and we are verifying it.
-  const isVerifyingToken = loading && !isAuthenticated && getAccessToken();
+  const isVerifyingToken = !isAuthenticated && getAccessToken();
   if (isVerifyingToken) {
     return (
       <>

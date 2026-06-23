@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { UserPlus, LogOut, Bell, Image as ImageIcon, Link as LinkIcon, FileText, Search, X, Video } from "lucide-react";
+import { UserPlus, LogOut, Bell, Image as ImageIcon, Link as LinkIcon, FileText, Search, X, Video, Users, Camera } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { UserAvatar } from "../../../components/ui/user-avatar";
 import { Spinner } from "../../../components/ui/spinner";
@@ -7,11 +7,15 @@ import { searchApi } from "../../../api/searchApi";
 import { messageApi } from "../../../api/messageApi";
 import mediaApi from "../../../api/mediaApi";
 import { useDispatch, useSelector } from "react-redux";
-import { removeConversation } from "../../../store/chatSlice";
+import { removeConversation, updateConversationAvatar } from "../../../store/chatSlice";
+import { useRef } from "react";
+import { AvatarCropDialog } from "../.././../components/AvatarCropDialog/AvatarCropDialog";
+import { useSocket } from "../../../context/SocketContext";
 
 export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
   const dispatch = useDispatch();
   const { conversations } = useSelector(state => state.chat);
+  const socket = useSocket();
 
   // Add Member State
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -24,9 +28,35 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
+  // Members State
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+
+  // Avatar State
+  const [avatarUrl, setAvatarUrl] = useState(
+    conversation?.user?.avatar || conversation?.conversationAvatar || null
+  );
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState(null);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const avatarInputRef = useRef(null);
+
   // Shared Media State
   const [sharedMedia, setSharedMedia] = useState([]);
   const [mediaLoading, setMediaLoading] = useState(false);
+
+  // Lắng nghe realtime khi thành viên khác đổi avatar nhóm
+  useEffect(() => {
+    if (!socket || !conversation?.id) return;
+    const handler = (data) => {
+      if (data?.conversationId === conversation.id && data?.avatarUrl) {
+        setAvatarUrl(data.avatarUrl);
+      }
+    };
+    socket.on("group_avatar_updated", handler);
+    return () => socket.off("group_avatar_updated", handler);
+  }, [socket, conversation?.id]);
 
   // Fetch shared media
   useEffect(() => {
@@ -57,7 +87,8 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
       setSearchLoading(true);
       try {
         const res = await searchApi.searchUsers(searchQuery);
-        setSearchResults(res.data?.result || []);
+        const data = res.data || res;
+        setSearchResults(data?.result || data || []);
       } catch (err) {
         setSearchResults([]);
       } finally {
@@ -78,6 +109,54 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
       console.error("Failed to add member:", err);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageSrc(reader.result);
+      setIsCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = null;
+  };
+
+  const handleCropDone = async (croppedFile, previewUrl) => {
+    setAvatarUrl(previewUrl); // preview ngay
+    setIsUploadingAvatar(true);
+    try {
+      const fd = new FormData();
+      fd.append("files", croppedFile);
+      const uploadRes = await mediaApi.upload(fd);
+      const uploadData = Array.isArray(uploadRes) ? uploadRes : (uploadRes?.result || []);
+      const newUrl = uploadData[0]?.mediaUrl;
+      if (!newUrl) throw new Error("Upload failed");
+
+      await messageApi.updateGroupAvatar(conversation.id, newUrl);
+      setAvatarUrl(newUrl);
+      dispatch(updateConversationAvatar({ conversationId: conversation.id, avatarUrl: newUrl }));
+    } catch (err) {
+      console.error("Failed to update group avatar:", err);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleViewMembers = async () => {
+    setIsMembersOpen(true);
+    if (members.length > 0) return; // đã load rồi
+    setMembersLoading(true);
+    try {
+      const res = await messageApi.getMembers(conversation.id);
+      const data = res.data || res;
+      setMembers(data?.result || data || []);
+    } catch (err) {
+      console.error("Failed to fetch members:", err);
+    } finally {
+      setMembersLoading(false);
     }
   };
 
@@ -125,13 +204,36 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
       <div className="flex-1 overflow-y-auto">
         {/* Profile Info */}
         <div className="flex flex-col items-center p-6 border-b border-[#1a1a1a]">
-          {avatar ? (
-            <img src={avatar} alt={name} className="w-20 h-20 rounded-full object-cover mb-4" />
-          ) : (
-            <div className="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-white text-2xl font-medium mb-4">
-              {name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div className="relative mb-4">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={name} className="w-20 h-20 rounded-full object-cover" />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-white text-2xl font-medium">
+                {name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            {isGroup && (
+              <>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  className="absolute bottom-0 right-0 w-7 h-7 bg-[#333] hover:bg-[#444] rounded-full flex items-center justify-center border-2 border-[#0b0b0b] transition-colors disabled:opacity-50"
+                >
+                  {isUploadingAvatar
+                    ? <Spinner className="w-3 h-3" />
+                    : <Camera className="w-3.5 h-3.5 text-white" />
+                  }
+                </button>
+              </>
+            )}
+          </div>
           <h3 className="text-xl font-semibold text-center">{name}</h3>
         </div>
 
@@ -154,6 +256,13 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
         {/* Group Actions */}
         {isGroup && (
           <div className="p-2 border-b border-[#1a1a1a]">
+            <button
+              onClick={handleViewMembers}
+              className="w-full flex items-center gap-3 p-3 hover:bg-[#1a1a1a] rounded-lg transition-colors text-sm"
+            >
+              <Users className="w-5 h-5 text-gray-400" />
+              <span>Members</span>
+            </button>
             <button
               onClick={() => setIsAddMemberOpen(true)}
               className="w-full flex items-center gap-3 p-3 hover:bg-[#1a1a1a] rounded-lg transition-colors text-sm"
@@ -219,6 +328,44 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
         </div>
       </div>
 
+      {/* Avatar Crop Dialog */}
+      <AvatarCropDialog
+        open={isCropOpen}
+        imageSrc={cropImageSrc}
+        onClose={() => setIsCropOpen(false)}
+        onCropDone={handleCropDone}
+      />
+
+      {/* Members Dialog */}
+      <Dialog open={isMembersOpen} onOpenChange={setIsMembersOpen}>
+        <DialogContent
+          className="bg-[#111] border-[#2a2a2a] text-white max-w-md rounded-2xl"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Members</DialogTitle>
+          </DialogHeader>
+          <div className="pt-2 pb-2">
+            {membersLoading ? (
+              <div className="flex justify-center p-6">
+                <Spinner className="w-5 h-5 text-gray-500" />
+              </div>
+            ) : (
+              <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
+                {members.map(member => (
+                  <div key={member.userId} className="flex items-center gap-3 px-2 py-2.5 hover:bg-[#1a1a1a] rounded-xl transition-colors">
+                    <UserAvatar user={{ ...member, id: member.userId, avatar: member.avatarUrl }} avatarClassName="w-9 h-9" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-tight truncate">{member.fullName || "Unknown"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Leave Group Confirm Dialog */}
       <Dialog open={isLeaveConfirmOpen} onOpenChange={setIsLeaveConfirmOpen}>
         <DialogContent className="bg-[#0b0b0b] border-[#333] text-white max-w-sm">
@@ -250,36 +397,41 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
       </Dialog>
 
       {/* Add Member Dialog */}
-      <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>        <DialogContent className="bg-[#0b0b0b] border-[#333] text-white">
+      <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>        <DialogContent className="bg-[#111] border-[#2a2a2a] text-white max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Add New Member</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Add New Member</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 pt-2 pb-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
                 type="text"
                 placeholder="Search users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-[#555]"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-gray-600 focus:outline-none focus:border-[#444] transition-colors"
               />
             </div>
-            <div className="max-h-60 overflow-y-auto space-y-2">
+            <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
               {searchLoading ? (
-                <div className="flex justify-center p-4">
+                <div className="flex justify-center p-6">
                   <Spinner className="w-5 h-5 text-gray-500" />
                 </div>
+              ) : searchResults.length === 0 && searchQuery ? (
+                <p className="text-sm text-gray-600 text-center py-6">No users found</p>
               ) : searchResults.map(user => (
-                <div key={user.userId} className="flex items-center justify-between p-2 hover:bg-[#1a1a1a] rounded-lg">
+                <div key={user.userId} className="flex items-center justify-between px-2 py-2.5 hover:bg-[#1a1a1a] rounded-xl transition-colors">
                   <div className="flex items-center gap-3">
-                    <UserAvatar user={{ ...user, id: user.userId, avatar: user.avatarUrl }} avatarClassName="w-8 h-8" />
-                    <span className="text-sm">{user.fullName || user.username}</span>
+                    <UserAvatar user={{ ...user, id: user.userId, avatar: user.avatarUrl }} avatarClassName="w-9 h-9" />
+                    <div>
+                      <p className="text-sm font-medium leading-tight">{user.fullName || user.username}</p>
+                      <p className="text-xs text-gray-500">@{user.username}</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => handleAddMember(user.userId)}
                     disabled={isAdding}
-                    className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md transition-colors"
+                    className="text-xs font-medium bg-white text-black hover:bg-gray-200 px-4 py-1.5 rounded-full transition-colors disabled:opacity-50"
                   >
                     Add
                   </button>

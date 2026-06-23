@@ -1,6 +1,7 @@
 package com.DuyHao.api_gateway.configuration;
 
 import com.DuyHao.api_gateway.repository.IdentityClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -18,11 +19,12 @@ import java.util.List;
 
 @Configuration
 public class WebClientConfiguration {
+
+    @Value("${app.identity.url:http://localhost:8080/identity}")
+    private String identityUrl;
+
     @Bean
     WebClient webClient() {
-        // Connection pool ngắn hạn — tránh stale connection gây
-        // "Connection prematurely closed DURING response" khi identity-service
-        // hoặc OS đóng socket sau idle timeout.
         ConnectionProvider provider = ConnectionProvider.builder("identity-pool")
                 .maxIdleTime(Duration.ofSeconds(5))
                 .maxLifeTime(Duration.ofSeconds(30))
@@ -34,23 +36,23 @@ public class WebClientConfiguration {
                 .responseTimeout(Duration.ofSeconds(10));
 
         return WebClient.builder()
-                .baseUrl("http://localhost:8080/identity")
+                .baseUrl(identityUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
 
     @Bean
-    CorsWebFilter corsWebFilter(){
+    CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
+        corsConfiguration.setAllowedOriginPatterns(List.of("*"));
         corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowedMethods(List.of("*"));
         corsConfiguration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
-        urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
 
-        return new CorsWebFilter(urlBasedCorsConfigurationSource);
+        return new CorsWebFilter(source);
     }
 
     @Bean

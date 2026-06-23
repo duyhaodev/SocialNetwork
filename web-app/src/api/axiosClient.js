@@ -2,7 +2,7 @@ import axios from "axios";
 import { getAccessToken, getRefreshToken, setToken, removeToken } from "./localStorageService";
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:8888',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8888',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -89,7 +89,7 @@ axiosClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Gọi trực tiếp axios để tránh loop vô tận
-          const res = await axios.post("http://localhost:8888/identity/auth/refresh", {
+          const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8888'}/identity/auth/refresh`, {
             token: refreshToken
           });
 
