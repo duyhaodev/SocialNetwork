@@ -33,6 +33,9 @@ export const SocketProvider = ({ children }) => {
         // Khi tab khác hỏi "Có ai đang bận không?", nếu mình đang bận thì trả lời
         if (callStatus !== 'IDLE') {
           channel.postMessage({ type: 'BUSY_STATUS', isBusy: true });
+        } else {
+          // Mình đang IDLE → báo cho tab hỏi biết là không bận
+          channel.postMessage({ type: 'BUSY_STATUS', isBusy: false });
         }
       }
     };
@@ -247,6 +250,9 @@ export const SocketProvider = ({ children }) => {
     // --- Call Listeners ---
     newSocket.on("incoming_call", (data) => {
       console.log("Incoming call:", data);
+      // Reset isAnotherTabBusy trước khi nhận cuộc gọi mới
+      // để tránh trường hợp bị stuck true từ session trước
+      dispatch(setAnotherTabBusy(false));
       dispatch(receiveIncomingCall(data));
     });
 

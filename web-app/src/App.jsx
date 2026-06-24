@@ -50,6 +50,7 @@ export default function App() {
     return (
       <>
         <Toaster richColors position="top-right" />
+        <CallOverlay />
         <div className="min-h-screen flex items-center justify-center">
           <Spinner />
         </div>

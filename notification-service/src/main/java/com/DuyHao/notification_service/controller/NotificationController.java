@@ -31,7 +31,7 @@ public class NotificationController {
                 notificationService.getUnreadCount(userId)));
     }
 
-    @PatchMapping("/{notificationId}/read")
+    @PostMapping("/{notificationId}/read")
     public ResponseEntity<?> markAsRead(@PathVariable String notificationId) {
 
         notificationService.markAsRead(notificationId);
@@ -39,7 +39,7 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/read-all")
+    @PostMapping("/read-all")
     public ResponseEntity<?> markAllAsRead() {
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();
         notificationService.markAllAsRead(userId);

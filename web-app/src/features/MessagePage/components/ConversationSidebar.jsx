@@ -266,22 +266,23 @@ export function ConversationSidebar({
             const timestampRaw = item.timestamp; // Luôn sử dụng item.timestamp
             const unread = item.unread;
 
+            // Tìm đối tác chat (partnerId) để hiển thị status online
+            const partnerId = item.partnerId || (item.user && item.user.userId);
+
             // Helper to construct the standardized object for onSelect
             const normalizedConv = isApiConv
               ? {
                 id,
-                user: { displayName, avatar },
+                partnerId: item.partnerId || partnerId,
+                user: { displayName, avatar, userId: item.partnerId || partnerId },
                 lastMessage,
                 unread: unread || false,
                 timestamp: timestampRaw,
                 type: item.type,
+                conversationName: item.conversationName,
+                conversationAvatar: item.conversationAvatar,
               }
               : item;
-
-            // Tìm đối tác chat (partnerId) để hiển thị status online
-            // Trong conversation 1-1 đơn giản này, ta có thể lấy từ item.participantIds hoặc tương tự
-            // Ở đây tôi giả định logic lấy ID đối phương:
-            const partnerId = item.partnerId || (item.user && item.user.userId);
 
             return (
               <div

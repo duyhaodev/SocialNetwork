@@ -107,8 +107,9 @@ export function ActivityPage() {
   }, [activeTab, allActivities]);
 
   useEffect(() => {
-    dispatch(fetchNotifications());
-    dispatch(markAllNotificationsRead());
+    dispatch(fetchNotifications()).then(() => {
+      dispatch(markAllNotificationsRead());
+    });
   }, [dispatch]);
 
   const handleFollowBack = async (notification) => {

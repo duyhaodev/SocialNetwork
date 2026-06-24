@@ -42,7 +42,7 @@ const notificationApi = {
 
   // Đánh dấu thông báo là đã đọc
   markAsRead: (notificationId) => {
-    return axios.patch(`/notification/api/notifications/${notificationId}/read`);
+    return axios.post(`/notification/api/notifications/${notificationId}/read`);
   },
 
   // Follow back từ thông báo
@@ -52,7 +52,7 @@ const notificationApi = {
 
   // Đánh dấu tất cả thông báo là đã đọc
   markAllRead: () => {
-    return axios.patch("/notification/api/notifications/read-all");
+    return axios.post("/notification/api/notifications/read-all");
   },
 };
 
