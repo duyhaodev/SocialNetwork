@@ -28,11 +28,11 @@ export function Sidebar({ currentPage }) {
   const unreadNotifications = useSelector(selectUnreadCount);
 
   useEffect(() => {
-    // Fetch initial notifications to get unread count
-    if (profile) {
+    // Fetch initial notifications to get unread count — chỉ chạy 1 lần khi profile lần đầu load
+    if (profile?.id) {
       dispatch(fetchNotifications());
     }
-  }, [dispatch, profile]);
+  }, [dispatch, profile?.id]);
 
   const menuItems = [
     { id: "feed", label: "Home", icon: Home, path: "/feed" },
