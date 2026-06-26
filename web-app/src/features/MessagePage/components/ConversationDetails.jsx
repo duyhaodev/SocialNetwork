@@ -11,11 +11,16 @@ import { removeConversation, updateConversationAvatar } from "../../../store/cha
 import { useRef } from "react";
 import { AvatarCropDialog } from "../.././../components/AvatarCropDialog/AvatarCropDialog";
 import { useSocket } from "../../../context/SocketContext";
+import { ImageViewer } from "../../../components/ImageViewer/ImageViewer";
 
 export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
   const dispatch = useDispatch();
   const { conversations } = useSelector(state => state.chat);
   const socket = useSocket();
+
+  // ImageViewer state
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   // Add Member State
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -41,6 +46,11 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
   const [cropImageSrc, setCropImageSrc] = useState(null);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const avatarInputRef = useRef(null);
+
+  // Sync avatar khi conversation thay đổi
+  useEffect(() => {
+    setAvatarUrl(conversation?.user?.avatar || conversation?.conversationAvatar || null);
+  }, [conversation?.id]);
 
   // Shared Media State
   const [sharedMedia, setSharedMedia] = useState([]);
@@ -300,7 +310,14 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
                   <div
                     key={idx}
                     className="aspect-square bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#222] cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => window.open(m.mediaUrl, '_blank')}
+                    onClick={() => {
+                      if (m.mediaType === 'image') {
+                        setViewerIndex(idx);
+                        setViewerOpen(true);
+                      } else {
+                        window.open(m.mediaUrl, '_blank');
+                      }
+                    }}
                   >
                     {m.mediaType === 'image' ? (
                       <img src={m.mediaUrl} alt="" className="w-full h-full object-cover" />
@@ -397,8 +414,8 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
       </Dialog>
 
       {/* Add Member Dialog */}
-      <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>        <DialogContent className="bg-[#111] border-[#2a2a2a] text-white max-w-md rounded-2xl">
-          <DialogHeader>
+      <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+        <DialogContent className="bg-[#111] border-[#2a2a2a] text-white max-w-md rounded-2xl">          <DialogHeader>
             <DialogTitle className="text-lg font-semibold">Add New Member</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2 pb-2">
@@ -441,6 +458,13 @@ export function ConversationDetails({ conversation, onClose, onLeaveGroup }) {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Image Viewer */}
+      <ImageViewer
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        mediaList={sharedMedia.filter(m => m.mediaType === 'image').map(m => ({ mediaUrl: m.mediaUrl, mediaType: 'image' }))}
+        index={viewerIndex}
+      />
     </div>
   );
 }

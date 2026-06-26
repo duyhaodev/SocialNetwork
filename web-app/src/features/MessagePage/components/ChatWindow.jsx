@@ -461,22 +461,35 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
           </div>
           {conversation ? (
             <div className="flex items-center gap-2">
-              <button
-                className={`p-2 rounded-lg transition-colors ${ (isAnotherTabBusy || callStatus !== 'IDLE') ? 'text-gray-600 cursor-not-allowed' : 'hover:bg-[#1a1a1a]'}`}
-                onClick={() => handleInitiateCall('AUDIO')}
-                disabled={isAnotherTabBusy || callStatus !== 'IDLE'}
-                title={isAnotherTabBusy ? "Bạn đang có cuộc gọi ở tab khác" : (callStatus !== 'IDLE' ? "Bạn đang trong cuộc gọi" : "Cuộc gọi thoại")}
-              >
-                <Phone className="w-5 h-5" />
-              </button>
-              <button
-                className={`p-2 rounded-lg transition-colors ${ (isAnotherTabBusy || callStatus !== 'IDLE') ? 'text-gray-600 cursor-not-allowed' : 'hover:bg-[#1a1a1a]'}`}
-                onClick={() => handleInitiateCall('VIDEO')}
-                disabled={isAnotherTabBusy || callStatus !== 'IDLE'}
-                title={isAnotherTabBusy ? "Bạn đang có cuộc gọi ở tab khác" : (callStatus !== 'IDLE' ? "Bạn đang trong cuộc gọi" : "Cuộc gọi video")}
-              >
-                <Video className="w-5 h-5" />
-              </button>
+              {conversation.type !== "GROUP" ? (
+                <>
+                  <button
+                    className={`p-2 rounded-lg transition-colors ${ (isAnotherTabBusy || callStatus !== 'IDLE') ? 'text-gray-600 cursor-not-allowed' : 'hover:bg-[#1a1a1a]'}`}
+                    onClick={() => handleInitiateCall('AUDIO')}
+                    disabled={isAnotherTabBusy || callStatus !== 'IDLE'}
+                    title={isAnotherTabBusy ? "Bạn đang có cuộc gọi ở tab khác" : (callStatus !== 'IDLE' ? "Bạn đang trong cuộc gọi" : "Cuộc gọi thoại")}
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
+                  <button
+                    className={`p-2 rounded-lg transition-colors ${ (isAnotherTabBusy || callStatus !== 'IDLE') ? 'text-gray-600 cursor-not-allowed' : 'hover:bg-[#1a1a1a]'}`}
+                    onClick={() => handleInitiateCall('VIDEO')}
+                    disabled={isAnotherTabBusy || callStatus !== 'IDLE'}
+                    title={isAnotherTabBusy ? "Bạn đang có cuộc gọi ở tab khác" : (callStatus !== 'IDLE' ? "Bạn đang trong cuộc gọi" : "Cuộc gọi video")}
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="p-2 rounded-lg text-gray-600 cursor-not-allowed" disabled>
+                    <Phone className="w-5 h-5" />
+                  </button>
+                  <button className="p-2 rounded-lg text-gray-600 cursor-not-allowed" disabled>
+                    <Video className="w-5 h-5" />
+                  </button>
+                </>
+              )}
               <button className="p-2 hover:bg-[#1a1a1a] rounded-lg transition-colors" onClick={() => setIsInfoOpen(!isInfoOpen)}>
                 <Info className={`w-5 h-5 ${isInfoOpen ? "text-[#0095f6]" : ""}`} />
               </button>
@@ -518,7 +531,15 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
             messages.map((msg, index) => {
               const nextMsg = messages[index + 1];
               const getSenderId = (m) => m?.sender?.id || m?.sender?.userId || m?.senderId;
-              const isLastInGroup = !nextMsg || !!nextMsg.type || (getSenderId(nextMsg) !== getSenderId(msg));
+
+              const THIRTY_MIN = 30 * 60 * 1000;
+              const nextGap = nextMsg?.createdAt && msg?.createdAt
+                ? new Date(nextMsg.createdAt) - new Date(msg.createdAt)
+                : null;
+              const isTimeGapAfter = nextGap !== null && nextGap > THIRTY_MIN;
+
+              const isLastInGroup = !nextMsg || !!nextMsg.type || isTimeGapAfter || (getSenderId(nextMsg) !== getSenderId(msg));
+
               return (
               <div key={msg.id} className="space-y-1">
 
@@ -638,7 +659,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                               </div>
                               {/* Reactions — iMessage style, góc dưới bubble */}
                               {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                                <div className={`absolute -bottom-1 flex gap-0.5 ${msg.isMe ? '-right-2' : '-left-2'}`}>
+                                <div className={`absolute -bottom-1 flex gap-0.5 ${msg.isMe ? '-right-2' : '-right-2'}`}>
                                   {Object.entries(
                                     Object.values(msg.reactions).reduce((acc, emoji) => {
                                       acc[emoji] = (acc[emoji] || 0) + 1;
@@ -679,24 +700,31 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
 
                         {/* Media */}
                         {msg.media && msg.media.length > 0 && (
-                          <div
-                            className={`grid gap-2 mt-1 ${msg.media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
-                            title={msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}
-                          >
-                            {msg.media.map((m, idx) => (
-                              <div key={idx} className="rounded-2xl overflow-hidden border border-[#333]">
-                                {m.type === 'image' ? (
-                                  <img
-                                    src={m.url}
-                                    alt=""
-                                    className="max-w-64 h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity block"
-                                    onClick={() => handleOpenViewer(msg.media, idx)}
-                                  />
-                                ) : (
-                                  <video src={m.url} controls className="max-w-64 h-auto block" />
-                                )}
-                              </div>
-                            ))}
+                          <div className="mt-1">
+                            <div
+                              className={`grid gap-2 ${msg.media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
+                            >
+                              {msg.media.map((m, idx) => (
+                                <div key={idx} className="rounded-2xl overflow-hidden border border-[#333]">
+                                  {m.type === 'image' ? (
+                                    <img
+                                      src={m.url}
+                                      alt=""
+                                      className="max-w-64 h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity block"
+                                      onClick={() => handleOpenViewer(msg.media, idx)}
+                                    />
+                                  ) : (
+                                    <video src={m.url} controls className="max-w-64 h-auto block" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            {/* Timestamp dưới ảnh — chỉ khi không có text và là tin cuối nhóm */}
+                            {!msg.content && msg.createdAt && isLastInGroup && (
+                              <span className={`text-[10px] opacity-50 block mt-1 ${msg.isMe ? 'text-right' : 'text-left'}`}>
+                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
                           </div>
                         )}
 
