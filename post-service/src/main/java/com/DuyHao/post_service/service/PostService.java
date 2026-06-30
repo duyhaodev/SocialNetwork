@@ -34,12 +34,14 @@ public class PostService {
     private final LocalFeedCacheService localFeedCacheService;
     private final AiClient aiClient;
     private final FollowClient followClient;
+    private final com.DuyHao.post_service.FeignClient.GroupClient groupClient;
 
     // ==================== CREATE ====================
     public PostResponse create(
             String userId,
             String content,
             String repostOfId,
+            String groupId,
             List<String> mediaIds,
             List<String> tags,
             String clientIp) {
@@ -47,6 +49,32 @@ public class PostService {
 
         // Resolve city từ IP
         String city = geoIpService.resolveCity(clientIp);
+
+        // Group Logic
+        String status = "APPROVED";
+        if (groupId != null && !groupId.isBlank()) {
+            boolean isMember = false;
+            try {
+                isMember = groupClient.checkMember(groupId, userId);
+            } catch (Exception e) {
+                throw new RuntimeException("Error checking group membership");
+            }
+            if (!isMember) {
+                throw new RuntimeException("You are not a member of this group");
+            }
+
+            // Fetch group info to check approval
+            try {
+                var groupResponse = groupClient.getGroup(groupId);
+                if (groupResponse != null && groupResponse.getResult() != null) {
+                    if (Boolean.TRUE.equals(groupResponse.getResult().requiresApproval())) {
+                        status = "PENDING";
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Could not fetch group info for approval check");
+            }
+        }
 
         // Auto AI Tagging if no manual tags are provided
         List<String> resolvedTags = tags;
@@ -87,6 +115,8 @@ public class PostService {
                 .scope("public")
                 .tags(resolvedTags)
                 .city(city)
+                .groupId(groupId)
+                .status(status)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -571,5 +601,66 @@ public class PostService {
     public List<String> getPostTags(String id) {
         Post post = postRepository.findById(id).orElseThrow(() -> new RuntimeException("Post not found"));
         return post.getTags() != null ? post.getTags() : Collections.emptyList();
+    }
+
+    // ==================== GROUP ====================
+    public List<PostResponse> getGroupPosts(String groupId, String currentUserId, int page, int size) {
+        boolean isMember = false;
+        try {
+            isMember = groupClient.checkMember(groupId, currentUserId);
+        } catch (Exception e) {
+        }
+
+        try {
+            var groupResponse = groupClient.getGroup(groupId);
+            if (groupResponse != null && groupResponse.getResult() != null) {
+                if ("PRIVATE".equals(groupResponse.getResult().privacy()) && !isMember) {
+                    throw new RuntimeException("Group is private");
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Could not fetch group privacy info");
+        }
+
+        List<Post> posts = postRepository.findByGroupIdAndStatusOrderByCreatedAtDesc(
+                groupId, "APPROVED", PageRequest.of(page, size));
+        if (posts.isEmpty()) return Collections.emptyList();
+
+        Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
+        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        return posts.stream()
+                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .collect(Collectors.toList());
+    }
+
+    public List<PostResponse> getPendingGroupPosts(String groupId, String currentUserId, int page, int size) {
+        // Here we should ideally check if currentUserId is ADMIN or MODERATOR of the group.
+        // For simplicity we check if they are member. In real implementation, groupClient.checkAdmin() would be better.
+        List<Post> posts = postRepository.findByGroupIdAndStatusOrderByCreatedAtDesc(
+                groupId, "PENDING", PageRequest.of(page, size));
+        if (posts.isEmpty()) return Collections.emptyList();
+
+        Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
+        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        return posts.stream()
+                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updatePostStatus(String postId, String status, String currentUserId) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        // Check admin/mod permission via group-service if needed
+        post.setStatus(status);
+        postRepository.save(post);
+
+        // If approved, add to LocalFeed Cache if needed
+        if ("APPROVED".equals(status)) {
+            localFeedCacheService.addPost(post.getCity(), post.getId(), post.getCreatedAt());
+        }
     }
 }

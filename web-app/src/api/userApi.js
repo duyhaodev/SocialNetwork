@@ -18,6 +18,12 @@ const userApi = {
     const url = "profile/users/interests";
     return axiosClient.get(url);
   },
+
+  // Lấy danh sách user từ danh sách userIds
+  getUsersBatch(userIds) {
+    const url = "profile/users/batch";
+    return axiosClient.post(url, userIds);
+  }
 };
 
 export default userApi;

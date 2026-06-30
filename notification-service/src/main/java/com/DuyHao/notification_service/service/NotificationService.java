@@ -124,6 +124,38 @@ public class NotificationService {
         return notification;
     }
 
+    public Notification createGroupJoinRequestNotification(String toUserId, String fromUserId, String groupId) {
+        if (Objects.equals(toUserId, fromUserId)) return null;
+
+        Notification notification = notificationRepo
+                .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, fromUserId, "group_join_request", groupId)
+                .map(n -> {
+                    n.setCreatedAt(LocalDateTime.now());
+                    n.setIsRead(false);
+                    return notificationRepo.save(n);
+                })
+                .orElseGet(() -> notificationRepo.save(buildNotification(toUserId, fromUserId, "group_join_request", groupId, null)));
+
+        pushRealtime(notification, "new_notification");
+        return notification;
+    }
+
+    public Notification createGroupJoinApprovedNotification(String toUserId, String fromUserId, String groupId) {
+        if (Objects.equals(toUserId, fromUserId)) return null;
+
+        Notification notification = notificationRepo
+                .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, fromUserId, "group_join_approved", groupId)
+                .map(n -> {
+                    n.setCreatedAt(LocalDateTime.now());
+                    n.setIsRead(false);
+                    return notificationRepo.save(n);
+                })
+                .orElseGet(() -> notificationRepo.save(buildNotification(toUserId, fromUserId, "group_join_approved", groupId, null)));
+
+        pushRealtime(notification, "new_notification");
+        return notification;
+    }
+
     private Notification buildNotification(
             String toUserId, String fromUserId, String type, String postId, String commentId) {
         return Notification.builder()
@@ -303,7 +335,10 @@ public class NotificationService {
             if ("follow".equals(type)) {
                 return "follow_" + n.getId();
             }
-            if ("comment_post".equals(type) || "like_post".equals(type) || "repost".equals(type)) {
+            if ("group_join_approved".equals(type)) {
+                return "group_join_approved_" + n.getId();
+            }
+            if ("comment_post".equals(type) || "like_post".equals(type) || "repost".equals(type) || "group_join_request".equals(type)) {
                 return type + "_post_" + (n.getPostId() != null ? n.getPostId() : "none");
             }
             if ("reply_comment".equals(type) || "like_comment".equals(type)) {

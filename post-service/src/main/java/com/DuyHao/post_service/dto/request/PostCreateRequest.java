@@ -13,6 +13,7 @@ public class PostCreateRequest {
     private String content;
     private String scope;
     private String repostOfId;
+    private String groupId;
     private List<String> tags;
     List<String> mediaIds;
 }

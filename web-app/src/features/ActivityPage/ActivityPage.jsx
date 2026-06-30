@@ -7,6 +7,7 @@ import {
   Repeat2,
   UserPlus,
   ChevronRight,
+  Users,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -31,6 +32,7 @@ const typeMap = {
   likes: ["like_post", "like_comment"],
   reposts: ["repost"],
   follows: ["follow"],
+  groups: ["group_join_request", "group_join_approved"],
 };
 
 // Số user tối đa hiển thị trong popover follow gộp ở tab All
@@ -143,7 +145,7 @@ export function ActivityPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex justify-center w-full border-b border-border/20 py-2.5 bg-background/30 backdrop-blur-sm sticky top-14 z-10 px-4">
-          <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[500px] grid grid-cols-5 relative overflow-hidden">
+          <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[600px] grid grid-cols-6 relative overflow-hidden">
             <TabsTrigger
               value="all"
               className="relative z-10 rounded-full text-[10px] sm:text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
@@ -174,16 +176,23 @@ export function ActivityPage() {
             >
               Follows
             </TabsTrigger>
+            <TabsTrigger
+              value="groups"
+              className="relative z-10 rounded-full text-[10px] sm:text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
+            >
+              Groups
+            </TabsTrigger>
 
             {/* Sliding Indicator background pill */}
-            <div className="absolute inset-1 w-[calc(20%-4px)] h-[calc(100%-8px)] pointer-events-none z-0">
+            <div className="absolute inset-1 w-[calc(16.666%-4px)] h-[calc(100%-8px)] pointer-events-none z-0">
               <motion.div
                 className="w-full h-full bg-foreground rounded-full shadow-sm"
                 animate={{
                   x: activeTab === "all" ? 0 :
                     activeTab === "comments" ? "100%" :
                       activeTab === "likes" ? "200%" :
-                        activeTab === "reposts" ? "300%" : "400%",
+                        activeTab === "reposts" ? "300%" :
+                          activeTab === "follows" ? "400%" : "500%",
                 }}
                 transition={{ type: "spring", stiffness: 350, damping: 28 }}
               />
@@ -404,6 +413,8 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
     reply_comment: <MessageCircle className="w-3 h-3 text-white fill-white" />,
     repost: <Repeat2 className="w-3 h-3 text-white" />,
     follow: <UserPlus className="w-3 h-3 text-white fill-white" />,
+    group_join_request: <Users className="w-3 h-3 text-white fill-white" />,
+    group_join_approved: <Users className="w-3 h-3 text-white fill-white" />,
   };
 
   const bgMap = {
@@ -413,6 +424,8 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
     reply_comment: "bg-blue-400",
     repost: "bg-green-500",
     follow: "bg-purple-500",
+    group_join_request: "bg-orange-500",
+    group_join_approved: "bg-green-500",
   };
 
   const messageMap = {
@@ -422,6 +435,8 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
     reply_comment: "replied to your comment",
     repost: "reposted your thread",
     follow: "followed you",
+    group_join_request: "requested to join your group",
+    group_join_approved: "approved your request to join the group",
   };
 
   const users = Array.isArray(activity.users) && activity.users.length > 0
@@ -438,8 +453,21 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
   const actionText = messageMap[type] || activity.message || "did something";
 
   const hasPostLink = activity.postId && ["like_post", "like_comment", "comment_post", "reply_comment", "repost"].includes(type);
+  const isGroupNotification = ["group_join_request", "group_join_approved"].includes(type);
 
   const firstName = firstUser?.displayName || firstUser?.username || "Someone";
+
+  const handleNotificationClick = () => {
+    if (hasPostLink) {
+      onPostClick?.(activity.postId);
+    } else if (isGroupNotification && activity.postId) {
+      if (type === "group_join_request") {
+        navigate(`/group/${activity.postId}?tab=members`);
+      } else {
+        navigate(`/group/${activity.postId}`);
+      }
+    }
+  };
 
   return (
     <div className={`border-b border-border/10 p-4 bg-transparent hover:bg-muted/5 transition-all duration-300 relative group ${!activity.read ? "bg-muted/10" : ""}`}>
@@ -529,9 +557,9 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
           </div>
 
           <div className="text-muted-foreground text-sm">
-            {hasPostLink ? (
+            {(hasPostLink || isGroupNotification) ? (
               <div
-                onClick={() => onPostClick?.(activity.postId)}
+                onClick={handleNotificationClick}
                 className="cursor-pointer hover:text-foreground transition-colors font-medium text-xs sm:text-sm mt-0.5 inline-block"
               >
                 {actionText}

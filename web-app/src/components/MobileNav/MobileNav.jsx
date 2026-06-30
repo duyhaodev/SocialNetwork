@@ -52,6 +52,7 @@ export function MobileNav() {
     { id: "feed", label: "Home", icon: Home, path: "/feed" },
     { id: "search", label: "Search", icon: Search, path: "/search" },
     { id: "activity", label: "Activity", icon: Heart, path: "/activity" },
+    { id: "groups", label: "Cộng đồng", icon: User, path: "/groups" },
     { id: "profile", label: "Profile", icon: User, path: "/profile" },
     { id: "story", label: "Archive", icon: Archive, path: "/story/archive" },
   ];

@@ -51,6 +51,13 @@ public class Post {
     @Column(length = 100)
     String city;
 
+    @Column(name = "group_id", length = 36)
+    String groupId;
+
+    @Column(length = 20)
+    @Builder.Default
+    String status = "APPROVED"; // APPROVED, PENDING, REJECTED
+
     // Repost
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "repost_of_id")

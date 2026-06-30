@@ -251,6 +251,21 @@ services:
       postgres:
         condition: service_healthy
 
+  group-service:
+    build: ./group-service
+    container_name: group-service
+    restart: unless-stopped
+    ports:
+      - "8093:8093"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/GROUP_DB
+      SPRING_DATASOURCE_USERNAME: admin123
+      SPRING_DATASOURCE_PASSWORD: admin123
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   ai-service:
     build: ./ai-service
     container_name: ai-service
@@ -277,6 +292,7 @@ services:
       - search-service
       - story-service
       - ai-service
+      - group-service
 
 # ─────────────────────────────────────────────
 # VOLUMES

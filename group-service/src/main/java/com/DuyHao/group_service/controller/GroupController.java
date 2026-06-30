@@ -1,0 +1,121 @@
+package com.DuyHao.group_service.controller;
+
+import com.DuyHao.group_service.dto.ApiResponse;
+import com.DuyHao.group_service.dto.request.GroupCreateRequest;
+import com.DuyHao.group_service.dto.response.GroupResponse;
+import com.DuyHao.group_service.service.GroupService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequiredArgsConstructor
+public class GroupController {
+
+    private final GroupService groupService;
+
+    @PostMapping
+    public ApiResponse<GroupResponse> createGroup(
+            @RequestBody GroupCreateRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        GroupResponse response = groupService.createGroup(request, userId);
+        return ApiResponse.<GroupResponse>builder().result(response).build();
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<GroupResponse> getGroup(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt != null ? jwt.getSubject() : null;
+        GroupResponse response = groupService.getGroup(id, userId);
+        return ApiResponse.<GroupResponse>builder().result(response).build();
+    }
+
+    @PostMapping("/{id}/join")
+    public ApiResponse<Void> joinGroup(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        groupService.joinGroup(id, userId);
+        return ApiResponse.<Void>builder().message("Request submitted").build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> disbandGroup(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        groupService.disbandGroup(id, currentUserId);
+        return ApiResponse.<Void>builder().message("Group disbanded").build();
+    }
+
+    @DeleteMapping("/{id}/leave")
+    public ApiResponse<Void> leaveGroup(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        groupService.leaveGroup(id, userId);
+        return ApiResponse.<Void>builder().message("Left group / Withdrawn request").build();
+    }
+
+    @PutMapping("/{id}/members/{userId}/approve")
+    public ApiResponse<Void> approveMember(
+            @PathVariable String id,
+            @PathVariable String userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        groupService.approveMember(id, userId, currentUserId);
+        return ApiResponse.<Void>builder().message("Member approved").build();
+    }
+    @GetMapping("/{id}/members/active")
+    public ApiResponse<java.util.List<com.DuyHao.group_service.dto.response.GroupMemberResponse>> getActiveMembers(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        java.util.List<com.DuyHao.group_service.dto.response.GroupMemberResponse> members = groupService.getActiveMembers(id, currentUserId);
+        return ApiResponse.<java.util.List<com.DuyHao.group_service.dto.response.GroupMemberResponse>>builder().result(members).build();
+    }
+
+    @DeleteMapping("/{id}/members/{userId}/kick")
+    public ApiResponse<Void> kickMember(
+            @PathVariable String id,
+            @PathVariable String userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        groupService.kickMember(id, userId, currentUserId);
+        return ApiResponse.<Void>builder().message("Member kicked").build();
+    }
+
+    @PutMapping("/{id}/members/{userId}/promote")
+    public ApiResponse<Void> promoteToModerator(
+            @PathVariable String id,
+            @PathVariable String userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        groupService.promoteToModerator(id, userId, currentUserId);
+        return ApiResponse.<Void>builder().message("Promoted to Moderator").build();
+    }
+
+    @GetMapping("/{id}/members/pending")
+    public ApiResponse<java.util.List<String>> getPendingMembers(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        java.util.List<String> pendingIds = groupService.getPendingMembers(id, currentUserId);
+        return ApiResponse.<java.util.List<String>>builder().result(pendingIds).build();
+    }
+    @GetMapping("/my-groups")
+    public ApiResponse<java.util.List<GroupResponse>> getMyGroups(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        java.util.List<GroupResponse> responses = groupService.getMyGroups(userId);
+        return ApiResponse.<java.util.List<GroupResponse>>builder().result(responses).build();
+    }
+
+    @GetMapping
+    public ApiResponse<java.util.List<GroupResponse>> getAllGroups() {
+        java.util.List<GroupResponse> responses = groupService.getAllGroups();
+        return ApiResponse.<java.util.List<GroupResponse>>builder().result(responses).build();
+    }
+}

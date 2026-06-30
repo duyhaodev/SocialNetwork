@@ -36,6 +36,13 @@ public class UserProfileController {
         return ApiResponse.<List<UserProfileResponse>>builder().result(result).build();
     }
 
+    @PostMapping("/users/batch")
+    ApiResponse<List<UserProfileResponse>> getUsersBatch(@RequestBody List<String> userIds) {
+        return ApiResponse.<List<UserProfileResponse>>builder()
+                .result(userProfileRepositoryService.getUsers(userIds))
+                .build();
+    }
+
     @GetMapping("/myInfo")
     ApiResponse<UserProfileResponse> getMyInfo() {
         return ApiResponse.<UserProfileResponse>builder()

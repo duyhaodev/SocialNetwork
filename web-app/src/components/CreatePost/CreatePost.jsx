@@ -13,7 +13,7 @@ import aiApi from "../../api/aiApi";
 import AISuggestPanel from "./AISuggestPanel";
 import ModerationWarning from "../ModerationWarning/ModerationWarning";
 
-export function CreatePost({ open, onOpenChange }) {
+export function CreatePost({ open, onOpenChange, groupId, isInline }) {
 
   // REDUX & USER PROFILE
   const dispatch = useDispatch();
@@ -128,6 +128,9 @@ export function CreatePost({ open, onOpenChange }) {
         content: trimContent,
         mediaIds,
       };
+      if (groupId) {
+        payload.groupId = groupId;
+      }
 
       await dispatch(createPost(payload)).unwrap();
 
@@ -136,7 +139,10 @@ export function CreatePost({ open, onOpenChange }) {
       handleRemoveAll();
       setEmojiOpen(false);
       setModerationResult(null);
-      onOpenChange(false);
+      if (onOpenChange) onOpenChange(false);
+      
+      // If we need to trigger a refresh inline
+      // We can rely on the caller observing state, but for now just close if it's a modal
 
     } catch (err) {
       toast.error(err?.message || "Post failed!");
@@ -225,35 +231,16 @@ export function CreatePost({ open, onOpenChange }) {
 
   const hasMedia = mediaFiles.length > 0;
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => (!v ? onOpenChange(false) : onOpenChange(true))}>
-      <DialogContent
-        className="max-w-[420px] p-0 gap-0 bg-[#181818] border-[#2a2a2a] [&>button]:hidden"
-        aria-describedby="dialog-description"
-      >
-        <style>
-          {`
-            .media-scroll {
-              scrollbar-width: none;
-              -ms-overflow-style: none;
-            }
-            .media-scroll::-webkit-scrollbar {
-              display: none;
-            }
-          `}
-        </style>
-
-        <DialogDescription id="dialog-description" className="sr-only">
-          Create new thread with content, emoji and control options
-        </DialogDescription>
-
+  const innerContent = (
+    <div className={isInline ? "w-full bg-zinc-900/40 border rounded-xl overflow-hidden" : ""}>
+      {!isInline && (
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#2a2a2a]">
           <Button
             variant="ghost"
             onClick={() => {
               setAiPanelOpen(false);
               setEmojiOpen(false);
-              onOpenChange(false);
+              if (onOpenChange) onOpenChange(false);
             }}
             className="h-auto p-0 hover:bg-transparent cursor-pointer"
           >
@@ -262,8 +249,9 @@ export function CreatePost({ open, onOpenChange }) {
           <h2 className="font-semibold">New thread</h2>
           <div className="w-16"></div>
         </div>
+      )}
 
-        <div className="px-4 py-4">
+      <div className={isInline ? "p-4" : "px-4 py-4"}>
           <div className="flex gap-3">
             <Avatar className="w-10 h-10 flex-shrink-0">
               <AvatarImage
@@ -280,18 +268,23 @@ export function CreatePost({ open, onOpenChange }) {
 
             <div className="flex-1 min-w-0">
               <div className="mb-3">
-                <div className="mb-1">
-                  <span className="font-semibold">@{username}</span>
-                </div>
+                {!isInline && (
+                  <div className="mb-1">
+                    <span className="font-semibold">@{username}</span>
+                  </div>
+                )}
 
                 <Textarea
                   placeholder="What's new?"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[25px] max-h-[52px] overflow-y-auto resize-none border-none p-0 focus-visible:ring-0 text-base bg-transparent placeholder:text-muted-foreground w-full max-w-full"
+                  className={isInline 
+                    ? "min-h-[80px] max-h-[200px] overflow-y-auto resize-none text-base w-full [field-sizing:normal] break-words" 
+                    : "min-h-[25px] max-h-[52px] overflow-y-auto resize-none border-none p-0 focus-visible:ring-0 text-base bg-transparent placeholder:text-muted-foreground w-full max-w-full"
+                  }
                   style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
                   maxLength={500}
-                  autoFocus
+                  autoFocus={!isInline}
                 />
 
                 <AISuggestPanel
@@ -424,7 +417,7 @@ export function CreatePost({ open, onOpenChange }) {
           </div>
         </div>
 
-        <div className="px-4 py-3 border-t border-[#2a2a2a] flex items-center justify-between">
+        <div className={`px-4 py-3 flex items-center justify-between ${isInline ? 'mt-2' : 'border-t border-[#2a2a2a]'}`}>
           <span
             className={`text-sm ${
               content.length > 450 ? "text-red-500" : "text-muted-foreground"
@@ -442,7 +435,60 @@ export function CreatePost({ open, onOpenChange }) {
             {creating ? "Posting..." : "Post"}
           </Button>
         </div>
+    </div>
+  );
 
+  if (isInline) {
+    return (
+      <div className="relative">
+        <style>
+          {`
+            .media-scroll {
+              scrollbar-width: none;
+              -ms-overflow-style: none;
+            }
+            .media-scroll::-webkit-scrollbar {
+              display: none;
+            }
+          `}
+        </style>
+        {innerContent}
+        <ModerationWarning
+          open={showModWarning}
+          result={moderationResult}
+          onClose={() => setShowModWarning(false)}
+          onPostAnyway={() => {
+            setShowModWarning(false);
+            setModerationResult(null);
+            doPost();
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => (!v ? onOpenChange(false) : onOpenChange(true))}>
+      <DialogContent
+        className="max-w-[420px] p-0 gap-0 bg-[#181818] border-[#2a2a2a] [&>button]:hidden"
+        aria-describedby="dialog-description"
+      >
+        <style>
+          {`
+            .media-scroll {
+              scrollbar-width: none;
+              -ms-overflow-style: none;
+            }
+            .media-scroll::-webkit-scrollbar {
+              display: none;
+            }
+          `}
+        </style>
+        <DialogDescription id="dialog-description" className="sr-only">
+          Create new thread with content, emoji and control options
+        </DialogDescription>
+        
+        {innerContent}
       </DialogContent>
 
       <ModerationWarning

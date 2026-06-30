@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: group-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/GROUP_DB
+    username: admin123
+    password: admin123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8093
+  servlet:
+    context-path: /group
+
+app:
+  service:
+    profile: http://localhost:8081/profile
+    notification: http://localhost:8082/notification

@@ -37,6 +37,7 @@ public class PostController {
                 userId,
                 request.getContent(),
                 request.getRepostOfId(),
+                request.getGroupId(),
                 request.getMediaIds(),
                 request.getTags(),
                 clientIp);
@@ -175,5 +176,36 @@ public class PostController {
             @RequestBody TranslateRequest request, @AuthenticationPrincipal Jwt jwt) {
         TranslateResponse result = translateService.translate(request);
         return ApiResponse.<TranslateResponse>builder().result(result).build();
+    }
+
+    // ==================== GROUP ====================
+    @GetMapping("/posts/group/{groupId}")
+    public ApiResponse<List<PostResponse>> getGroupPosts(
+            @PathVariable String groupId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        List<PostResponse> posts = postService.getGroupPosts(groupId, userId, page, size);
+        return ApiResponse.<List<PostResponse>>builder().result(posts).build();
+    }
+
+    @GetMapping("/posts/group/{groupId}/pending")
+    public ApiResponse<List<PostResponse>> getPendingGroupPosts(
+            @PathVariable String groupId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        List<PostResponse> posts = postService.getPendingGroupPosts(groupId, userId, page, size);
+        return ApiResponse.<List<PostResponse>>builder().result(posts).build();
+    }
+
+    @PutMapping("/posts/{postId}/status")
+    public ApiResponse<Void> updatePostStatus(
+            @PathVariable String postId, @RequestParam String status, @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        postService.updatePostStatus(postId, status, userId);
+        return ApiResponse.<Void>builder().message("Status updated").build();
     }
 }

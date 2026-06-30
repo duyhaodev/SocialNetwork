@@ -98,6 +98,25 @@ const postApi = {
   translate(text) {
     return axiosClient.post("/post/posts/translate", { text });
   },
+
+  // ================= GROUP POSTS =================
+  getGroupPosts(groupId, { page = 0, size = 20 } = {}) {
+    return axiosClient.get(`/post/posts/group/${groupId}`, {
+      params: { page, size }
+    });
+  },
+
+  getPendingGroupPosts(groupId, { page = 0, size = 20 } = {}) {
+    return axiosClient.get(`/post/posts/group/${groupId}/pending`, {
+      params: { page, size }
+    });
+  },
+
+  updatePostStatus(postId, status) {
+    return axiosClient.put(`/post/posts/${postId}/status`, null, {
+      params: { status }
+    });
+  }
 };
 
 export default postApi;

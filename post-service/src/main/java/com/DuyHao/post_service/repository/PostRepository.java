@@ -53,4 +53,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
             value = "SELECT * FROM posts WHERE tags @> CAST(:tagJson AS jsonb) ORDER BY created_at DESC",
             nativeQuery = true)
     List<Post> findByTag(String tagJson, Pageable pageable);
+
+    List<Post> findByGroupIdAndStatusOrderByCreatedAtDesc(String groupId, String status, Pageable pageable);
 }

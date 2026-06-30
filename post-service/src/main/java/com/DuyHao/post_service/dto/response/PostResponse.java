@@ -13,6 +13,8 @@ public class PostResponse {
     private String id;
     private String content;
     private String scope;
+    private String groupId;
+    private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

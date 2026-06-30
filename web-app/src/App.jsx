@@ -25,6 +25,8 @@ import CallOverlay from "./features/MessagePage/components/CallOverlay.jsx";
 import CreateStoryPage from "./features/StoryPage/CreateStoryPage.jsx";
 import StoryArchivePage from "./features/StoryPage/StoryArchivePage.jsx";
 import { OnboardingInterestsPage } from "./features/OnboardingInterestsPage/OnboardingInterestsPage.jsx";
+import { GroupListPage } from "./features/GroupPage/GroupListPage.jsx";
+import { GroupDetailPage } from "./features/GroupPage/GroupDetailPage.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -98,6 +100,8 @@ export default function App() {
               <Route path="post/:postId" element={<PostDetailPage />} />
               <Route path="tag/:tagName" element={<TagFeedPage />} />
               <Route path="story/archive" element={<StoryArchivePage />} />
+              <Route path="groups" element={<GroupListPage />} />
+              <Route path="groups/:groupId" element={<GroupDetailPage />} />
             </Route>
           </Route>
 

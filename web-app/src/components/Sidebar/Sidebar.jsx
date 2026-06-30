@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Home, Search, Heart, User, Edit, Menu, Archive, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../ui/button.js";
@@ -16,6 +16,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import { Users as UsersIcon, ChevronDown, ChevronRight, Hash } from "lucide-react";
+import groupApi from "../../api/groupApi";
 
 export function Sidebar({ currentPage }) {
   const navigate = useNavigate();
@@ -27,10 +30,16 @@ export function Sidebar({ currentPage }) {
   const prefill = useSelector(selectComposerPrefill);
   const unreadNotifications = useSelector(selectUnreadCount);
 
+  const [myGroups, setMyGroups] = useState([]);
+  const [isGroupsOpen, setIsGroupsOpen] = useState(false);
+
   useEffect(() => {
     // Fetch initial notifications to get unread count — chỉ chạy 1 lần khi profile lần đầu load
     if (profile?.userId || profile?.id) {
       dispatch(fetchNotifications());
+      groupApi.getMyGroups().then(res => {
+        if (res.code === 1000) setMyGroups(res.result);
+      }).catch(console.error);
     }
   }, [dispatch, profile?.userId, profile?.id]);
 
@@ -168,6 +177,53 @@ export function Sidebar({ currentPage }) {
               </Button>
             );
           })}
+
+          <Collapsible open={isGroupsOpen} onOpenChange={setIsGroupsOpen} className="w-full">
+            <CollapsibleTrigger asChild>
+              <Button
+                variant={location.pathname.startsWith("/groups") ? "secondary" : "ghost"}
+                className="w-full justify-between h-12 px-4 relative"
+              >
+                <div className="flex items-center">
+                  <UsersIcon className="w-6 h-6 mr-4" />
+                  <span className={`text-base ${location.pathname.startsWith("/groups") ? "font-semibold" : ""}`}>
+                    Cộng đồng
+                  </span>
+                </div>
+                {isGroupsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 pr-4 pt-1">
+              {myGroups.slice(0, 5).map(group => (
+                <Button
+                  key={group.id}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-8 font-normal text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate(`/groups/${group.id}`)}
+                >
+                  {group.coverImageUrl ? (
+                    <img
+                      src={group.coverImageUrl}
+                      alt=""
+                      className="w-4 h-4 mr-2 object-cover rounded-[4px] shrink-0"
+                    />
+                  ) : (
+                    <div className="w-4 h-4 mr-2 bg-muted-foreground/20 rounded-[4px] shrink-0" />
+                  )}
+                  <span className="truncate">{group.name}</span>
+                </Button>
+              ))}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start h-8 font-medium text-primary hover:text-primary/80"
+                onClick={() => navigate('/groups')}
+              >
+                Xem thêm...
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Create Post Button */}

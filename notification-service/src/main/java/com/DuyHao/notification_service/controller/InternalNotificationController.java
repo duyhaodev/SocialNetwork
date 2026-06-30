@@ -107,4 +107,19 @@ public class InternalNotificationController {
         notificationService.deleteRepostNotification(receiverId, senderId, postId);
         return ResponseEntity.ok().build();
     }
+
+    // ===== GROUP =====
+    @PostMapping("/group-join-request")
+    public ResponseEntity<?> groupJoinRequest(
+            @RequestParam String receiverId, @RequestParam String senderId, @RequestParam String groupId) {
+        notificationService.createGroupJoinRequestNotification(receiverId, senderId, groupId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/group-join-approved")
+    public ResponseEntity<?> groupJoinApproved(
+            @RequestParam String receiverId, @RequestParam String senderId, @RequestParam String groupId) {
+        notificationService.createGroupJoinApprovedNotification(receiverId, senderId, groupId);
+        return ResponseEntity.ok().build();
+    }
 }

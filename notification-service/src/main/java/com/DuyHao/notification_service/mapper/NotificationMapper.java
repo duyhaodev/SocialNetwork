@@ -31,6 +31,8 @@ public class NotificationMapper {
             case "reply_comment" -> "replied to your comment";
             case "repost" -> "reposted your thread";
             case "follow" -> "followed you";
+            case "group_join_request" -> "requested to join your group";
+            case "group_join_approved" -> "approved your request to join the group";
             default -> "did something";
         };
     }

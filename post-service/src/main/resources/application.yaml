@@ -40,6 +40,7 @@ app:
     interaction: http://localhost:8087/interaction
     ai: http://localhost:8092
     follow: http://localhost:8084/follow
+    group: http://localhost:8093/group
   geo:
     ipinfo-token: e9580fb14a1286
     # test chạy localhost

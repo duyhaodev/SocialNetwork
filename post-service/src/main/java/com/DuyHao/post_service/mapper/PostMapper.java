@@ -21,6 +21,8 @@ public class PostMapper {
                 .id(post.getId())
                 .content(post.getContent())
                 .scope(post.getScope())
+                .groupId(post.getGroupId())
+                .status(post.getStatus())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
 
