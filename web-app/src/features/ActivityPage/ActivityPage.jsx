@@ -8,6 +8,7 @@ import {
   UserPlus,
   ChevronRight,
   Users,
+  Check,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -32,7 +33,7 @@ const typeMap = {
   likes: ["like_post", "like_comment"],
   reposts: ["repost"],
   follows: ["follow"],
-  groups: ["group_join_request", "group_join_approved"],
+  groups: ["group_join_request", "group_join_approved", "group_post_approved"],
 };
 
 // Số user tối đa hiển thị trong popover follow gộp ở tab All
@@ -415,6 +416,7 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
     follow: <UserPlus className="w-3 h-3 text-white fill-white" />,
     group_join_request: <Users className="w-3 h-3 text-white fill-white" />,
     group_join_approved: <Users className="w-3 h-3 text-white fill-white" />,
+    group_post_approved: <Check className="w-3 h-3 text-white" />,
   };
 
   const bgMap = {
@@ -426,6 +428,7 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
     follow: "bg-purple-500",
     group_join_request: "bg-orange-500",
     group_join_approved: "bg-green-500",
+    group_post_approved: "bg-green-500",
   };
 
   const messageMap = {
@@ -437,6 +440,7 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
     follow: "followed you",
     group_join_request: "requested to join your group",
     group_join_approved: "approved your request to join the group",
+    group_post_approved: "approved your post in the group",
   };
 
   const users = Array.isArray(activity.users) && activity.users.length > 0
@@ -453,7 +457,7 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
   const actionText = messageMap[type] || activity.message || "did something";
 
   const hasPostLink = activity.postId && ["like_post", "like_comment", "comment_post", "reply_comment", "repost"].includes(type);
-  const isGroupNotification = ["group_join_request", "group_join_approved"].includes(type);
+  const isGroupNotification = ["group_join_request", "group_join_approved", "group_post_approved"].includes(type);
 
   const firstName = firstUser?.displayName || firstUser?.username || "Someone";
 
@@ -463,6 +467,8 @@ function ActivityItem({ activity, onProfileClick, onPostClick, onFollowBack }) {
     } else if (isGroupNotification && activity.postId) {
       if (type === "group_join_request") {
         navigate(`/group/${activity.postId}?tab=members`);
+      } else if (type === "group_post_approved") {
+        navigate(`/post/${activity.postId}`);
       } else {
         navigate(`/group/${activity.postId}`);
       }

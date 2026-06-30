@@ -122,4 +122,11 @@ public class InternalNotificationController {
         notificationService.createGroupJoinApprovedNotification(receiverId, senderId, groupId);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/group-post-approved")
+    public ResponseEntity<?> groupPostApproved(
+            @RequestParam String receiverId, @RequestParam String senderId, @RequestParam String postId) {
+        notificationService.createGroupPostApprovedNotification(receiverId, senderId, postId);
+        return ResponseEntity.ok().build();
+    }
 }

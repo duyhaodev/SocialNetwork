@@ -17,4 +17,7 @@ public interface GroupClient {
 
     @GetMapping("/{id}")
     ApiResponse<GroupInfo> getGroup(@PathVariable("id") String id);
+
+    @GetMapping("/internal/{id}/member-role")
+    String getMemberRole(@PathVariable("id") String id, @RequestParam("userId") String userId);
 }

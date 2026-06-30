@@ -19,4 +19,11 @@ public class InternalGroupController {
             @RequestParam String userId) {
         return groupService.isUserInGroup(id, userId);
     }
+
+    @GetMapping("/internal/{id}/member-role")
+    public String getMemberRole(
+            @PathVariable String id,
+            @RequestParam String userId) {
+        return groupService.getMemberRole(id, userId);
+    }
 }

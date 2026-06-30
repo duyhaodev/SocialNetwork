@@ -156,6 +156,22 @@ public class NotificationService {
         return notification;
     }
 
+    public Notification createGroupPostApprovedNotification(String toUserId, String fromUserId, String postId) {
+        if (Objects.equals(toUserId, fromUserId)) return null;
+
+        Notification notification = notificationRepo
+                .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, fromUserId, "group_post_approved", postId)
+                .map(n -> {
+                    n.setCreatedAt(LocalDateTime.now());
+                    n.setIsRead(false);
+                    return notificationRepo.save(n);
+                })
+                .orElseGet(() -> notificationRepo.save(buildNotification(toUserId, fromUserId, "group_post_approved", postId, null)));
+
+        pushRealtime(notification, "new_notification");
+        return notification;
+    }
+
     private Notification buildNotification(
             String toUserId, String fromUserId, String type, String postId, String commentId) {
         return Notification.builder()

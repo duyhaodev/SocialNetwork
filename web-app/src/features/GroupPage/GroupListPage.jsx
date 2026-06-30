@@ -36,6 +36,10 @@ export function GroupListPage() {
 
   useEffect(() => {
     fetchGroups();
+    
+    const handleGroupListChanged = () => fetchGroups();
+    window.addEventListener('groupListChanged', handleGroupListChanged);
+    return () => window.removeEventListener('groupListChanged', handleGroupListChanged);
   }, []);
 
   const handleGroupCreated = (newGroup) => {

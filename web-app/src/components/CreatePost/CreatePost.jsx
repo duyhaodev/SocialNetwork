@@ -132,9 +132,14 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
         payload.groupId = groupId;
       }
 
-      await dispatch(createPost(payload)).unwrap();
+      const newPost = await dispatch(createPost(payload)).unwrap();
 
-      toast.success("Posted successfully!");
+      if (newPost?.status === 'PENDING') {
+        toast.success("Bài của bạn đang được duyệt!");
+      } else {
+        toast.success("Đăng bài thành công!");
+      }
+      
       setContent("");
       handleRemoveAll();
       setEmojiOpen(false);

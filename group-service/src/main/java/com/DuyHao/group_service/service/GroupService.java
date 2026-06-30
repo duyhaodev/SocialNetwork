@@ -169,6 +169,11 @@ public class GroupService {
         return member.isPresent() && (member.get().getRole().equals("ADMIN") || member.get().getRole().equals("MODERATOR") || member.get().getRole().equals("MEMBER"));
     }
 
+    public String getMemberRole(String groupId, String userId) {
+        Optional<GroupMember> member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId);
+        return member.map(GroupMember::getRole).orElse("NONE");
+    }
+
     public java.util.List<String> getPendingMembers(String groupId, String currentUserId) {
         GroupMember admin = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
                 .orElseThrow(() -> new RuntimeException("No permission"));

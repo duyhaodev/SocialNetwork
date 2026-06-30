@@ -35,6 +35,7 @@ public class PostService {
     private final AiClient aiClient;
     private final FollowClient followClient;
     private final com.DuyHao.post_service.FeignClient.GroupClient groupClient;
+    private final com.DuyHao.post_service.FeignClient.NotificationClient notificationClient;
 
     // ==================== CREATE ====================
     public PostResponse create(
@@ -68,7 +69,16 @@ public class PostService {
                 var groupResponse = groupClient.getGroup(groupId);
                 if (groupResponse != null && groupResponse.getResult() != null) {
                     if (Boolean.TRUE.equals(groupResponse.getResult().requiresApproval())) {
-                        status = "PENDING";
+                        String role = "NONE";
+                        try {
+                            role = groupClient.getMemberRole(groupId, userId);
+                        } catch (Exception e) {
+                            System.err.println("Could not fetch member role");
+                        }
+                        
+                        if (!"ADMIN".equals(role) && !"MODERATOR".equals(role)) {
+                            status = "PENDING";
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -655,12 +665,22 @@ public class PostService {
     public void updatePostStatus(String postId, String status, String currentUserId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
         // Check admin/mod permission via group-service if needed
+        String oldStatus = post.getStatus();
         post.setStatus(status);
         postRepository.save(post);
 
         // If approved, add to LocalFeed Cache if needed
         if ("APPROVED".equals(status)) {
             localFeedCacheService.addPost(post.getCity(), post.getId(), post.getCreatedAt());
+            
+            // Send notification if it was PENDING
+            if ("PENDING".equals(oldStatus)) {
+                try {
+                    notificationClient.groupPostApproved(post.getUserId(), currentUserId, post.getId());
+                } catch (Exception e) {
+                    System.err.println("Lỗi gửi thông báo phê duyệt bài viết: " + e.getMessage());
+                }
+            }
         }
     }
 }

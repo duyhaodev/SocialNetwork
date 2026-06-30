@@ -8,6 +8,17 @@ import userApi from "@/api/userApi";
 import { toast } from "sonner";
 import { Loader2, Search, UserMinus, ArrowUpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function GroupMembersTab({ groupId, currentUserRole }) {
   const [members, setMembers] = useState([]);
@@ -54,8 +65,6 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
   };
 
   const handleKickMember = async (userId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn mời người này ra khỏi nhóm?")) return;
-    
     try {
       await groupApi.kickMember(groupId, userId);
       toast.success("Đã xóa khỏi nhóm");
@@ -66,8 +75,6 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
   };
 
   const handlePromoteMod = async (userId) => {
-    if (!window.confirm("Thăng cấp người này làm Kiểm duyệt viên?")) return;
-    
     try {
       await groupApi.promoteToModerator(groupId, userId);
       toast.success("Thăng cấp thành công!");
@@ -147,25 +154,55 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
               {canKick(member.role) && (
                 <div className="flex gap-2 self-start sm:self-auto">
                   {currentUserRole === 'ADMIN' && member.role === 'MEMBER' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-blue-200"
-                      onClick={() => handlePromoteMod(member.userId)}
-                    >
-                      <ArrowUpCircle className="w-4 h-4 mr-2" />
-                      Thăng cấp Mod
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 border-blue-200"
+                        >
+                          <ArrowUpCircle className="w-4 h-4 mr-2" />
+                          Thăng cấp Mod
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Thăng cấp Kiểm duyệt viên?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Bạn có chắc chắn muốn thăng cấp <b>{member.fullName}</b> làm Kiểm duyệt viên không? Họ sẽ có quyền duyệt thành viên và duyệt bài viết.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Hủy</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handlePromoteMod(member.userId)} className="bg-blue-500 hover:bg-blue-600 text-white">Xác nhận thăng cấp</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
-                    onClick={() => handleKickMember(member.userId)}
-                  >
-                    <UserMinus className="w-4 h-4 mr-2" />
-                    Mời ra
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                      >
+                        <UserMinus className="w-4 h-4 mr-2" />
+                        Mời ra
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Mời ra khỏi nhóm?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Bạn có chắc chắn muốn xóa <b>{member.fullName}</b> khỏi nhóm này không?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleKickMember(member.userId)} className="bg-red-500 hover:bg-red-600 text-white">Xác nhận mời ra</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               )}
             </div>

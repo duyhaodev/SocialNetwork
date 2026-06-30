@@ -37,11 +37,21 @@ export function Sidebar({ currentPage }) {
     // Fetch initial notifications to get unread count — chỉ chạy 1 lần khi profile lần đầu load
     if (profile?.userId || profile?.id) {
       dispatch(fetchNotifications());
-      groupApi.getMyGroups().then(res => {
-        if (res.code === 1000) setMyGroups(res.result);
-      }).catch(console.error);
+      fetchMyGroups();
     }
   }, [dispatch, profile?.userId, profile?.id]);
+
+  const fetchMyGroups = () => {
+    groupApi.getMyGroups().then(res => {
+      if (res.code === 1000) setMyGroups(res.result);
+    }).catch(console.error);
+  };
+
+  useEffect(() => {
+    const handleGroupListChanged = () => fetchMyGroups();
+    window.addEventListener('groupListChanged', handleGroupListChanged);
+    return () => window.removeEventListener('groupListChanged', handleGroupListChanged);
+  }, []);
 
   const menuItems = [
     { id: "feed", label: "Home", icon: Home, path: "/feed" },

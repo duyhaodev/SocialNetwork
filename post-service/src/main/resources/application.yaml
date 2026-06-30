@@ -41,6 +41,7 @@ app:
     ai: http://localhost:8092
     follow: http://localhost:8084/follow
     group: http://localhost:8093/group
+    notification: http://localhost:8082/notification
   geo:
     ipinfo-token: e9580fb14a1286
     # test chạy localhost

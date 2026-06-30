@@ -231,19 +231,21 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
         <PostMedia mediaList={mediaList} mediaCount={mediaCount} onMediaClick={handleMediaClick} />
 
         {/* Actions buttons */}
-        <PostActions
-          postId={originalPostId}
-          isLiked={isLiked}
-          likes={likes}
-          commentCount={post.commentCount ?? 0}
-          isReposted={isReposted}
-          reposts={reposts}
-          liking={liking}
-          reposting={reposting}
-          onLike={handleLike}
-          onCommentClick={handleOpenPost}
-          onRepostAction={handleRepostAction}
-        />
+        {post.status !== 'PENDING' && (
+          <PostActions
+            postId={originalPostId}
+            isLiked={isLiked}
+            likes={likes}
+            commentCount={post.commentCount ?? 0}
+            isReposted={isReposted}
+            reposts={reposts}
+            liking={liking}
+            reposting={reposting}
+            onLike={handleLike}
+            onCommentClick={handleOpenPost}
+            onRepostAction={handleRepostAction}
+          />
+        )}
       </div>
 
       {/* Lightbox / Image Viewer */}

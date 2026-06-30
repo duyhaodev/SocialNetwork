@@ -1,0 +1,18 @@
+package com.DuyHao.post_service.FeignClient;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.DuyHao.post_service.configuration.FeignConfig;
+
+@FeignClient(name = "notification-service", url = "${app.service.notification}", path = "/internal/notifications", configuration = FeignConfig.class)
+public interface NotificationClient {
+
+    @PostMapping("/group-post-approved")
+    ResponseEntity<?> groupPostApproved(
+            @RequestParam("receiverId") String receiverId,
+            @RequestParam("senderId") String senderId,
+            @RequestParam("postId") String postId);
+}

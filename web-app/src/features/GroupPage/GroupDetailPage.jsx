@@ -15,6 +15,17 @@ import { useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GroupMembersTab } from "./components/GroupMembersTab";
 import { motion } from "framer-motion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 export function GroupDetailPage() {
@@ -23,6 +34,7 @@ export function GroupDetailPage() {
   const [group, setGroup] = useState(null);
   const [posts, setPosts] = useState([]);
   const [pendingPosts, setPendingPosts] = useState([]);
+  const [pendingMembersCount, setPendingMembersCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
   const [showPendingMembers, setShowPendingMembers] = useState(false);
@@ -67,9 +79,20 @@ export function GroupDetailPage() {
     }
   };
 
+  const fetchPendingMembers = async () => {
+    try {
+      const res = await groupApi.getPendingMembers(groupId);
+      if (res.code === 1000) {
+        setPendingMembersCount(res.result?.length || 0);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchGroupDetails(), fetchGroupPosts(), fetchPendingPosts()]).finally(() => {
+    Promise.all([fetchGroupDetails(), fetchGroupPosts(), fetchPendingPosts(), fetchPendingMembers()]).finally(() => {
       setLoading(false);
     });
   }, [groupId]);
@@ -79,6 +102,7 @@ export function GroupDetailPage() {
       const res = await groupApi.joinGroup(groupId);
       if (res.code === 1000) {
         toast.success("Đã gửi yêu cầu tham gia!");
+        window.dispatchEvent(new Event('groupListChanged'));
         fetchGroupDetails();
       }
     } catch (error) {
@@ -110,11 +134,11 @@ export function GroupDetailPage() {
   };
 
   const handleLeaveGroup = async () => {
-    if (!window.confirm("Bạn có chắc chắn muốn rời nhóm?")) return;
     try {
       const res = await groupApi.leaveGroup(groupId);
       if (res.code === 1000) {
         toast.success("Đã rời nhóm thành công!");
+        window.dispatchEvent(new Event('groupListChanged'));
         fetchGroupDetails();
       }
     } catch (error) {
@@ -123,11 +147,11 @@ export function GroupDetailPage() {
   };
 
   const handleDisbandGroup = async () => {
-    if (!window.confirm("Hành động này không thể hoàn tác. Bạn có chắc chắn muốn giải tán nhóm này? Toàn bộ dữ liệu sẽ bị xóa.")) return;
     try {
       const res = await groupApi.disbandGroup(groupId);
       if (res.code === 1000) {
         toast.success("Đã giải tán nhóm thành công!");
+        window.dispatchEvent(new Event('groupListChanged'));
         navigate("/activity"); // Or wherever makes sense
       }
     } catch (error) {
@@ -170,25 +194,63 @@ export function GroupDetailPage() {
             </Button>
           )}
           {(group.currentUserRole === 'MEMBER' || group.currentUserRole === 'MODERATOR') && (
-            <Button size="lg" variant="outline" className="font-semibold px-8 hover:bg-red-50 hover:text-red-600 transition-colors" onClick={handleLeaveGroup}>
-              Rời nhóm
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="lg" variant="outline" className="font-semibold px-8 hover:bg-red-50 hover:text-red-600 transition-colors">
+                  Rời nhóm
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Bạn có chắc chắn muốn rời nhóm?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Bạn sẽ không còn nhận được thông báo hay tham gia các hoạt động trong nhóm này nữa.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Hủy</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLeaveGroup} className="bg-red-500 hover:bg-red-600 text-white">Xác nhận rời nhóm</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
+
           {group.currentUserRole === 'ADMIN' && (
-            <Button size="lg" variant="destructive" className="font-semibold px-8" onClick={handleDisbandGroup}>
-              Giải tán nhóm
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="lg" variant="destructive" className="font-semibold px-8">
+                  Giải tán nhóm
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Giải tán nhóm?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Hành động này không thể hoàn tác. Toàn bộ dữ liệu của nhóm, bao gồm bài viết và thành viên sẽ bị xóa vĩnh viễn.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Hủy</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDisbandGroup} className="bg-red-500 hover:bg-red-600 text-white">Tôi chắc chắn, giải tán!</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
 
           {(group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR') && (
-            <Button 
-              size="lg" 
-              variant="default" 
-              className="font-semibold px-6 gap-2 bg-zinc-800 hover:bg-zinc-700 text-white"
-              onClick={() => setShowPendingMembers(true)}
-            >
-              <Users className="w-5 h-5" /> Duyệt thành viên
-            </Button>
+            <div className="relative">
+              <Button 
+                size="lg" 
+                variant="default" 
+                className="font-semibold px-6 gap-2 bg-zinc-800 hover:bg-zinc-700 text-white"
+                onClick={() => setShowPendingMembers(true)}
+              >
+                <Users className="w-5 h-5" /> Duyệt thành viên
+              </Button>
+              {pendingMembersCount > 0 && (
+                <span className="absolute top-0 right-0 block h-3 w-3 rounded-full ring-2 ring-background bg-blue-500 transform translate-x-1/3 -translate-y-1/3 z-10" />
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -302,6 +364,7 @@ export function GroupDetailPage() {
           setShowPendingMembers(false);
           // Refresh after closing modal to see if there are any changes
           fetchGroupPosts();
+          fetchPendingMembers();
         }} 
         groupId={groupId} 
       />

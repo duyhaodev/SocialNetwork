@@ -86,6 +86,7 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }) {
         reset();
         setCoverFile(null);
         setCoverPreview(null);
+        window.dispatchEvent(new Event('groupListChanged'));
         onSuccess && onSuccess(res.result);
         onClose();
       } else {
