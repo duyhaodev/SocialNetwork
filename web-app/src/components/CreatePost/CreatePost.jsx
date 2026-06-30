@@ -30,6 +30,7 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [moderationResult, setModerationResult] = useState(null);
   const [showModWarning, setShowModWarning] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // REFS
   const fileInputRef = useRef(null);
@@ -111,6 +112,7 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
     if (!trimContent && mediaFiles.length === 0) return;
 
     try {
+      setIsUploading(true);
       let mediaIds = [];
 
       if (mediaFiles.length > 0) {
@@ -151,6 +153,8 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
 
     } catch (err) {
       toast.error(err?.message || "Post failed!");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -433,11 +437,11 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
 
           <Button
             onClick={handleSubmit}
-            disabled={creating || (!content.trim() && mediaFiles.length === 0)}
+            disabled={creating || isUploading || (!content.trim() && mediaFiles.length === 0)}
             size="sm"
             className="px-6 cursor-pointer"
           >
-            {creating ? "Posting..." : "Post"}
+            {creating || isUploading ? "Posting..." : "Post"}
           </Button>
         </div>
     </div>

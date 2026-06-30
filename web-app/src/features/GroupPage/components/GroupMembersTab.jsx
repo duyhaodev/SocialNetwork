@@ -24,6 +24,7 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
   const [members, setMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isForbidden, setIsForbidden] = useState(false);
 
   useEffect(() => {
     if (groupId) {
@@ -58,7 +59,11 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Không thể tải danh sách thành viên");
+      if (error.response?.status === 403 || error.response?.status === 400 || error.response?.status === 500) {
+        setIsForbidden(true);
+      } else {
+        setIsForbidden(true); // Treat general fetch errors as permission denied to avoid toast
+      }
     } finally {
       setIsLoading(false);
     }
@@ -128,6 +133,10 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
       <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
         {isLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>
+        ) : isForbidden ? (
+          <div className="text-center text-zinc-500 py-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl">
+            Chỉ thành viên mới được xem danh sách này.
+          </div>
         ) : filteredMembers.length === 0 ? (
           <div className="text-center text-zinc-500 py-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl">
             Không tìm thấy thành viên nào.
