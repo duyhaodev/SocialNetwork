@@ -167,6 +167,12 @@ public class MessageService {
             return toMessageResponse(message, currentUserId);
         }
 
+        // Check 24-hour time limit
+        LocalDateTime cutoff = message.getCreatedAt().plusHours(24);
+        if (LocalDateTime.now().isAfter(cutoff)) {
+            throw new RuntimeException("Cannot revoke message: 24-hour time limit exceeded");
+        }
+
         // Update message
         message.setRevoked(true);
         message = messageRepository.save(message);

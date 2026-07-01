@@ -1,4 +1,4 @@
-import { MoreHorizontal, Trash2, Link, Repeat2, Globe } from "lucide-react";
+import { MoreHorizontal, Trash2, Link, Repeat2, Globe, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
@@ -11,6 +11,7 @@ import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
 import { formatTimeAgo } from "../../utils/dateUtils.js";
 import { useState } from "react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 export function PostHeader({
   post,
@@ -98,6 +99,36 @@ export function PostHeader({
               </span>
               <span>·</span>
               <Globe className="w-3.5 h-3.5" />
+              {post.isAiGenerated && (
+                <>
+                  <span>·</span>
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold relative overflow-hidden
+                      bg-gradient-to-r from-cyan-500/15 via-violet-500/15 to-pink-500/15
+                      border border-transparent
+                      [background-clip:padding-box]"
+                    style={{
+                      backgroundImage: "linear-gradient(to right, rgba(6,182,212,0.12), rgba(139,92,246,0.12), rgba(236,72,153,0.12))",
+                      boxShadow: "inset 0 0 0 1px rgba(139,92,246,0.25), 0 0 8px rgba(139,92,246,0.15)",
+                    }}
+                  >
+                    {/* shimmer effect */}
+                    <motion.span
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent blur-[1px]"
+                      animate={{ x: ["-100%", "100%"] }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
+                    />
+                    {/* gradient text */}
+                    <Sparkles className="w-3.5 h-3.5 relative z-10 text-violet-400" />
+                    <span className="relative z-10 bg-gradient-to-r from-cyan-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">
+                      AI Generated
+                    </span>
+                  </motion.span>
+                </>
+              )}
             </div>
           </div>
         </div>

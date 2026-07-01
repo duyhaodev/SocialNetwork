@@ -25,6 +25,17 @@ const aiApi = {
   moderate(payload) {
     return aiClient.post("/ai/moderate", payload);
   },
+
+  // Phân tích ảnh: kiểm duyệt nhạy cảm + phát hiện ảnh AI
+  // file: File object (raw file từ input)
+  // Trả về: { nsfw: { is_safe, label, severity, confidence }, ai_generated: { is_ai, label, confidence } }
+  analyzeImage(file) {
+    const fd = new FormData();
+    fd.append("file", file);
+    return aiClient.post("/ai/analyze-image", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export default aiApi;

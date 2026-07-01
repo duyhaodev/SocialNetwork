@@ -237,13 +237,66 @@ export function FeedPage() {
   };
 
   // Thực hiện đăng bài (bỏ qua moderation)
-  const doPost = async () => {
+  const doPost = async (skipImageModeration = false) => {
     const content = (newPost || "").trim();
     if (!content && mediaFiles.length === 0) return;
 
     setIsPosting(true);
 
     try {
+      // --- Kiểm duyệt ảnh TRƯỚC khi upload ---
+      const imageFiles = mediaFiles.filter((m) => m.kind === "image");
+      let hasAiGenerated = false;
+
+      if (imageFiles.length > 0 && !skipImageModeration) {
+        try {
+          // Gửi tất cả ảnh song song
+          const analysisResults = await Promise.all(
+            imageFiles.map((m) => aiApi.analyzeImage(m.file))
+          );
+
+          for (let i = 0; i < analysisResults.length; i++) {
+            const result = analysisResults[i];
+            const nsfw = result?.nsfw;
+            const aiGen = result?.ai_generated;
+
+            // Phát hiện ảnh nhạy cảm
+            if (nsfw && !nsfw.is_safe) {
+              const severity = nsfw.severity; // "mild" | "moderate" | "severe"
+              const warningLevel = severity === "mild" ? "mild" : severity === "moderate" ? "moderate" : "severe";
+
+              const imageViolationResult = {
+                warning_level: warningLevel,
+                message: warningLevel === "mild"
+                  ? "One of your images contains mildly suggestive content. Consider replacing it."
+                  : "One of your images contains content that violates community guidelines.",
+                flagged_items: [{
+                  word: `Image ${i + 1}`,
+                  category: "adult_content",
+                  category_label: `Sensitive content (${nsfw.label}) · ${Math.round(nsfw.confidence * 100)}% confidence`,
+                }],
+                suggestion: warningLevel === "mild"
+                  ? "You may still post, but the image may be flagged for review."
+                  : "Please remove the flagged image before posting.",
+              };
+
+              setModerationResult(imageViolationResult);
+              setShowModWarning(true);
+              setIsPosting(false);
+              return;
+            }
+
+            // Phát hiện ảnh AI generated
+            if (aiGen?.is_ai) {
+              hasAiGenerated = true;
+            }
+          }
+        } catch {
+          // AI service lỗi → bỏ qua, cho đăng bình thường
+        }
+      }
+      // --- Kết thúc kiểm duyệt ảnh ---
+
       let mediaIds = [];
 
       if (mediaFiles.length > 0) {
@@ -260,6 +313,7 @@ export function FeedPage() {
       const payload = {
         content,
         mediaIds,
+        isAiGenerated: hasAiGenerated, // post-service sẽ dùng để gắn tag
       };
 
       const action = await dispatch(createPost(payload));
@@ -521,7 +575,7 @@ export function FeedPage() {
           onPostAnyway={() => {
             setShowModWarning(false);
             setModerationResult(null);
-            doPost();
+            doPost(true);
           }}
         />
       </Tabs>

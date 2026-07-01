@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 import { Phone, Video, Camera, Info, Smile, Mic, Image, Heart, Send, X, RotateCcw, Pencil } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
 import { messageApi } from "../../../api/messageApi";
 import mediaApi from "../../../api/mediaApi";
 import streakApi from "../../../api/streakApi";
 import { Spinner } from "../../../components/ui/spinner";
 import { showUnderDevelopmentToast } from "../../../utils/commonUtils";
+import { toast } from "sonner";
 
 import { searchApi } from "../../../api/searchApi";
 import { Search } from "lucide-react";
@@ -181,6 +183,12 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
       }
     } catch (error) {
       console.error("Failed to revoke message:", error);
+      const msg = error?.response?.data?.message || error?.message || "";
+      if (msg.toLowerCase().includes("24")) {
+        toast.error("Không thể thu hồi — tin nhắn đã quá 24 giờ");
+      } else {
+        toast.error("Thu hồi tin nhắn thất bại");
+      }
     }
   };
 
@@ -626,13 +634,16 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                                       <Pencil size={14} />
                                     </button>
                                   )}
-                                  <button 
-                                    onClick={() => handleRevokeMessage(msg.id)}
-                                    className="p-1.5 bg-[#1a1a1a] rounded-full text-gray-400 hover:text-red-500"
-                                    title="Thu hồi"
-                                  >
-                                    <RotateCcw size={14} />
-                                  </button>
+                                  {/* Ẩn nút thu hồi nếu tin nhắn đã quá 24 giờ */}
+                                  {msg.createdAt && (Date.now() - new Date(msg.createdAt).getTime() < 24 * 60 * 60 * 1000) && (
+                                    <button 
+                                      onClick={() => handleRevokeMessage(msg.id)}
+                                      className="p-1.5 bg-[#1a1a1a] rounded-full text-gray-400 hover:text-red-500"
+                                      title="Thu hồi"
+                                    >
+                                      <RotateCcw size={14} />
+                                    </button>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -831,9 +842,11 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
           </div>
         </div>
       </div>
-      {isInfoOpen && (
-        <ConversationDetails conversation={conversation} onClose={() => setIsInfoOpen(false)} onLeaveGroup={onLeaveGroup} />
-      )}
+      <AnimatePresence>
+        {isInfoOpen && (
+          <ConversationDetails conversation={conversation} onClose={() => setIsInfoOpen(false)} onLeaveGroup={onLeaveGroup} />
+        )}
+      </AnimatePresence>
 
       <ImageViewer
         open={viewerOpen}

@@ -51,6 +51,9 @@ public class Post {
     @Column(length = 100)
     String city;
 
+    @Column(name = "is_ai_generated")
+    Boolean isAiGenerated; // true nếu bài đăng chứa ảnh do AI tạo ra
+
     // Repost
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "repost_of_id")

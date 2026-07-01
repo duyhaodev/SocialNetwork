@@ -42,7 +42,8 @@ public class PostService {
             String repostOfId,
             List<String> mediaIds,
             List<String> tags,
-            String clientIp) {
+            String clientIp,
+            Boolean isAiGenerated) {
         UserResponse user = userClient.getUser(userId);
 
         // Resolve city từ IP
@@ -87,6 +88,7 @@ public class PostService {
                 .scope("public")
                 .tags(resolvedTags)
                 .city(city)
+                .isAiGenerated(Boolean.TRUE.equals(isAiGenerated))
                 .createdAt(LocalDateTime.now())
                 .build();
 

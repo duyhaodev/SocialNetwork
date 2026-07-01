@@ -39,7 +39,8 @@ public class PostController {
                 request.getRepostOfId(),
                 request.getMediaIds(),
                 request.getTags(),
-                clientIp);
+                clientIp,
+                request.getIsAiGenerated());
 
         return ApiResponse.<PostResponse>builder().result(post).build();
     }

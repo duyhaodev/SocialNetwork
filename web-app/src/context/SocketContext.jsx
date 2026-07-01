@@ -161,8 +161,13 @@ export const SocketProvider = ({ children }) => {
         const senderId = message.sender?.id || message.senderId;
         const isMe = senderId === currentUserId;
         if (!isMe) {
-          const audio = new Audio(messageSound);
-          audio.play().catch(e => console.warn("Audio play failed:", e));
+          // Check if this conversation is muted — skip sound if so
+          const mutedIds = state.chat.mutedConversationIds || [];
+          const isMuted = mutedIds.includes(message.conversationId);
+          if (!isMuted) {
+            const audio = new Audio(messageSound);
+            audio.play().catch(e => console.warn("Audio play failed:", e));
+          }
         }
       } catch (error) {
         console.error("Socket message handling error:", error);

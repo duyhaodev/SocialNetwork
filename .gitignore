@@ -75,3 +75,12 @@ GEMINI.md
 plan.txt
 Threads/
 plant.txt
+
+# Không push ai-service (chứa model nặng và môi trường ảo)
+ai-service/
+
+# Python virtual environment
+ai-service/venv/
+ai-service/__pycache__/
+ai-service/**/__pycache__/
+ai-service/**/*.pyc
