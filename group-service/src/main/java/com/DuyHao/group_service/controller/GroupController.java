@@ -3,11 +3,15 @@ package com.DuyHao.group_service.controller;
 import com.DuyHao.group_service.dto.ApiResponse;
 import com.DuyHao.group_service.dto.request.GroupCreateRequest;
 import com.DuyHao.group_service.dto.response.GroupResponse;
+import com.DuyHao.group_service.dto.request.GroupRuleUpdateRequest;
+import com.DuyHao.group_service.dto.response.GroupRuleDto;
 import com.DuyHao.group_service.service.GroupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,6 +25,16 @@ public class GroupController {
             @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         GroupResponse response = groupService.createGroup(request, userId);
+        return ApiResponse.<GroupResponse>builder().result(response).build();
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<GroupResponse> updateGroup(
+            @PathVariable String id,
+            @RequestBody com.DuyHao.group_service.dto.request.GroupUpdateRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        GroupResponse response = groupService.updateGroup(id, request, userId);
         return ApiResponse.<GroupResponse>builder().result(response).build();
     }
 
@@ -115,7 +129,23 @@ public class GroupController {
 
     @GetMapping
     public ApiResponse<java.util.List<GroupResponse>> getAllGroups() {
-        java.util.List<GroupResponse> responses = groupService.getAllGroups();
-        return ApiResponse.<java.util.List<GroupResponse>>builder().result(responses).build();
+        java.util.List<GroupResponse> response = groupService.getAllGroups();
+        return ApiResponse.<java.util.List<GroupResponse>>builder().result(response).build();
+    }
+
+    @GetMapping("/{id}/rules")
+    public ApiResponse<List<GroupRuleDto>> getGroupRules(@PathVariable String id) {
+        List<GroupRuleDto> response = groupService.getGroupRules(id);
+        return ApiResponse.<List<GroupRuleDto>>builder().result(response).build();
+    }
+
+    @PutMapping("/{id}/rules")
+    public ApiResponse<List<GroupRuleDto>> updateGroupRules(
+            @PathVariable String id,
+            @RequestBody GroupRuleUpdateRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        List<GroupRuleDto> response = groupService.updateGroupRules(id, request, userId);
+        return ApiResponse.<List<GroupRuleDto>>builder().result(response).build();
     }
 }

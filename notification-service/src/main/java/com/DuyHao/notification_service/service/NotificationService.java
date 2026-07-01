@@ -41,7 +41,7 @@ public class NotificationService {
             notification.setIsRead(false);
             notification = notificationRepo.save(notification);
         } else {
-            notification = notificationRepo.save(buildNotification(toUserId, fromUserId, "follow", null, null));
+            notification = notificationRepo.save(buildNotification(toUserId, fromUserId, "follow", null, null, null));
         }
 
         pushRealtime(notification, "new_notification");
@@ -67,7 +67,7 @@ public class NotificationService {
                     return notificationRepo.save(n);
                 })
                 .orElseGet(() -> notificationRepo.save(
-                        buildNotification(toUserId, fromUserId, "comment_post", postId, commentId)));
+                        buildNotification(toUserId, fromUserId, "comment_post", postId, commentId, null)));
 
         pushRealtime(notification, "new_notification");
         return notification;
@@ -84,7 +84,7 @@ public class NotificationService {
                     return notificationRepo.save(n);
                 })
                 .orElseGet(() -> notificationRepo.save(
-                        buildNotification(toUserId, fromUserId, "reply_comment", postId, commentId)));
+                        buildNotification(toUserId, fromUserId, "reply_comment", postId, commentId, null)));
 
         pushRealtime(notification, "new_notification");
         return notification;
@@ -102,7 +102,7 @@ public class NotificationService {
                     return notificationRepo.save(n);
                 })
                 .orElseGet(() -> notificationRepo.save(
-                        buildNotification(toUserId, fromUserId, "like_comment", postId, commentId)));
+                        buildNotification(toUserId, fromUserId, "like_comment", postId, commentId, null)));
 
         pushRealtime(notification, "new_notification");
         return notification;
@@ -118,7 +118,8 @@ public class NotificationService {
                     n.setIsRead(false);
                     return notificationRepo.save(n);
                 })
-                .orElseGet(() -> notificationRepo.save(buildNotification(toUserId, fromUserId, type, postId, null)));
+                .orElseGet(
+                        () -> notificationRepo.save(buildNotification(toUserId, fromUserId, type, postId, null, null)));
 
         pushRealtime(notification, "new_notification");
         return notification;
@@ -134,7 +135,8 @@ public class NotificationService {
                     n.setIsRead(false);
                     return notificationRepo.save(n);
                 })
-                .orElseGet(() -> notificationRepo.save(buildNotification(toUserId, fromUserId, "group_join_request", groupId, null)));
+                .orElseGet(() -> notificationRepo.save(
+                        buildNotification(toUserId, fromUserId, "group_join_request", groupId, null, null)));
 
         pushRealtime(notification, "new_notification");
         return notification;
@@ -150,7 +152,8 @@ public class NotificationService {
                     n.setIsRead(false);
                     return notificationRepo.save(n);
                 })
-                .orElseGet(() -> notificationRepo.save(buildNotification(toUserId, fromUserId, "group_join_approved", groupId, null)));
+                .orElseGet(() -> notificationRepo.save(
+                        buildNotification(toUserId, fromUserId, "group_join_approved", groupId, null, null)));
 
         pushRealtime(notification, "new_notification");
         return notification;
@@ -166,21 +169,45 @@ public class NotificationService {
                     n.setIsRead(false);
                     return notificationRepo.save(n);
                 })
-                .orElseGet(() -> notificationRepo.save(buildNotification(toUserId, fromUserId, "group_post_approved", postId, null)));
+                .orElseGet(() -> notificationRepo.save(
+                        buildNotification(toUserId, fromUserId, "group_post_approved", postId, null, null)));
+
+        pushRealtime(notification, "new_notification");
+        return notification;
+    }
+
+    public Notification createGroupPostRejectedNotification(
+            String toUserId, String fromUserId, String postId, String reason) {
+        if (Objects.equals(toUserId, fromUserId)) return null;
+
+        String baseMessage = NotificationMapper.buildMessage("group_post_rejected");
+        final String message =
+                (reason != null && !reason.trim().isEmpty()) ? baseMessage + ". Reason: " + reason : baseMessage;
+
+        Notification notification = notificationRepo
+                .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, fromUserId, "group_post_rejected", postId)
+                .map(n -> {
+                    n.setCreatedAt(LocalDateTime.now());
+                    n.setIsRead(false);
+                    n.setMessage(message); // Cập nhật lại lý do nếu có thay đổi
+                    return notificationRepo.save(n);
+                })
+                .orElseGet(() -> notificationRepo.save(
+                        buildNotification(toUserId, fromUserId, "group_post_rejected", postId, null, message)));
 
         pushRealtime(notification, "new_notification");
         return notification;
     }
 
     private Notification buildNotification(
-            String toUserId, String fromUserId, String type, String postId, String commentId) {
+            String toUserId, String fromUserId, String type, String postId, String commentId, String customMessage) {
         return Notification.builder()
                 .userId(toUserId)
                 .fromUserId(fromUserId)
                 .type(type)
                 .postId(postId)
                 .commentId(commentId)
-                .message(NotificationMapper.buildMessage(type))
+                .message(customMessage != null ? customMessage : NotificationMapper.buildMessage(type))
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -354,7 +381,10 @@ public class NotificationService {
             if ("group_join_approved".equals(type)) {
                 return "group_join_approved_" + n.getId();
             }
-            if ("comment_post".equals(type) || "like_post".equals(type) || "repost".equals(type) || "group_join_request".equals(type)) {
+            if ("comment_post".equals(type)
+                    || "like_post".equals(type)
+                    || "repost".equals(type)
+                    || "group_join_request".equals(type)) {
                 return type + "_post_" + (n.getPostId() != null ? n.getPostId() : "none");
             }
             if ("reply_comment".equals(type) || "like_comment".equals(type)) {

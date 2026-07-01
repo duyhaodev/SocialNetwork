@@ -10,10 +10,14 @@ import postApi from "@/api/postApi";
 import { PostCard } from "@/components/PostCard/PostCard";
 import CreatePost from "@/components/CreatePost/CreatePost";
 import { PendingMembersModal } from "./components/PendingMembersModal";
-import { Users, Plus, LogOut } from "lucide-react";
+import { EditGroupModal } from "./components/EditGroupModal";
+import { Users, Plus, LogOut, Settings } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GroupMembersTab } from "./components/GroupMembersTab";
+import { GroupRulesTab } from "./components/GroupRulesTab";
+import { JoinGroupRulesModal } from "./components/JoinGroupRulesModal";
+import { RejectPostModal } from "./components/RejectPostModal";
 import { motion } from "framer-motion";
 import {
   AlertDialog,
@@ -38,6 +42,9 @@ export function GroupDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
   const [showPendingMembers, setShowPendingMembers] = useState(false);
+  const [showJoinRulesModal, setShowJoinRulesModal] = useState(false);
+  const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+  const [postToReject, setPostToReject] = useState(null);
   const [activeTab, setActiveTab] = useState("feed");
   const currentUser = useSelector((s) => s.user.profile) ?? {};
 
@@ -97,6 +104,12 @@ export function GroupDetailPage() {
     });
   }, [groupId]);
 
+  useEffect(() => {
+    if (activeTab === "pending") {
+      fetchPendingPosts();
+    }
+  }, [activeTab]);
+
   const handleJoinGroup = async () => {
     try {
       const res = await groupApi.joinGroup(groupId);
@@ -107,6 +120,19 @@ export function GroupDetailPage() {
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi khi tham gia nhóm");
+    }
+  };
+
+  const handleJoinGroupClick = async () => {
+    try {
+      const res = await groupApi.getGroupRules(groupId);
+      if (res.code === 1000 && res.result && res.result.length > 0) {
+        setShowJoinRulesModal(true);
+      } else {
+        handleJoinGroup();
+      }
+    } catch (error) {
+      handleJoinGroup();
     }
   };
 
@@ -122,12 +148,15 @@ export function GroupDetailPage() {
     }
   };
 
-  const handleApprovePost = async (postId, status) => {
+  const handleApprovePost = async (postId, status, reason = null) => {
     try {
-      await postApi.updatePostStatus(postId, status);
-      toast.success("Cập nhật bài viết thành công!");
+      await postApi.updatePostStatus(postId, status, reason);
+      toast.success(status === 'APPROVED' ? "Phê duyệt bài viết thành công!" : "Đã từ chối bài viết!");
       fetchPendingPosts();
-      fetchGroupPosts();
+      if (status === 'APPROVED') {
+        fetchGroupPosts();
+      }
+      setPostToReject(null);
     } catch (error) {
       toast.error("Lỗi cập nhật trạng thái");
     }
@@ -184,7 +213,7 @@ export function GroupDetailPage() {
         
         <div className="flex justify-end gap-3">
           {group.currentUserRole === 'NONE' && (
-            <Button onClick={handleJoinGroup} size="lg" className="font-semibold px-8">
+            <Button onClick={handleJoinGroupClick} size="lg" className="font-semibold px-8">
               Tham gia
             </Button>
           )}
@@ -237,13 +266,27 @@ export function GroupDetailPage() {
             </AlertDialog>
           )}
 
+          {group.currentUserRole === 'ADMIN' && (
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="font-semibold px-6 gap-2"
+              onClick={() => setIsEditGroupOpen(true)}
+            >
+              <Settings className="w-5 h-5" /> Cài đặt
+            </Button>
+          )}
+
           {(group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR') && (
             <div className="relative">
               <Button 
                 size="lg" 
                 variant="default" 
                 className="font-semibold px-6 gap-2 bg-zinc-800 hover:bg-zinc-700 text-white"
-                onClick={() => setShowPendingMembers(true)}
+                onClick={() => {
+                  fetchPendingMembers();
+                  setShowPendingMembers(true);
+                }}
               >
                 <Users className="w-5 h-5" /> Duyệt thành viên
               </Button>
@@ -259,20 +302,22 @@ export function GroupDetailPage() {
       <div className="px-4 md:px-8 mt-4 border-t pt-4">
         {(() => {
           const isAdminOrMod = group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR';
-          const colsClass = isAdminOrMod ? "grid-cols-3" : "grid-cols-2";
-          const indicatorWidth = isAdminOrMod ? "w-[calc(33.333%-4px)]" : "w-[calc(50%-4px)]";
+          const colsClass = isAdminOrMod ? "grid-cols-4" : "grid-cols-3";
+          const indicatorWidth = isAdminOrMod ? "w-[calc(25%-4px)]" : "w-[calc(33.333%-4px)]";
           
           let xValue = "0";
           if (activeTab === "members") {
             xValue = "100%";
-          } else if (activeTab === "pending") {
+          } else if (activeTab === "rules") {
             xValue = "200%";
+          } else if (activeTab === "pending") {
+            xValue = "300%";
           }
 
           return (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex justify-center w-full border-b border-border/20 py-2.5 bg-background/30 backdrop-blur-sm sticky top-14 z-10 px-4 mb-4">
-                <TabsList className={`bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[480px] grid ${colsClass} relative overflow-hidden`}>
+                <TabsList className={`bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[600px] grid ${colsClass} relative overflow-hidden`}>
                   <TabsTrigger
                     value="feed"
                     className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
@@ -284,6 +329,12 @@ export function GroupDetailPage() {
                     className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
                   >
                     Thành viên
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="rules"
+                    className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
+                  >
+                    Nội quy
                   </TabsTrigger>
                   {isAdminOrMod && (
                     <TabsTrigger
@@ -314,45 +365,67 @@ export function GroupDetailPage() {
                 ) : (
                   <div className="space-y-6 w-full">
                     {isMember && (
-                      <div className="mb-4">
-                        <CreatePost isInline={true} groupId={groupId} onOpenChange={() => fetchGroupPosts()} />
+                      <div className="mb-6">
+                        <CreatePost 
+                          isInline={true}
+                          groupId={groupId} 
+                          onOpenChange={() => {
+                            fetchGroupPosts();
+                            fetchPendingPosts();
+                          }}
+                        />
                       </div>
                     )}
                     {posts.length === 0 ? (
-                      <p className="text-muted-foreground text-center p-8 border rounded-lg">Chưa có bài viết nào.</p>
+                      <div className="text-center text-muted-foreground py-8">Chưa có bài viết nào.</div>
                     ) : (
-                      posts.map(post => <PostCard key={post.id} post={post} />)
+                      posts.map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))
                     )}
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="pending">
-                <div className="space-y-4 w-full">
-                  {pendingPosts.length === 0 ? (
-                    <p className="text-muted-foreground text-center p-8 border rounded-lg">Không có bài viết chờ duyệt.</p>
-                  ) : (
-                    pendingPosts.map(post => (
-                      <div key={post.id} className="relative border rounded-lg">
-                        <PostCard post={post} />
-                        {/* Overlay Action buttons for admin */}
-                        <div className="absolute top-4 right-4 flex gap-2">
-                          <Button size="sm" variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleApprovePost(post.id, 'REJECTED')}>
-                            <X className="w-4 h-4 mr-1" /> Từ chối
-                          </Button>
-                          <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleApprovePost(post.id, 'APPROVED')}>
-                            <Check className="w-4 h-4 mr-1" /> Phê duyệt
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+              <TabsContent value="members" className="m-0 focus-visible:outline-none">
+                <GroupMembersTab 
+                  groupId={groupId} 
+                  groupOwnerId={null} 
+                  isAdmin={group.currentUserRole === 'ADMIN'}
+                />
               </TabsContent>
 
-              <TabsContent value="members">
-                <GroupMembersTab groupId={groupId} currentUserRole={group.currentUserRole} />
+              <TabsContent value="rules" className="m-0 focus-visible:outline-none">
+                <GroupRulesTab 
+                  groupId={groupId} 
+                  isAdmin={group.currentUserRole === 'ADMIN'}
+                  groupName={group.name}
+                />
               </TabsContent>
+
+              {isAdminOrMod && (
+                <TabsContent value="pending" className="m-0 focus-visible:outline-none">
+                  <div className="space-y-4">
+                    {pendingPosts.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">Không có bài viết chờ duyệt.</div>
+                    ) : (
+                      pendingPosts.map((post) => (
+                        <div key={post.id} className="relative">
+                          <PostCard post={post} />
+                          <div className="absolute top-4 right-4 flex gap-2">
+                            <Button size="sm" onClick={() => handleApprovePost(post.id, 'APPROVED')} className="bg-green-500 hover:bg-green-600 text-white gap-1">
+                              <Check className="w-4 h-4"/> Duyệt
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => setPostToReject(post)} className="gap-1">
+                              <X className="w-4 h-4"/> Từ chối
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              )}
             </Tabs>
           );
         })()}
@@ -360,13 +433,39 @@ export function GroupDetailPage() {
 
       <PendingMembersModal 
         isOpen={showPendingMembers} 
-        onClose={() => {
-          setShowPendingMembers(false);
-          // Refresh after closing modal to see if there are any changes
-          fetchGroupPosts();
+        onClose={() => setShowPendingMembers(false)} 
+        groupId={groupId}
+        onApproveSuccess={() => {
           fetchPendingMembers();
-        }} 
-        groupId={groupId} 
+          fetchGroupDetails();
+          // also refresh members tab if needed by dispatching an event or relying on websocket
+        }}
+      />
+      <EditGroupModal
+        isOpen={isEditGroupOpen}
+        onClose={() => setIsEditGroupOpen(false)}
+        group={group}
+        onSuccess={() => {
+          fetchGroupDetails();
+        }}
+      />
+      
+      <JoinGroupRulesModal
+        isOpen={showJoinRulesModal}
+        onClose={() => setShowJoinRulesModal(false)}
+        groupId={groupId}
+        groupName={group.name}
+        onAgree={handleJoinGroup}
+      />
+      
+      <RejectPostModal
+        isOpen={!!postToReject}
+        onClose={() => setPostToReject(null)}
+        onReject={(reason) => {
+          if (postToReject) {
+            handleApprovePost(postToReject.id, 'REJECTED', reason);
+          }
+        }}
       />
     </div>
   );

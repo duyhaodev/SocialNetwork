@@ -129,4 +129,14 @@ public class InternalNotificationController {
         notificationService.createGroupPostApprovedNotification(receiverId, senderId, postId);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/group-post-rejected")
+    public ResponseEntity<?> groupPostRejected(
+            @RequestParam String receiverId,
+            @RequestParam String senderId,
+            @RequestParam String postId,
+            @RequestParam(required = false) String reason) {
+        notificationService.createGroupPostRejectedNotification(receiverId, senderId, postId, reason);
+        return ResponseEntity.ok().build();
+    }
 }

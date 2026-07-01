@@ -112,9 +112,11 @@ const postApi = {
     });
   },
 
-  updatePostStatus(postId, status) {
+  updatePostStatus(postId, status, reason = null) {
+    const params = { status };
+    if (reason) params.reason = reason;
     return axiosClient.put(`/post/posts/${postId}/status`, null, {
-      params: { status }
+      params
     });
   }
 };

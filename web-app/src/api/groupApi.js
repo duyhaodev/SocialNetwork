@@ -5,6 +5,18 @@ const groupApi = {
     return axiosClient.post("/group/", payload);
   },
 
+  updateGroup(groupId, payload) {
+    return axiosClient.put(`/group/${groupId}`, payload);
+  },
+
+  getGroupRules(groupId) {
+    return axiosClient.get(`/group/${groupId}/rules`);
+  },
+
+  updateGroupRules(groupId, payload) {
+    return axiosClient.put(`/group/${groupId}/rules`, payload);
+  },
+
   getGroupDetails(groupId) {
     return axiosClient.get(`/group/${groupId}`);
   },

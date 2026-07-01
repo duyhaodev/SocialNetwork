@@ -8,7 +8,13 @@ import com.DuyHao.group_service.entity.GroupMember;
 import com.DuyHao.group_service.mapper.GroupMapper;
 import com.DuyHao.group_service.repository.GroupMemberRepository;
 import com.DuyHao.group_service.repository.GroupRepository;
+import com.DuyHao.group_service.repository.GroupRuleRepository;
+import com.DuyHao.group_service.dto.response.GroupRuleDto;
+import com.DuyHao.group_service.dto.request.GroupRuleUpdateRequest;
+import com.DuyHao.group_service.entity.GroupRule;
 import com.DuyHao.group_service.client.NotificationClient;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +28,7 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final GroupRuleRepository groupRuleRepository;
     private final GroupMapper groupMapper;
     private final NotificationClient notificationClient;
 
@@ -38,6 +45,30 @@ public class GroupService {
                 .build();
         groupMemberRepository.save(adminMember);
 
+        return groupMapper.toGroupResponse(savedGroup);
+    }
+
+    @Transactional
+    public GroupResponse updateGroup(String groupId, com.DuyHao.group_service.dto.request.GroupUpdateRequest request, String currentUserId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("No permission"));
+
+        if (!"ADMIN".equals(member.getRole())) {
+            throw new RuntimeException("Only Admin can update group settings");
+        }
+
+        group.setName(request.getName());
+        group.setDescription(request.getDescription());
+        if (request.getCoverImageUrl() != null && !request.getCoverImageUrl().isEmpty()) {
+            group.setCoverImageUrl(request.getCoverImageUrl());
+        }
+        group.setPrivacy(request.getPrivacy());
+        group.setRequiresApproval(request.getRequiresApproval());
+
+        Group savedGroup = groupRepository.save(group);
         return groupMapper.toGroupResponse(savedGroup);
     }
 
@@ -242,5 +273,50 @@ public class GroupService {
         return groupRepository.findAll().stream()
                 .map(groupMapper::toGroupResponse)
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<GroupRuleDto> getGroupRules(String groupId) {
+        return groupRuleRepository.findByGroupIdOrderByOrderIndexAsc(groupId).stream()
+                .map(rule -> GroupRuleDto.builder()
+                        .id(rule.getId())
+                        .groupId(rule.getGroupId())
+                        .title(rule.getTitle())
+                        .description(rule.getDescription())
+                        .orderIndex(rule.getOrderIndex())
+                        .createdAt(rule.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<GroupRuleDto> updateGroupRules(String groupId, GroupRuleUpdateRequest request, String currentUserId) {
+        GroupMember admin = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("No permission"));
+        if (!"ADMIN".equals(admin.getRole())) {
+            throw new RuntimeException("Only Admin can update rules");
+        }
+
+        // Validate max 10 rules
+        if (request.getRules() != null && request.getRules().size() > 10) {
+            throw new RuntimeException("Maximum 10 rules allowed");
+        }
+
+        groupRuleRepository.deleteByGroupId(groupId);
+        
+        List<GroupRule> rulesToSave = new java.util.ArrayList<>();
+        if (request.getRules() != null) {
+            for (int i = 0; i < request.getRules().size(); i++) {
+                var item = request.getRules().get(i);
+                rulesToSave.add(GroupRule.builder()
+                        .groupId(groupId)
+                        .title(item.getTitle())
+                        .description(item.getDescription())
+                        .orderIndex(i)
+                        .build());
+            }
+        }
+        
+        groupRuleRepository.saveAll(rulesToSave);
+        return getGroupRules(groupId);
     }
 }

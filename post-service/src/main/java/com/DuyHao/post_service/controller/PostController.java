@@ -203,9 +203,12 @@ public class PostController {
 
     @PutMapping("/posts/{postId}/status")
     public ApiResponse<Void> updatePostStatus(
-            @PathVariable String postId, @RequestParam String status, @AuthenticationPrincipal Jwt jwt) {
+            @PathVariable String postId,
+            @RequestParam String status,
+            @RequestParam(required = false) String reason,
+            @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
-        postService.updatePostStatus(postId, status, userId);
+        postService.updatePostStatus(postId, status, reason, userId);
         return ApiResponse.<Void>builder().message("Status updated").build();
     }
 }

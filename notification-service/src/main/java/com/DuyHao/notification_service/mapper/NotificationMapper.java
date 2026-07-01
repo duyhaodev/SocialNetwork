@@ -16,7 +16,9 @@ public class NotificationMapper {
                 latest.getCommentId(),
                 group.size(),
                 List.of(),
-                buildMessage(latest.getType()),
+                latest.getMessage() != null && !latest.getMessage().trim().isEmpty()
+                        ? latest.getMessage()
+                        : buildMessage(latest.getType()),
                 latest.getCreatedAt(),
                 group.stream().anyMatch(n -> !n.getIsRead()),
                 null,
@@ -33,6 +35,7 @@ public class NotificationMapper {
             case "follow" -> "followed you";
             case "group_join_request" -> "requested to join your group";
             case "group_join_approved" -> "approved your request to join the group";
+            case "group_post_rejected" -> "rejected your post in the group";
             default -> "did something";
         };
     }
