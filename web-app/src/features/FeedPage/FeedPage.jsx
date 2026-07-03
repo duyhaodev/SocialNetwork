@@ -59,6 +59,7 @@ export function FeedPage() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [moderationResult, setModerationResult] = useState(null);
   const [showModWarning, setShowModWarning] = useState(false);
+  const pendingAiGeneratedRef = useRef(false);
 
   // FIX: trạng thái posting ngay lập tức
   const [isPosting, setIsPosting] = useState(false);
@@ -246,7 +247,7 @@ export function FeedPage() {
     try {
       // --- Kiểm duyệt ảnh TRƯỚC khi upload ---
       const imageFiles = mediaFiles.filter((m) => m.kind === "image");
-      let hasAiGenerated = false;
+      let hasAiGenerated = skipImageModeration ? pendingAiGeneratedRef.current : false;
 
       if (imageFiles.length > 0 && !skipImageModeration) {
         try {
@@ -259,6 +260,11 @@ export function FeedPage() {
             const result = analysisResults[i];
             const nsfw = result?.nsfw;
             const aiGen = result?.ai_generated;
+
+            // Phát hiện ảnh AI generated — lưu trước
+            if (aiGen?.is_ai) {
+              pendingAiGeneratedRef.current = true;
+            }
 
             // Phát hiện ảnh nhạy cảm
             if (nsfw && !nsfw.is_safe) {
@@ -286,7 +292,7 @@ export function FeedPage() {
               return;
             }
 
-            // Phát hiện ảnh AI generated
+            // Ghi nhận AI generated
             if (aiGen?.is_ai) {
               hasAiGenerated = true;
             }
@@ -322,6 +328,7 @@ export function FeedPage() {
         toast.success("Posted successfully");
         setNewPost("");
         setModerationResult(null);
+        pendingAiGeneratedRef.current = false;
         handleRemoveAll();
         setLocalRefreshKey((k) => k + 1);
       } else {
