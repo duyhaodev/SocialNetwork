@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Phone, Video, Camera, Info, Smile, Mic, Image, Heart, Send, X, RotateCcw, Pencil } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
 import { messageApi } from "../../../api/messageApi";
 import mediaApi from "../../../api/mediaApi";
@@ -8,6 +8,7 @@ import streakApi from "../../../api/streakApi";
 import { Spinner } from "../../../components/ui/spinner";
 import { showUnderDevelopmentToast } from "../../../utils/commonUtils";
 import { toast } from "sonner";
+import { linkifyText } from "../../../utils/linkifyText";
 
 import { searchApi } from "../../../api/searchApi";
 import { Search } from "lucide-react";
@@ -462,7 +463,18 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
               <h3 className="font-medium flex items-center gap-2">
                 {conversation?.user?.displayName || "Chưa chọn cuộc trò chuyện"}
                 {streak && streak.streakCount > 0 && (
-                  <span className="text-orange-400 text-sm font-semibold">🔥 {streak.streakCount}</span>
+                  <motion.span
+                    key={streak.streakCount}
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    className="inline-flex items-center gap-1"
+                  >
+                    <span className="streak-fire inline-block text-base">🔥</span>
+                    <span className="streak-count text-sm font-bold bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
+                      {streak.streakCount}
+                    </span>
+                  </motion.span>
                 )}
               </h3>
             </div>
@@ -657,7 +669,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                                   msg.reactions && Object.keys(msg.reactions).length > 0 ? "mb-3" : ""
                                 } ${msg.media && msg.media.length > 0 ? "mb-2" : ""} ${msg.isMe ? "bg-[#0095f6] text-white" : "bg-[#262626] text-white"}`}
                               >
-                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p className="text-sm whitespace-pre-wrap">{linkifyText(msg.content)}</p>
                                 {msg.isEdited && (
                                   <span className="text-[9px] opacity-60 block">(đã chỉnh sửa)</span>
                                 )}
@@ -793,8 +805,15 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
                   {file.type === 'image' ? (
                     <img src={file.preview} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                      <Video className="w-6 h-6 text-gray-400" />
+                    <div className="relative w-full h-full bg-gray-800">
+                      <video src={file.preview} className="w-full h-full object-cover" preload="metadata" muted />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                        <div className="w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                          <svg className="w-3 h-3 text-white ml-0.5" viewBox="0 0 12 12" fill="currentColor">
+                            <polygon points="2,1 11,6 2,11" />
+                          </svg>
+                        </div>
+                      </div>
                     </div>
                   )}
                   <button onClick={() => removeFile(idx)} className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5 hover:bg-black/70">
@@ -844,7 +863,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
       </div>
       <AnimatePresence>
         {isInfoOpen && (
-          <ConversationDetails conversation={conversation} onClose={() => setIsInfoOpen(false)} onLeaveGroup={onLeaveGroup} />
+          <ConversationDetails conversation={conversation} messages={messages} onClose={() => setIsInfoOpen(false)} onLeaveGroup={onLeaveGroup} />
         )}
       </AnimatePresence>
 
