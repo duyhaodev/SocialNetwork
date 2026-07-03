@@ -35,6 +35,7 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
   // REFS
   const fileInputRef = useRef(null);
   const emojiRef = useRef(null);
+  const pendingAiGeneratedRef = useRef(false);
 
   // REFS cho drag-to-scroll
   const mediaScrollRef = useRef(null);
@@ -107,12 +108,66 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
   };
 
   // Thực hiện đăng bài (bỏ qua moderation)
-  const doPost = async () => {
+  // isSensitive = true khi user nhấn "Post anyway" sau cảnh báo mild
+  const doPost = async (skipImageModeration = false, isSensitive = false) => {
     const trimContent = (content || "").trim();
     if (!trimContent && mediaFiles.length === 0) return;
 
     try {
       setIsUploading(true);
+
+      // --- Kiểm duyệt ảnh TRƯỚC khi upload ---
+      const imageFiles = mediaFiles.filter((m) => m.kind === "image");
+      let hasAiGenerated = skipImageModeration ? pendingAiGeneratedRef.current : false;
+
+      if (imageFiles.length > 0 && !skipImageModeration) {
+        try {
+          const analysisResults = await Promise.all(
+            imageFiles.map((m) => aiApi.analyzeImage(m.file))
+          );
+
+          for (let i = 0; i < analysisResults.length; i++) {
+            const result = analysisResults[i];
+            const nsfw = result?.nsfw;
+            const aiGen = result?.ai_generated;
+
+            // Lưu AI detection trước
+            if (aiGen?.is_ai) {
+              pendingAiGeneratedRef.current = true;
+            }
+
+            if (nsfw && !nsfw.is_safe) {
+              const severity = nsfw.severity;
+              const warningLevel = severity === "mild" ? "mild" : severity === "moderate" ? "moderate" : "severe";
+              setModerationResult({
+                warning_level: warningLevel,
+                message: warningLevel === "mild"
+                  ? "One of your images contains mildly suggestive content. Consider replacing it."
+                  : "One of your images contains content that violates community guidelines.",
+                flagged_items: [{
+                  word: `Image ${i + 1}`,
+                  category: "adult_content",
+                  category_label: `Sensitive content (${nsfw.label}) · ${Math.round(nsfw.confidence * 100)}% confidence`,
+                }],
+                suggestion: warningLevel === "mild"
+                  ? "You may still post, but the image may be flagged for review."
+                  : "Please remove the flagged image before posting.",
+              });
+              setShowModWarning(true);
+              setIsUploading(false);
+              return;
+            }
+
+            if (aiGen?.is_ai) {
+              hasAiGenerated = true;
+            }
+          }
+        } catch {
+          // AI service lỗi → bỏ qua
+        }
+      }
+      // --- Kết thúc kiểm duyệt ảnh ---
+
       let mediaIds = [];
 
       if (mediaFiles.length > 0) {
@@ -129,6 +184,8 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
       const payload = {
         content: trimContent,
         mediaIds,
+        isAiGenerated: hasAiGenerated,
+        isSensitiveContent: isSensitive, // true nếu user nhấn "Post anyway"
       };
       if (groupId) {
         payload.groupId = groupId;
@@ -141,15 +198,13 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
       } else {
         toast.success("Đăng bài thành công!");
       }
-      
+
       setContent("");
       handleRemoveAll();
       setEmojiOpen(false);
       setModerationResult(null);
+      pendingAiGeneratedRef.current = false;
       if (onOpenChange) onOpenChange(false);
-      
-      // If we need to trigger a refresh inline
-      // We can rely on the caller observing state, but for now just close if it's a modal
 
     } catch (err) {
       toast.error(err?.message || "Post failed!");
@@ -469,7 +524,7 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
           onPostAnyway={() => {
             setShowModWarning(false);
             setModerationResult(null);
-            doPost();
+            doPost(true, true); // skipImageModeration=true, isSensitive=true
           }}
         />
       </div>
@@ -507,7 +562,7 @@ export function CreatePost({ open, onOpenChange, groupId, isInline }) {
         onPostAnyway={() => {
           setShowModWarning(false);
           setModerationResult(null);
-          doPost();
+          doPost(true, true); // skipImageModeration=true, isSensitive=true
         }}
       />
     </Dialog>

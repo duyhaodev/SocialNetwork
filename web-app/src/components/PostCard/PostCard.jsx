@@ -228,7 +228,12 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
         <PostTranslation isNonVietnamese={isNonVietnamese} content={isRepost ? post.originalContent : post.content} />
 
         {/* Media rendering component */}
-        <PostMedia mediaList={mediaList} mediaCount={mediaCount} onMediaClick={handleMediaClick} />
+        <PostMedia
+          mediaList={mediaList}
+          mediaCount={mediaCount}
+          onMediaClick={handleMediaClick}
+          isSensitiveContent={post.isSensitiveContent}
+        />
 
         {/* Actions buttons */}
         {post.status !== 'PENDING' && (

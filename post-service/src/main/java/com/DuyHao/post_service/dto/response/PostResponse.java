@@ -44,4 +44,10 @@ public class PostResponse {
 
     // AI generated flag — true nếu bài đăng chứa ảnh do AI tạo ra
     private Boolean isAiGenerated;
+
+    // Sensitive content flag — true nếu user nhấn "Post anyway" khi bị cảnh báo nội dung nhạy cảm
+    private Boolean isSensitiveContent;
+
+    // tags
+    private List<String> tags;
 }

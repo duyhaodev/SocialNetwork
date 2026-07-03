@@ -1,6 +1,124 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 
-export function PostMedia({ mediaList, mediaCount, onMediaClick }) {
+// ── Hybrid: nền mờ Threads (dot + shimmer) + label Mẫu A (lock pulse + pill) ──
+function SensitiveOverlay({ onReveal }) {
+  return (
+    <div
+      className="sensitive-overlay absolute inset-0 z-10 rounded-2xl overflow-hidden cursor-pointer select-none"
+      onClick={(e) => {
+        e.stopPropagation();
+        onReveal();
+      }}
+    >
+      <style>{`
+        /* --- NỀN: Threads style --- */
+        .sensitive-overlay .blur-base {
+          position: absolute;
+          inset: 0;
+          backdrop-filter: blur(18px) saturate(0.6);
+          -webkit-backdrop-filter: blur(18px) saturate(0.6);
+          background: rgba(0,0,0,0.35);
+        }
+
+        .sensitive-overlay .dot-layer {
+          position: absolute;
+          inset: 0;
+          background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px);
+          background-size: 6px 6px;
+          animation: dotMove 3s linear infinite;
+          opacity: 0.5;
+        }
+
+        @keyframes dotMove {
+          0%   { background-position: 0 0; }
+          100% { background-position: 0 24px; }
+        }
+
+        .sensitive-overlay .shimmer {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            105deg,
+            transparent 35%,
+            rgba(255,255,255,0.07) 50%,
+            transparent 65%
+          );
+          background-size: 200% 100%;
+          animation: shimmerMove 5s ease-in-out infinite;
+        }
+
+        @keyframes shimmerMove {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
+        /* --- LABEL: Mẫu A style --- */
+        .sensitive-overlay .label {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: #fff;
+        }
+
+        .sensitive-overlay .icon-ring {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.15);
+          border: 1.5px solid rgba(255,255,255,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: lockPulse 2.8s ease-in-out infinite;
+        }
+
+        @keyframes lockPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.15); }
+          50%       { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+        }
+
+        .sensitive-overlay .pill {
+          font-size: 11px;
+          opacity: 0.6;
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.18);
+          border-radius: 999px;
+          padding: 3px 14px;
+          letter-spacing: 0.02em;
+        }
+      `}</style>
+
+      {/* Threads background */}
+      <div className="blur-base" />
+      <div className="dot-layer" />
+      <div className="shimmer" />
+
+      {/* Mẫu A label */}
+      <div className="label">
+        <div className="icon-ring">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", opacity: 0.92 }}>
+          Sensitive content
+        </span>
+        <span className="pill">Tap to view</span>
+      </div>
+    </div>
+  );
+}
+
+export function PostMedia({ mediaList, mediaCount, onMediaClick, isSensitiveContent }) {
+  // Mỗi ảnh track riêng — user có thể reveal từng cái
+  const [revealed, setRevealed] = useState({});
+  const revealOne = (idx) => setRevealed((prev) => ({ ...prev, [idx]: true }));
+
   const multiSize = useMemo(() => {
     if (mediaCount <= 1) return null;
     if (mediaCount === 2) return { width: 250, height: 300 };
@@ -88,6 +206,8 @@ export function PostMedia({ mediaList, mediaCount, onMediaClick }) {
 
   if (mediaCount === 0) return null;
 
+  const sensitive = Boolean(isSensitiveContent);
+
   return (
     <div ref={containerRef} className="mt-3 flex justify-center w-full">
       {mediaCount === 1 ? (
@@ -95,32 +215,38 @@ export function PostMedia({ mediaList, mediaCount, onMediaClick }) {
           const m = mediaList[0];
           const url = m.mediaUrl;
           const isVideo = m.mediaType === "video";
+          const isRevealed = revealed[0];
 
           if (isVideo) {
             return (
-              <video
-                src={url}
-                loop
-                data-autoplay
-                className="rounded-2xl border border-border/30 object-contain shadow-md cursor-pointer"
-                style={{
-                  maxWidth: "min(680px, 100%)",
-                  maxHeight: "420px",
-                  width: "auto",
-                  height: "auto",
-                  backgroundColor: "#000",
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMediaClick?.(0);
-                }}
-              />
+              <div className="relative">
+                <video
+                  src={url}
+                  loop
+                  data-autoplay
+                  className="rounded-2xl border border-border/30 object-contain shadow-md cursor-pointer"
+                  style={{
+                    maxWidth: "min(680px, 100%)",
+                    maxHeight: "420px",
+                    width: "auto",
+                    height: "auto",
+                    backgroundColor: "#000",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMediaClick?.(0);
+                  }}
+                />
+                {sensitive && !isRevealed && (
+                  <SensitiveOverlay onReveal={() => revealOne(0)} />
+                )}
+              </div>
             );
           }
 
           return (
-            <div 
-              className="overflow-hidden rounded-2xl border border-border/30 shadow-md cursor-pointer"
+            <div
+              className="relative overflow-hidden rounded-2xl border border-border/30 shadow-md cursor-pointer"
               style={{
                 maxWidth: "min(680px, 100%)",
                 maxHeight: "420px",
@@ -139,9 +265,13 @@ export function PostMedia({ mediaList, mediaCount, onMediaClick }) {
                 loading="lazy"
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (sensitive && !isRevealed) return; // block click khi chưa reveal
                   onMediaClick?.(0);
                 }}
               />
+              {sensitive && !isRevealed && (
+                <SensitiveOverlay onReveal={() => revealOne(0)} />
+              )}
             </div>
           );
         })()
@@ -162,6 +292,7 @@ export function PostMedia({ mediaList, mediaCount, onMediaClick }) {
                     ? m.mediaUrl
                     : `${import.meta.env.VITE_BACKEND_URL || ""}${m.mediaUrl}`;
                   const isVideo = m.mediaType === "video";
+                  const isRevealed = revealed[idx];
 
                   return (
                     <div
@@ -174,6 +305,7 @@ export function PostMedia({ mediaList, mediaCount, onMediaClick }) {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (hasDraggedRef.current) return;
+                        if (sensitive && !isRevealed) return; // block click khi chưa reveal
                         onMediaClick?.(idx);
                       }}
                     >
@@ -191,6 +323,9 @@ export function PostMedia({ mediaList, mediaCount, onMediaClick }) {
                           className="w-full h-full object-cover rounded-2xl transition-transform duration-500 group-hover:scale-105"
                           loading="lazy"
                         />
+                      )}
+                      {sensitive && !isRevealed && (
+                        <SensitiveOverlay onReveal={() => revealOne(idx)} />
                       )}
                     </div>
                   );

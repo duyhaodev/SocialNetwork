@@ -41,7 +41,8 @@ public class PostController {
                 request.getMediaIds(),
                 request.getTags(),
                 clientIp,
-                request.getIsAiGenerated());
+                request.getIsAiGenerated(),
+                request.getIsSensitiveContent());
 
         return ApiResponse.<PostResponse>builder().result(post).build();
     }

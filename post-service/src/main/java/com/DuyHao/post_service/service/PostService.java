@@ -46,7 +46,8 @@ public class PostService {
             List<String> mediaIds,
             List<String> tags,
             String clientIp,
-            Boolean isAiGenerated) {
+            Boolean isAiGenerated,
+            Boolean isSensitiveContent) {
         UserResponse user = userClient.getUser(userId);
 
         // Resolve city từ IP
@@ -129,6 +130,7 @@ public class PostService {
                 .groupId(groupId)
                 .status(status)
                 .isAiGenerated(Boolean.TRUE.equals(isAiGenerated))
+                .isSensitiveContent(Boolean.TRUE.equals(isSensitiveContent))
                 .createdAt(LocalDateTime.now())
                 .build();
 

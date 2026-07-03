@@ -61,6 +61,9 @@ public class Post {
     @Column(name = "is_ai_generated")
     Boolean isAiGenerated; // true nếu bài đăng chứa ảnh do AI tạo ra
 
+    @Column(name = "is_sensitive_content")
+    Boolean isSensitiveContent; // true nếu user chọn "Post anyway" khi bị cảnh báo nội dung nhạy cảm mức mild
+
     // Repost
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "repost_of_id")
