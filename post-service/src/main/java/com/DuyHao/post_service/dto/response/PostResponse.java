@@ -44,4 +44,6 @@ public class PostResponse {
 
     // AI generated flag — true nếu bài đăng chứa ảnh do AI tạo ra
     private Boolean isAiGenerated;
+
+    private Boolean isPinned;
 }

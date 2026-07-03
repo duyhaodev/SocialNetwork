@@ -634,8 +634,7 @@ public class PostService {
             System.err.println("Could not fetch group privacy info");
         }
 
-        List<Post> posts = postRepository.findByGroupIdAndStatusOrderByCreatedAtDesc(
-                groupId, "APPROVED", PageRequest.of(page, size));
+        List<Post> posts = postRepository.findGroupPosts(groupId, "APPROVED", PageRequest.of(page, size));
         if (posts.isEmpty()) return Collections.emptyList();
 
         Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
@@ -650,8 +649,7 @@ public class PostService {
     public List<PostResponse> getPendingGroupPosts(String groupId, String currentUserId, int page, int size) {
         // Here we should ideally check if currentUserId is ADMIN or MODERATOR of the group.
         // For simplicity we check if they are member. In real implementation, groupClient.checkAdmin() would be better.
-        List<Post> posts = postRepository.findByGroupIdAndStatusOrderByCreatedAtDesc(
-                groupId, "PENDING", PageRequest.of(page, size));
+        List<Post> posts = postRepository.findGroupPosts(groupId, "PENDING", PageRequest.of(page, size));
         if (posts.isEmpty()) return Collections.emptyList();
 
         Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
@@ -692,5 +690,18 @@ public class PostService {
                 }
             }
         }
+    }
+
+    public void pinPost(String postId, String userId) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        if (post.getGroupId() == null || post.getGroupId().isBlank()) {
+            throw new RuntimeException("Chỉ có thể ghim bài viết trong nhóm");
+        }
+        String role = groupClient.getMemberRole(post.getGroupId(), userId);
+        if (!"ADMIN".equals(role) && !"MODERATOR".equals(role)) {
+            throw new RuntimeException("Bạn không có quyền ghim bài viết");
+        }
+        post.setIsPinned(!Boolean.TRUE.equals(post.getIsPinned()));
+        postRepository.save(post);
     }
 }

@@ -118,6 +118,10 @@ const postApi = {
     return axiosClient.put(`/post/posts/${postId}/status`, null, {
       params
     });
+  },
+
+  pinPost(postId) {
+    return axiosClient.put(`/post/posts/${postId}/pin`);
   }
 };
 

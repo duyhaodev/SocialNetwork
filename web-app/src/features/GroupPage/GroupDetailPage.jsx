@@ -191,6 +191,18 @@ export function GroupDetailPage() {
   if (loading) return <div className="flex justify-center p-8"><Spinner /></div>;
   if (!group) return <div className="text-center p-8">Không tìm thấy nhóm</div>;
 
+  if (group.currentUserRole === 'BANNED') {
+    return (
+      <div className="w-full max-w-4xl mx-auto py-20 px-4 text-center">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Shield className="w-10 h-10 text-red-500" />
+        </div>
+        <h1 className="text-3xl font-bold text-red-500 mb-4">Bạn đã bị chặn khỏi nhóm này</h1>
+        <p className="text-muted-foreground text-lg">Bạn không thể xem nội dung hoặc tham gia lại nhóm này.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto pb-16">
       {/* Cover Image */}
@@ -380,7 +392,12 @@ export function GroupDetailPage() {
                       <div className="text-center text-muted-foreground py-8">Chưa có bài viết nào.</div>
                     ) : (
                       posts.map((post) => (
-                        <PostCard key={post.id} post={post} />
+                        <PostCard 
+                          key={post.id} 
+                          post={post} 
+                          isGroupAdminOrMod={group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR'}
+                          onPinToggle={() => fetchGroupPosts()}
+                        />
                       ))
                     )}
                   </div>

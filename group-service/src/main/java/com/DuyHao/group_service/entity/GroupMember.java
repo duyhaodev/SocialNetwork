@@ -29,7 +29,7 @@ public class GroupMember {
     String userId;
 
     @Column(nullable = false, length = 20)
-    String role; // ADMIN, MODERATOR, MEMBER, PENDING
+    String role; // ADMIN, MODERATOR, MEMBER, PENDING, BANNED
 
     @Column(name = "joined_at")
     LocalDateTime joinedAt;

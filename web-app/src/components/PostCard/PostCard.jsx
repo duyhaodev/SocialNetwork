@@ -13,8 +13,9 @@ import { ImageViewer } from "../ImageViewer/ImageViewer.jsx";
 import ConfirmDeleteModal from "../Modals/ConfirmDeleteModal";
 import likeApi from "@/api/likeApi";
 import { franc } from "franc";
+import { Pin } from "lucide-react";
 
-export function PostCard({ post, onProfileClick, onPostClick }) {
+export function PostCard({ post, onProfileClick, onPostClick, isGroupAdminOrMod, onPinToggle }) {
   const dispatch = useDispatch();
   const currentUserId = useSelector((s) => s.user?.profile?.userId);
 
@@ -186,6 +187,13 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
         `}
       </style>
 
+      {post.isPinned && (
+        <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-bold mb-3 pl-12 uppercase tracking-wide">
+          <Pin className="w-3.5 h-3.5 fill-current" />
+          <span>Đã ghim</span>
+        </div>
+      )}
+
       {/* Header component */}
       <PostHeader
         post={post}
@@ -199,6 +207,8 @@ export function PostCard({ post, onProfileClick, onPostClick }) {
         isRepost={isRepost}
         baseUsername={baseUsername}
         reposterName={reposterName}
+        isGroupAdminOrMod={isGroupAdminOrMod}
+        onPinToggle={onPinToggle}
       />
 
       {/* Main post contents */}

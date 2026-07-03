@@ -2,6 +2,7 @@ package com.DuyHao.group_service.controller;
 
 import com.DuyHao.group_service.dto.ApiResponse;
 import com.DuyHao.group_service.dto.request.GroupCreateRequest;
+import com.DuyHao.group_service.dto.response.GroupMemberResponse;
 import com.DuyHao.group_service.dto.response.GroupResponse;
 import com.DuyHao.group_service.dto.request.GroupRuleUpdateRequest;
 import com.DuyHao.group_service.dto.response.GroupRuleDto;
@@ -147,5 +148,34 @@ public class GroupController {
         String userId = jwt.getSubject();
         List<GroupRuleDto> response = groupService.updateGroupRules(id, request, userId);
         return ApiResponse.<List<GroupRuleDto>>builder().result(response).build();
+    }
+
+    @PostMapping("/{id}/members/{userId}/ban")
+    public ApiResponse<Void> banMember(
+            @PathVariable String id,
+            @PathVariable String userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        groupService.banMember(id, userId, currentUserId);
+        return ApiResponse.<Void>builder().message("Member banned").build();
+    }
+
+    @PostMapping("/{id}/members/{userId}/unban")
+    public ApiResponse<Void> unbanMember(
+            @PathVariable String id,
+            @PathVariable String userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        groupService.unbanMember(id, userId, currentUserId);
+        return ApiResponse.<Void>builder().message("Member unbanned").build();
+    }
+
+    @GetMapping("/{id}/members/banned")
+    public ApiResponse<java.util.List<GroupMemberResponse>> getBannedMembers(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        java.util.List<GroupMemberResponse> bannedMembers = groupService.getBannedMembers(id, currentUserId);
+        return ApiResponse.<java.util.List<GroupMemberResponse>>builder().result(bannedMembers).build();
     }
 }

@@ -54,5 +54,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
             nativeQuery = true)
     List<Post> findByTag(String tagJson, Pageable pageable);
 
-    List<Post> findByGroupIdAndStatusOrderByCreatedAtDesc(String groupId, String status, Pageable pageable);
+    @Query(
+            "SELECT p FROM Post p WHERE p.groupId = :groupId AND p.status = :status ORDER BY COALESCE(p.isPinned, false) DESC, p.createdAt DESC")
+    List<Post> findGroupPosts(@Param("groupId") String groupId, @Param("status") String status, Pageable pageable);
 }

@@ -1,4 +1,4 @@
-import { MoreHorizontal, Trash2, Link, Repeat2, Globe, Sparkles } from "lucide-react";
+import { MoreHorizontal, Trash2, Link, Repeat2, Globe, Sparkles, Pin } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
@@ -12,6 +12,7 @@ import { formatTimeAgo } from "../../utils/dateUtils.js";
 import { useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import postApi from "../../api/postApi";
 
 export function PostHeader({
   post,
@@ -25,6 +26,8 @@ export function PostHeader({
   isRepost,
   baseUsername,
   reposterName,
+  isGroupAdminOrMod,
+  onPinToggle,
 }) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
@@ -35,6 +38,20 @@ export function PostHeader({
       .then(() => toast.success("Đã sao chép liên kết bài viết!"))
       .catch(() => toast.error("Không thể sao chép liên kết"));
     setMoreMenuOpen(false);
+  };
+
+  const handlePinAction = async () => {
+    try {
+      await postApi.pinPost(post.id ?? post.postId);
+      toast.success(post.isPinned ? "Đã bỏ ghim bài viết" : "Đã ghim bài viết");
+      if (onPinToggle) {
+        onPinToggle();
+      }
+    } catch (error) {
+      toast.error("Lỗi thao tác ghim bài viết");
+    } finally {
+      setMoreMenuOpen(false);
+    }
   };
 
   return (
@@ -161,6 +178,18 @@ export function PostHeader({
                   <span className="font-medium">Copy link</span>
                 </div>
               </DropdownMenuItem>
+
+              {isGroupAdminOrMod && (
+                <DropdownMenuItem
+                  className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-lg px-3 py-2 transition-colors"
+                  onClick={handlePinAction}
+                >
+                  <div className="flex items-center gap-2 w-full text-foreground">
+                    <Pin className="w-4 h-4 text-foreground" />
+                    <span className="font-medium">{post.isPinned ? "Bỏ ghim" : "Ghim bài viết"}</span>
+                  </div>
+                </DropdownMenuItem>
+              )}
 
               {canDelete && (
                 <DropdownMenuItem

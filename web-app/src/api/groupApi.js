@@ -59,6 +59,18 @@ const groupApi = {
 
   getAllGroups() {
       return axiosClient.get("/group/"); // Thêm trailing slash để tránh Spring Boot redirect 302
+  },
+
+  banMember(groupId, userId) {
+    return axiosClient.post(`/group/${groupId}/members/${userId}/ban`);
+  },
+
+  unbanMember(groupId, userId) {
+    return axiosClient.post(`/group/${groupId}/members/${userId}/unban`);
+  },
+
+  getBannedMembers(groupId) {
+    return axiosClient.get(`/group/${groupId}/members/banned`);
   }
 };
 

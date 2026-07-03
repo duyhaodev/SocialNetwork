@@ -6,7 +6,7 @@ import { UserHoverCard } from "@/components/UserHoverCard/UserHoverCard";
 import groupApi from "@/api/groupApi";
 import userApi from "@/api/userApi";
 import { toast } from "sonner";
-import { Loader2, Search, UserMinus, ArrowUpCircle } from "lucide-react";
+import { Loader2, Search, UserMinus, ArrowUpCircle, ShieldBan, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -25,12 +25,19 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isForbidden, setIsForbidden] = useState(false);
+  const [activeTab, setActiveTab] = useState("active");
+  const [bannedMembers, setBannedMembers] = useState([]);
+  const [isLoadingBanned, setIsLoadingBanned] = useState(false);
 
   useEffect(() => {
     if (groupId) {
-      fetchMembers();
+      if (activeTab === "active") {
+        fetchMembers();
+      } else if (activeTab === "banned") {
+        fetchBannedMembers();
+      }
     }
-  }, [groupId]);
+  }, [groupId, activeTab]);
 
   const fetchMembers = async () => {
     try {
@@ -69,6 +76,30 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
     }
   };
 
+  const fetchBannedMembers = async () => {
+    try {
+      setIsLoadingBanned(true);
+      const res = await groupApi.getBannedMembers(groupId);
+      const memberData = res.result || [];
+      if (memberData.length > 0) {
+        const userIds = memberData.map(m => m.userId);
+        const profilesRes = await userApi.getUsersBatch(userIds);
+        const profiles = profilesRes.result || [];
+        const mergedMembers = memberData.map(m => {
+          const profile = profiles.find(p => p.userId === m.userId) || {};
+          return { ...profile, role: m.role };
+        });
+        setBannedMembers(mergedMembers);
+      } else {
+        setBannedMembers([]);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingBanned(false);
+    }
+  };
+
   const handleKickMember = async (userId) => {
     try {
       await groupApi.kickMember(groupId, userId);
@@ -76,6 +107,26 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
       setMembers((prev) => prev.filter((m) => m.userId !== userId));
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi khi xóa thành viên");
+    }
+  };
+
+  const handleBanMember = async (userId) => {
+    try {
+      await groupApi.banMember(groupId, userId);
+      toast.success("Đã chặn người dùng khỏi nhóm");
+      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi chặn thành viên");
+    }
+  };
+
+  const handleUnbanMember = async (userId) => {
+    try {
+      await groupApi.unbanMember(groupId, userId);
+      toast.success("Đã gỡ chặn thành viên");
+      setBannedMembers((prev) => prev.filter((m) => m.userId !== userId));
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Lỗi khi gỡ chặn");
     }
   };
 
@@ -90,6 +141,11 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
   };
 
   const filteredMembers = members.filter(m => 
+    m.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    m.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredBannedMembers = bannedMembers.filter(m => 
     m.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     m.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -119,18 +175,38 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
     <div className="w-full bg-white/5 border rounded-2xl p-4 md:p-6 mt-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h3 className="text-xl font-bold">Thành viên ({members.length})</h3>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <Input 
-            placeholder="Tìm kiếm thành viên..." 
-            className="pl-9 bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex gap-4">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Input 
+              placeholder="Tìm kiếm thành viên..." 
+              className="pl-9 bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+      {(currentUserRole === 'ADMIN' || currentUserRole === 'MODERATOR') && (
+        <div className="flex gap-4 border-b border-zinc-200 dark:border-zinc-800 mb-6">
+          <button
+            onClick={() => setActiveTab("active")}
+            className={`pb-3 font-semibold px-2 transition-colors ${activeTab === "active" ? "border-b-2 border-primary text-primary" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"}`}
+          >
+            Đang hoạt động
+          </button>
+          <button
+            onClick={() => setActiveTab("banned")}
+            className={`pb-3 font-semibold px-2 transition-colors ${activeTab === "banned" ? "border-b-2 border-red-500 text-red-500" : "text-zinc-500 hover:text-red-400"}`}
+          >
+            Đã chặn
+          </button>
+        </div>
+      )}
+
+      {activeTab === "active" ? (
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
         {isLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>
         ) : isForbidden ? (
@@ -212,12 +288,96 @@ export function GroupMembersTab({ groupId, currentUserRole }) {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                  
+                  {/* Ban Button */}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                        title="Chặn khỏi nhóm"
+                      >
+                        <ShieldBan className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Chặn khỏi nhóm?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Bạn có chắc chắn muốn chặn <b>{member.fullName}</b> khỏi nhóm này không? Họ sẽ bị xóa khỏi nhóm và không thể tìm thấy hoặc tham gia lại nhóm.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleBanMember(member.userId)} className="bg-red-500 hover:bg-red-600 text-white">Xác nhận chặn</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               )}
             </div>
           ))
         )}
       </div>
+      ) : (
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+          {isLoadingBanned ? (
+            <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>
+          ) : filteredBannedMembers.length === 0 ? (
+            <div className="text-center text-zinc-500 py-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl">
+              Không có thành viên nào bị chặn.
+            </div>
+          ) : (
+            filteredBannedMembers.map((member) => (
+              <div key={member.userId} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-red-50 dark:bg-red-950/20 rounded-xl transition-colors gap-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-12 h-12 border border-red-200">
+                    <AvatarImage src={member.avatarUrl} style={{ objectFit: "cover" }} />
+                    <AvatarFallback>{member.fullName?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <UserHoverCard username={member.username}>
+                        <p className="font-bold text-base cursor-pointer text-red-700 dark:text-red-400 hover:underline">{member.fullName}</p>
+                      </UserHoverCard>
+                      <Badge variant="destructive">Đã chặn</Badge>
+                    </div>
+                    <p className="text-sm text-red-500/70">@{member.username}</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 self-start sm:self-auto">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-zinc-700 border-zinc-300 hover:bg-zinc-100 dark:text-zinc-300 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                      >
+                        <Undo2 className="w-4 h-4 mr-2" />
+                        Gỡ chặn
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Gỡ chặn thành viên?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Bạn có chắc chắn muốn gỡ chặn <b>{member.fullName}</b> không? Họ sẽ có thể tìm thấy nhóm và gửi yêu cầu tham gia lại.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleUnbanMember(member.userId)} className="bg-zinc-900 hover:bg-zinc-800 text-white">Xác nhận gỡ chặn</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

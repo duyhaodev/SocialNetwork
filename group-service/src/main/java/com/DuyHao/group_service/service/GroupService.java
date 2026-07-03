@@ -94,6 +94,9 @@ public class GroupService {
 
         Optional<GroupMember> existingMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId);
         if (existingMember.isPresent()) {
+            if ("BANNED".equals(existingMember.get().getRole())) {
+                throw new RuntimeException("Bạn đã bị chặn khỏi nhóm này");
+            }
             throw new RuntimeException("Already a member or pending");
         }
 
@@ -228,7 +231,7 @@ public class GroupService {
         }
 
         return groupMemberRepository.findByGroupId(groupId).stream()
-                .filter(m -> !m.getRole().equals("PENDING"))
+                .filter(m -> m.getRole().equals("ADMIN") || m.getRole().equals("MODERATOR") || m.getRole().equals("MEMBER"))
                 .map(m -> new GroupMemberResponse(m.getUserId(), m.getRole()))
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -318,5 +321,64 @@ public class GroupService {
         
         groupRuleRepository.saveAll(rulesToSave);
         return getGroupRules(groupId);
+    }
+
+    @Transactional
+    public void banMember(String groupId, String targetUserId, String currentUserId) {
+        GroupMember currentMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("No permission"));
+        
+        GroupMember targetMember = groupMemberRepository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new RuntimeException("Target member not found"));
+        
+        String curRole = currentMember.getRole();
+        String tarRole = targetMember.getRole();
+
+        if (!curRole.equals("ADMIN") && !curRole.equals("MODERATOR")) {
+            throw new RuntimeException("No permission to ban");
+        }
+
+        if (curRole.equals("MODERATOR") && (tarRole.equals("ADMIN") || tarRole.equals("MODERATOR"))) {
+            throw new RuntimeException("Moderator cannot ban Admin or another Moderator");
+        }
+
+        if (curRole.equals("ADMIN") && tarRole.equals("ADMIN")) {
+            throw new RuntimeException("Admin cannot ban another Admin");
+        }
+
+        targetMember.setRole("BANNED");
+        groupMemberRepository.save(targetMember);
+    }
+
+    @Transactional
+    public void unbanMember(String groupId, String targetUserId, String currentUserId) {
+        GroupMember currentMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("No permission"));
+        
+        if (!currentMember.getRole().equals("ADMIN") && !currentMember.getRole().equals("MODERATOR")) {
+            throw new RuntimeException("No permission to unban");
+        }
+
+        GroupMember targetMember = groupMemberRepository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new RuntimeException("Target member not found"));
+        
+        if (!targetMember.getRole().equals("BANNED")) {
+            throw new RuntimeException("Target user is not banned");
+        }
+
+        // Remove the ban by deleting the member record, allowing them to join again
+        groupMemberRepository.delete(targetMember);
+    }
+
+    public java.util.List<GroupMemberResponse> getBannedMembers(String groupId, String currentUserId) {
+        GroupMember currentMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("No permission"));
+        if (!currentMember.getRole().equals("ADMIN") && !currentMember.getRole().equals("MODERATOR")) {
+            throw new RuntimeException("No permission");
+        }
+
+        return groupMemberRepository.findByGroupIdAndRole(groupId, "BANNED").stream()
+                .map(m -> new GroupMemberResponse(m.getUserId(), m.getRole()))
+                .collect(java.util.stream.Collectors.toList());
     }
 }

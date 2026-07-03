@@ -212,4 +212,11 @@ public class PostController {
         postService.updatePostStatus(postId, status, reason, userId);
         return ApiResponse.<Void>builder().message("Status updated").build();
     }
+
+    @PutMapping("/posts/{postId}/pin")
+    public ApiResponse<Void> pinPost(@PathVariable String postId, @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        postService.pinPost(postId, userId);
+        return ApiResponse.<Void>builder().message("Post pinned status toggled").build();
+    }
 }
