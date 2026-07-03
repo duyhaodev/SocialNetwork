@@ -390,8 +390,7 @@ export function GroupDetailPage() {
               <TabsContent value="members" className="m-0 focus-visible:outline-none">
                 <GroupMembersTab 
                   groupId={groupId} 
-                  groupOwnerId={null} 
-                  isAdmin={group.currentUserRole === 'ADMIN'}
+                  currentUserRole={group.currentUserRole}
                 />
               </TabsContent>
 
