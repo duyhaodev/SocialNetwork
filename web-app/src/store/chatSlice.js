@@ -1,6 +1,22 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { messageApi } from "../api/messageApi";
 
+// Persist muted conversations to localStorage
+const MUTED_CONVS_KEY = "muted_conversation_ids";
+const loadMutedConvs = () => {
+  try {
+    const raw = localStorage.getItem(MUTED_CONVS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+const saveMutedConvs = (ids) => {
+  try {
+    localStorage.setItem(MUTED_CONVS_KEY, JSON.stringify(ids));
+  } catch {}
+};
+
 // Async thunk to fetch conversations
 export const fetchConversations = createAsyncThunk(
   "chat/fetchConversations",
@@ -45,10 +61,11 @@ const chatSlice = createSlice({
     isFetched: false,
     error: null,
     selectedConversationId: null,
-    latestMessage: null, // Track the newest incoming message object
-    latestRevokedMessage: null, // Track the newest revoked message object
-    latestEditedMessage: null, // Track the newest edited message object
-    latestReactionUpdate: null, // Track the newest reaction update object
+    latestMessage: null,
+    latestRevokedMessage: null,
+    latestEditedMessage: null,
+    latestReactionUpdate: null,
+    mutedConversationIds: loadMutedConvs(), // persisted — tắt tiếng âm thanh cho conversation
   },
   reducers: {
     // Action to handle incoming socket message
@@ -148,7 +165,20 @@ const chatSlice = createSlice({
                 conversationAvatar: avatarUrl
             };
         }
-    }
+    },
+
+    // Toggle tắt tiếng âm thanh cho 1 conversation — không ảnh hưởng unread/chấm xanh
+    toggleMuteConversation: (state, action) => {
+      const conversationId = action.payload;
+      if (!conversationId) return;
+      const idx = state.mutedConversationIds.indexOf(conversationId);
+      if (idx === -1) {
+        state.mutedConversationIds.push(conversationId);
+      } else {
+        state.mutedConversationIds.splice(idx, 1);
+      }
+      saveMutedConvs(state.mutedConversationIds);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -178,5 +208,8 @@ const chatSlice = createSlice({
   },
 });
 
-export const { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, receiveReactionUpdate, setConversationReadLocal, addNewConversation, removeConversation, updateConversationAvatar } = chatSlice.actions;
+export const { receiveSocketMessage, receiveRevokeMessage, receiveEditMessage, receiveReactionUpdate, setConversationReadLocal, addNewConversation, removeConversation, updateConversationAvatar, toggleMuteConversation } = chatSlice.actions;
+export const selectMutedConversationIds = (state) => state.chat.mutedConversationIds;
+export const selectIsConversationMuted = (conversationId) => (state) =>
+  state.chat.mutedConversationIds.includes(conversationId);
 export default chatSlice.reducer;

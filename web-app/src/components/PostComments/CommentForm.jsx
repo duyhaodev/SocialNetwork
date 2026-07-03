@@ -20,6 +20,9 @@ export default function CommentForm({
 }) {
   const [commentContent, setCommentContent] = useState("");
   const [commentFiles, setCommentFiles] = useState([]);
+  const [localSubmitting, setLocalSubmitting] = useState(false);
+
+  const isPosting = submitting || localSubmitting;
 
   /* ================= CLEANUP PREVIEW ================= */
 
@@ -89,11 +92,10 @@ export default function CommentForm({
     return;
   }
 
-  // Chuyển mảng object files hiện tại thành mảng File thuần túy
   const filesOnly = commentFiles.map(m => m.file);
 
+  setLocalSubmitting(true);
   try {
-    // Gửi Object sạch lên cho cha xử lý upload
     await onSubmit({
       content: commentContent,
       files: filesOnly
@@ -103,9 +105,23 @@ export default function CommentForm({
     setCommentContent("");
     handleRemoveAll();
   } catch (error) {
-    // Lỗi thì giữ nguyên text cho người dùng sửa
+    // Bỏ qua lỗi moderation — đã xử lý bằng warning dialog
+    if (error?.message === "__moderation__") return;
+    // Lỗi thật → giữ nguyên text cho người dùng sửa
+  } finally {
+    setLocalSubmitting(false);
   }
 };
+
+  // Enter → submit (Shift+Enter → xuống dòng)
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!isPosting && (commentContent.trim() || commentFiles.length > 0)) {
+        handleSubmit(e);
+      }
+    }
+  };
 
   /* ================= DRAG SCROLL PREVIEW ================= */
 
@@ -192,6 +208,7 @@ export default function CommentForm({
                   }
                   value={commentContent}
                   onChange={(e) => setCommentContent(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   autoFocus={isReply}
                   className="
                     min-h-[40px]
@@ -336,10 +353,10 @@ export default function CommentForm({
                   <Button
                     type="submit"
                     size="sm"
-                    disabled={submitting}
+                    disabled={isPosting}
                     className="h-7 px-4 text-[12px] rounded-full"
                   >
-                    {submitting ? (
+                    {isPosting ? (
                       <><Loader2 className="w-3 h-3 animate-spin mr-1" />Posting...</>
                     ) : "Post"}
                   </Button>

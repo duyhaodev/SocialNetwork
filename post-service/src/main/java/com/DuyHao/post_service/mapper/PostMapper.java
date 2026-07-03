@@ -46,6 +46,7 @@ public class PostMapper {
                 .originalUsername(originalUser != null ? originalUser.getUsername() : null)
                 .originalFullName(originalUser != null ? originalUser.getFullName() : null)
                 .originalAvatarUrl(originalUser != null ? originalUser.getAvatarUrl() : null)
+                .isAiGenerated(Boolean.TRUE.equals(post.getIsAiGenerated()))
                 .build();
     }
 }

@@ -21,3 +21,22 @@
 .chat-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 999px; }
 .chat-scroll::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
 .chat-scroll { scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+
+/* Streak fire animation — CSS-only, GPU accelerated */
+@keyframes streak-fire {
+  0%   { transform: scale(1)    rotate(0deg);   filter: drop-shadow(0 0 4px rgba(251,146,60,0.6)); }
+  20%  { transform: scale(1.2)  rotate(-7deg);  filter: drop-shadow(0 0 8px rgba(251,146,60,1)) drop-shadow(0 0 14px rgba(251,100,0,0.7)); }
+  50%  { transform: scale(1.15) rotate(7deg);   filter: drop-shadow(0 0 11px rgba(251,146,60,1)) drop-shadow(0 0 20px rgba(251,100,0,0.8)); }
+  80%  { transform: scale(1.2)  rotate(-5deg);  filter: drop-shadow(0 0 8px rgba(251,146,60,1)) drop-shadow(0 0 14px rgba(251,100,0,0.7)); }
+  100% { transform: scale(1)    rotate(0deg);   filter: drop-shadow(0 0 4px rgba(251,146,60,0.6)); }
+}
+
+.streak-fire {
+  display: inline-block;
+  animation: streak-fire 2.2s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+.streak-count {
+  display: inline-block;
+}

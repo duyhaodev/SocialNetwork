@@ -16,4 +16,5 @@ public class PostCreateRequest {
     private String groupId;
     private List<String> tags;
     List<String> mediaIds;
+    private Boolean isAiGenerated; // true nếu ảnh do AI tạo ra
 }

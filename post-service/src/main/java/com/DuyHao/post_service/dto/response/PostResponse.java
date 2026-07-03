@@ -41,4 +41,7 @@ public class PostResponse {
     private String originalUsername;
     private String originalFullName;
     private String originalAvatarUrl;
+
+    // AI generated flag — true nếu bài đăng chứa ảnh do AI tạo ra
+    private Boolean isAiGenerated;
 }

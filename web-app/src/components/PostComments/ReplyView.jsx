@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Heart } from "lucide-react";
+import { Heart, Trash2, MoreHorizontal } from "lucide-react";
 import { fetchReplies, selectRepliesByCommentId, selectRepliesLoadingByCommentId } from "@/store/commentsSlice";
 import CommentForm from "./CommentForm";
 import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -43,14 +47,20 @@ function flattenToMaxDepth(nodes, currentDepth, MAX_DEPTH) {
 function ReplyNode({
   node, depth, isLast,
   onProfileClick, avatarUrl, fullName,
-  submittingComment, handleCreateReply, handleToggleLikeComment,
+  submittingComment, isPostingAnyway, handleCreateReply, handleToggleLikeComment,
+  handleDeleteComment, currentUserId, profileUsername,
   rootCommentId, dispatch, formatTimeAgo,
   buildMediaUrl, openViewerForComment, handleDragStart, handleDragMove, hasDraggedRef,
 }) {
   const [replyTo, setReplyTo] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="flex gap-0">
+    <div
+      className="flex gap-0"
+      onMouseOver={(e) => { e.stopPropagation(); setIsHovered(true); }}
+      onMouseOut={(e) => { e.stopPropagation(); setIsHovered(false); }}
+    >
       {/* Đường kẻ dọc + cong */}
       <div className="flex flex-col" style={{ width: 36, minWidth: 36 }}>
         <div
@@ -73,7 +83,7 @@ function ReplyNode({
             <AvatarFallback className="text-xs">{node.fullName?.[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
 
-          <div className="flex-1 space-y-0.5">
+          <div className="flex-1 space-y-0.5 relative">
             {/* Tên + thời gian */}
             <div className="flex items-baseline gap-2">
               <span
@@ -86,6 +96,38 @@ function ReplyNode({
               </span>
               <span className="text-xs text-muted-foreground">· {formatTimeAgo(node.createdAt)}</span>
             </div>
+
+            {/* Dropdown menu — absolute, chỉ hiện khi hover */}
+            {(node.userId === currentUserId || node.username === profileUsername) && (
+              <div className={`absolute top-0 right-0 transition-opacity ${isHovered ? "opacity-100" : "opacity-0"}`}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-44 bg-card/95 border border-border/50 text-[14px] font-semibold p-1 rounded-xl shadow-lg backdrop-blur-md"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DropdownMenuItem
+                      className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-md px-3 py-2"
+                      onClick={() => handleDeleteComment(node.id)}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <span className="text-red-500">Delete comment</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
 
             {/* Nội dung text */}
             <p className="text-sm">{node.content}</p>
@@ -151,7 +193,7 @@ function ReplyNode({
                   avatarUrl={avatarUrl}
                   fullName={fullName}
                   placeholder={`Reply to ${node.fullName}...`}
-                  submitting={submittingComment}
+                  submitting={submittingComment || isPostingAnyway}
                   onSubmit={async (data) => {
                     await handleCreateReply(node.id)(data);
                     setReplyTo(null);
@@ -175,8 +217,12 @@ function ReplyNode({
                     avatarUrl={avatarUrl}
                     fullName={fullName}
                     submittingComment={submittingComment}
+                    isPostingAnyway={isPostingAnyway}
                     handleCreateReply={handleCreateReply}
                     handleToggleLikeComment={handleToggleLikeComment}
+                    handleDeleteComment={handleDeleteComment}
+                    currentUserId={currentUserId}
+                    profileUsername={profileUsername}
                     rootCommentId={rootCommentId}
                     dispatch={dispatch}
                     formatTimeAgo={formatTimeAgo}
@@ -201,7 +247,8 @@ function ReplyNode({
 // Component chính — nhận commentId, fetch thread, build cây, render
 export function ReplyView({
   commentId, onProfileClick, avatarUrl, fullName,
-  submittingComment, handleCreateReply, handleToggleLikeComment,
+  submittingComment, isPostingAnyway, handleCreateReply, handleToggleLikeComment,
+  handleDeleteComment, currentUserId, profileUsername,
   buildMediaUrl, openViewerForComment, handleDragStart, handleDragMove, hasDraggedRef,
   formatTimeAgo,
 }) {
@@ -229,8 +276,12 @@ export function ReplyView({
           avatarUrl={avatarUrl}
           fullName={fullName}
           submittingComment={submittingComment}
+          isPostingAnyway={isPostingAnyway}
           handleCreateReply={handleCreateReply}
           handleToggleLikeComment={handleToggleLikeComment}
+          handleDeleteComment={handleDeleteComment}
+          currentUserId={currentUserId}
+          profileUsername={profileUsername}
           rootCommentId={commentId}
           dispatch={dispatch}
           formatTimeAgo={formatTimeAgo}

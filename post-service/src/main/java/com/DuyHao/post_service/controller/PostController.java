@@ -40,7 +40,8 @@ public class PostController {
                 request.getGroupId(),
                 request.getMediaIds(),
                 request.getTags(),
-                clientIp);
+                clientIp,
+                request.getIsAiGenerated());
 
         return ApiResponse.<PostResponse>builder().result(post).build();
     }

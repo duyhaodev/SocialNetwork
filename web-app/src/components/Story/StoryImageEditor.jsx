@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import MusicPicker from "./MusicPicker";
 import MusicWaveform from "./MusicWaveform";
 import mediaApi from "../../api/mediaApi";
+import aiApi from "../../api/aiApi";
+import ModerationWarning from "../ModerationWarning/ModerationWarning";
 import { toast } from "sonner";
 
 export default function StoryImageEditor({ file, onBack }) {
@@ -16,6 +18,10 @@ export default function StoryImageEditor({ file, onBack }) {
     const navigate = useNavigate();
     const currentUser = useSelector(selectUser);
     const creating = useSelector(selectStoriesCreating);
+
+    // ── Moderation ────────────────────────────────────────────
+    const [moderationResult, setModerationResult] = useState(null);
+    const [showModWarning, setShowModWarning] = useState(false);
 
     // ── Ảnh ──────────────────────────────────────────────────
     const [scale, setScale] = useState(1);
@@ -162,8 +168,40 @@ export default function StoryImageEditor({ file, onBack }) {
         resizeStart.current = { x: e.clientX, size: textSize };
     };
 
-    // ── Submit ────────────────────────────────────────────────
+    // ── Submit với kiểm duyệt ────────────────────────────────
     const handleSubmit = async () => {
+        if (!previewUrl || isSubmitting) return;
+        try {
+            const result = await aiApi.analyzeImage(file);
+            const nsfw = result?.nsfw;
+            if (nsfw && !nsfw.is_safe) {
+                const severity = nsfw.severity;
+                const warningLevel = severity === "mild" ? "mild" : severity === "moderate" ? "moderate" : "severe";
+                setModerationResult({
+                    warning_level: warningLevel,
+                    message: warningLevel === "mild"
+                        ? "Your story image contains mildly suggestive content."
+                        : "Your story image contains content that violates community guidelines.",
+                    flagged_items: [{
+                        word: "Story image",
+                        category: "adult_content",
+                        category_label: `Sensitive content (${nsfw.label}) · ${Math.round(nsfw.confidence * 100)}% confidence`,
+                    }],
+                    suggestion: warningLevel === "mild"
+                        ? "You may still post, but the image may be flagged for review."
+                        : "Please select a different image before posting.",
+                });
+                setShowModWarning(true);
+                return;
+            }
+        } catch {
+            // AI service lỗi → bỏ qua
+        }
+        doSubmitAfterModeration();
+    };
+
+    // ── Submit thực tế (bỏ qua moderation) ──────────────────
+    const doSubmitAfterModeration = () => {
         if (!previewUrl || isSubmitting) return;
         setIsSubmitting(true);
 
@@ -280,6 +318,7 @@ export default function StoryImageEditor({ file, onBack }) {
     };
 
     return (
+        <>
         <div className="fixed inset-0 z-50 flex" style={{ backgroundColor: "#000" }}>
             {/* Sidebar */}
             <div className="w-72 bg-[#111] border-r border-[#1a1a1a] flex flex-col flex-shrink-0">
@@ -571,5 +610,19 @@ export default function StoryImageEditor({ file, onBack }) {
                 />
             )}
         </div>
+
+        {/* Moderation Warning cho story */}
+        <ModerationWarning
+            open={showModWarning}
+            result={moderationResult}
+            onClose={() => setShowModWarning(false)}
+            onPostAnyway={() => {
+                setShowModWarning(false);
+                setModerationResult(null);
+                // Chạy lại submit nhưng bỏ qua kiểm duyệt
+                doSubmitAfterModeration();
+            }}
+        />
+    </>
     );
 }

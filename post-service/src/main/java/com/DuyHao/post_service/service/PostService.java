@@ -45,7 +45,8 @@ public class PostService {
             String groupId,
             List<String> mediaIds,
             List<String> tags,
-            String clientIp) {
+            String clientIp,
+            Boolean isAiGenerated) {
         UserResponse user = userClient.getUser(userId);
 
         // Resolve city từ IP
@@ -127,6 +128,7 @@ public class PostService {
                 .city(city)
                 .groupId(groupId)
                 .status(status)
+                .isAiGenerated(Boolean.TRUE.equals(isAiGenerated))
                 .createdAt(LocalDateTime.now())
                 .build();
 
