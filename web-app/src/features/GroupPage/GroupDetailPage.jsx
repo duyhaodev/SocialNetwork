@@ -11,11 +11,12 @@ import { PostCard } from "@/components/PostCard/PostCard";
 import CreatePost from "@/components/CreatePost/CreatePost";
 import { PendingMembersModal } from "./components/PendingMembersModal";
 import { EditGroupModal } from "./components/EditGroupModal";
-import { Users, Plus, LogOut, Settings } from "lucide-react";
+import { Users, Plus, LogOut, Settings, Search } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GroupMembersTab } from "./components/GroupMembersTab";
 import { GroupRulesTab } from "./components/GroupRulesTab";
+import { GroupReportsTab } from "./components/GroupReportsTab";
 import { JoinGroupRulesModal } from "./components/JoinGroupRulesModal";
 import { RejectPostModal } from "./components/RejectPostModal";
 import { motion } from "framer-motion";
@@ -46,6 +47,9 @@ export function GroupDetailPage() {
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
   const [postToReject, setPostToReject] = useState(null);
   const [activeTab, setActiveTab] = useState("feed");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
   const currentUser = useSelector((s) => s.user.profile) ?? {};
 
   const fetchGroupDetails = async () => {
@@ -102,6 +106,13 @@ export function GroupDetailPage() {
     Promise.all([fetchGroupDetails(), fetchGroupPosts(), fetchPendingPosts(), fetchPendingMembers()]).finally(() => {
       setLoading(false);
     });
+
+    const handleGroupListChanged = () => {
+      fetchGroupDetails();
+    };
+
+    window.addEventListener('groupListChanged', handleGroupListChanged);
+    return () => window.removeEventListener('groupListChanged', handleGroupListChanged);
   }, [groupId]);
 
   useEffect(() => {
@@ -109,6 +120,19 @@ export function GroupDetailPage() {
       fetchPendingPosts();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.trim()) {
+        executeSearch(searchQuery);
+      } else if (searchQuery === "") {
+        setIsSearching(false);
+        setSearchResults([]);
+      }
+    }, 3000);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, groupId]);
 
   const handleJoinGroup = async () => {
     try {
@@ -156,7 +180,7 @@ export function GroupDetailPage() {
     navigate(`/post/${postId}`);
   };
 
-  const handleApprovePost = async (postId, status, reason = null) => {
+  const handleApprovePost = async (postId, status = "APPROVED", reason = null) => {
     try {
       await postApi.updatePostStatus(postId, status, reason);
       toast.success(status === 'APPROVED' ? "Phê duyệt bài viết thành công!" : "Đã từ chối bài viết!");
@@ -164,10 +188,47 @@ export function GroupDetailPage() {
       if (status === 'APPROVED') {
         fetchGroupPosts();
       }
-      setPostToReject(null);
     } catch (error) {
       toast.error("Lỗi cập nhật trạng thái");
     }
+  };
+
+  const handleRejectPostSubmit = async (reason) => {
+    try {
+      await postApi.updatePostStatus(postToReject.id ?? postToReject.postId, "REJECTED", reason);
+      toast.success("Đã từ chối bài viết");
+      setPostToReject(null);
+      fetchPendingPosts();
+    } catch (error) {
+      toast.error("Lỗi khi từ chối bài viết");
+    }
+  };
+
+  const executeSearch = async (query) => {
+    setIsSearching(true);
+    try {
+      const res = await postApi.searchGroupPosts(groupId, query);
+      if (res.code === 1000) {
+        setSearchResults(res.result || []);
+      }
+    } catch (error) {
+      toast.error("Lỗi khi tìm kiếm bài viết");
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) {
+      handleClearSearch();
+      return;
+    }
+    executeSearch(searchQuery);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setIsSearching(false);
+    setSearchResults([]);
   };
 
   const handleLeaveGroup = async () => {
@@ -176,7 +237,9 @@ export function GroupDetailPage() {
       if (res.code === 1000) {
         toast.success("Đã rời nhóm thành công!");
         window.dispatchEvent(new Event('groupListChanged'));
-        fetchGroupDetails();
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi khi rời nhóm");
@@ -322,57 +385,25 @@ export function GroupDetailPage() {
       <div className="px-4 md:px-8 mt-4 border-t pt-4">
         {(() => {
           const isAdminOrMod = group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR';
-          const colsClass = isAdminOrMod ? "grid-cols-4" : "grid-cols-3";
-          const indicatorWidth = isAdminOrMod ? "w-[calc(25%-4px)]" : "w-[calc(33.333%-4px)]";
           
-          let xValue = "0";
-          if (activeTab === "members") {
-            xValue = "100%";
-          } else if (activeTab === "rules") {
-            xValue = "200%";
-          } else if (activeTab === "pending") {
-            xValue = "300%";
-          }
-
           return (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex justify-center w-full border-b border-border/20 py-2.5 bg-background/30 backdrop-blur-sm sticky top-14 z-10 px-4 mb-4">
-                <TabsList className={`bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[600px] grid ${colsClass} relative overflow-hidden`}>
-                  <TabsTrigger
-                    value="feed"
-                    className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
-                  >
-                    Bảng tin
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="members"
-                    className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
-                  >
-                    Thành viên
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="rules"
-                    className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
-                  >
-                    Nội quy
-                  </TabsTrigger>
+                <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[600px] flex gap-1">
+                  <TabsTrigger value="feed" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Bảng tin</TabsTrigger>
+                  <TabsTrigger value="members" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Thành viên</TabsTrigger>
+                  <TabsTrigger value="rules" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Nội quy</TabsTrigger>
                   {isAdminOrMod && (
+                    <TabsTrigger value="pending" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Chờ duyệt</TabsTrigger>
+                  )}
+                  {(group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR') && (
                     <TabsTrigger
-                      value="pending"
-                      className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
+                      value="reports"
+                      className="px-6 py-2.5 rounded-full data-[state=active]:bg-foreground data-[state=active]:text-background transition-all"
                     >
-                      Chờ duyệt {pendingPosts.length > 0 && `(${pendingPosts.length})`}
+                      <Shield className="w-4 h-4 mr-2" /> Báo cáo
                     </TabsTrigger>
                   )}
-
-                  {/* Sliding Indicator background pill */}
-                  <div className={`absolute inset-1 ${indicatorWidth} h-[calc(100%-8px)] pointer-events-none z-0`}>
-                    <motion.div
-                      className="w-full h-full bg-foreground rounded-full shadow-sm"
-                      animate={{ x: xValue }}
-                      transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                    />
-                  </div>
                 </TabsList>
               </div>
 
@@ -396,19 +427,63 @@ export function GroupDetailPage() {
                         />
                       </div>
                     )}
-                    {posts.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">Chưa có bài viết nào.</div>
-                    ) : (
-                      posts.map((post) => (
-                        <PostCard 
-                          key={post.id} 
-                          post={post} 
-                          isGroupAdminOrMod={group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR'}
-                          onPinToggle={() => fetchGroupPosts()}
-                          onProfileClick={handleProfileClick}
-                          onPostClick={handlePostClick}
+                    
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} className="relative w-full">
+                      <div className="relative flex items-center">
+                        <Search className="absolute left-4 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Tìm kiếm bài viết trong nhóm..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full h-12 pl-12 pr-12 rounded-full border border-border/60 bg-muted/30 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300 outline-none"
                         />
-                      ))
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={handleClearSearch}
+                            className="absolute right-4 p-1 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </form>
+
+                    {isSearching ? (
+                      searchResults.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-8">Không tìm thấy bài viết nào phù hợp.</div>
+                      ) : (
+                        searchResults.map((post) => (
+                          <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            isGroupAdminOrMod={group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR'}
+                            onPinToggle={() => {
+                              fetchGroupPosts();
+                              handleSearch(new Event('submit'));
+                            }}
+                            onProfileClick={handleProfileClick}
+                            onPostClick={handlePostClick}
+                          />
+                        ))
+                      )
+                    ) : (
+                      posts.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-8">Chưa có bài viết nào.</div>
+                      ) : (
+                        posts.map((post) => (
+                          <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            isGroupAdminOrMod={group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR'}
+                            onPinToggle={() => fetchGroupPosts()}
+                            onProfileClick={handleProfileClick}
+                            onPostClick={handlePostClick}
+                          />
+                        ))
+                      )
                     )}
                   </div>
                 )}
@@ -430,30 +505,68 @@ export function GroupDetailPage() {
               </TabsContent>
 
               {isAdminOrMod && (
-                <TabsContent value="pending" className="m-0 focus-visible:outline-none">
+                <TabsContent value="pending" className="mt-6 border-none focus:outline-none">
                   <div className="space-y-4">
-                    {pendingPosts.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-8">Không có bài viết chờ duyệt.</div>
-                    ) : (
-                      pendingPosts.map((post) => (
-                        <div key={post.id} className="relative">
-                          <PostCard 
-                            post={post} 
-                            onProfileClick={handleProfileClick}
-                            onPostClick={handlePostClick}
-                          />
-                          <div className="absolute top-4 right-4 flex gap-2">
-                            <Button size="sm" onClick={() => handleApprovePost(post.id, 'APPROVED')} className="bg-green-500 hover:bg-green-600 text-white gap-1">
-                              <Check className="w-4 h-4"/> Duyệt
+                    {pendingPosts.length > 0 ? (
+                      pendingPosts.map(post => (
+                        <div key={post.id} className="border border-border/60 rounded-xl overflow-hidden bg-card shadow-sm">
+                          <div className="bg-yellow-500/10 border-b border-yellow-500/20 p-3 flex items-center justify-between">
+                            <span className="text-yellow-600 font-medium text-sm flex items-center gap-2">
+                              <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                              </span>
+                              Đang chờ phê duyệt
+                            </span>
+                          </div>
+                          
+                          <div className="p-0 opacity-80 pointer-events-none">
+                            <PostCard post={post} />
+                          </div>
+                          
+                          <div className="p-3 border-t border-border/40 bg-muted/20 flex items-center justify-end gap-3 pointer-events-auto">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setPostToReject(post);
+                                setShowRejectModal(true);
+                              }}
+                            >
+                              Từ chối
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => setPostToReject(post)} className="gap-1">
-                              <X className="w-4 h-4"/> Từ chối
+                            <Button 
+                              size="sm" 
+                              className="bg-green-500 hover:bg-green-600 text-white gap-2"
+                              onClick={() => handleApprovePost(post.id ?? post.postId)}
+                            >
+                              <Check className="w-4 h-4" /> Phê duyệt
                             </Button>
                           </div>
                         </div>
                       ))
+                    ) : (
+                      <div className="text-center p-8 border border-dashed rounded-xl text-muted-foreground bg-muted/10">
+                        <Check className="w-12 h-12 mx-auto text-green-500/50 mb-3" />
+                        <h3 className="font-medium text-foreground mb-1">Không có bài viết chờ duyệt</h3>
+                        <p className="text-sm">Tất cả các bài viết đã được xử lý</p>
+                      </div>
                     )}
                   </div>
+                </TabsContent>
+              )}
+
+              {group.currentUserRole === 'ADMIN' && (
+                <TabsContent value="settings" className="mt-6 border-none focus:outline-none">
+                  <div className="p-8 text-center text-muted-foreground border rounded-lg">
+                    Cài đặt nhóm sẽ sớm ra mắt...
+                  </div>
+                </TabsContent>
+              )}
+
+              {(group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR') && (
+                <TabsContent value="reports" className="mt-6 border-none focus:outline-none">
+                  <GroupReportsTab groupId={groupId} />
                 </TabsContent>
               )}
             </Tabs>

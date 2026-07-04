@@ -112,6 +112,12 @@ const postApi = {
     });
   },
 
+  searchGroupPosts(groupId, keyword, { page = 0, size = 20 } = {}) {
+    return axiosClient.get(`/post/posts/group/${groupId}/search`, {
+      params: { keyword, page, size }
+    });
+  },
+
   updatePostStatus(postId, status, reason = null) {
     const params = { status };
     if (reason) params.reason = reason;

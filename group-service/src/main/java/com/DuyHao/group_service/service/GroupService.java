@@ -12,6 +12,10 @@ import com.DuyHao.group_service.repository.GroupRuleRepository;
 import com.DuyHao.group_service.dto.response.GroupRuleDto;
 import com.DuyHao.group_service.dto.request.GroupRuleUpdateRequest;
 import com.DuyHao.group_service.entity.GroupRule;
+import com.DuyHao.group_service.entity.GroupReport;
+import com.DuyHao.group_service.repository.GroupReportRepository;
+import com.DuyHao.group_service.dto.request.GroupReportRequest;
+import com.DuyHao.group_service.dto.response.GroupReportResponse;
 import com.DuyHao.group_service.client.NotificationClient;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +33,7 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final GroupRuleRepository groupRuleRepository;
+    private final GroupReportRepository groupReportRepository;
     private final GroupMapper groupMapper;
     private final NotificationClient notificationClient;
 
@@ -380,5 +385,75 @@ public class GroupService {
         return groupMemberRepository.findByGroupIdAndRole(groupId, "BANNED").stream()
                 .map(m -> new GroupMemberResponse(m.getUserId(), m.getRole()))
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Transactional
+    public GroupReportResponse createReport(String groupId, GroupReportRequest request, String currentUserId) {
+        // Validate member
+        groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("Chỉ thành viên nhóm mới có quyền báo cáo"));
+
+        GroupReport report = GroupReport.builder()
+                .groupId(groupId)
+                .reporterId(currentUserId)
+                .targetType(request.getTargetType())
+                .targetId(request.getTargetId())
+                .reason(request.getReason())
+                .build();
+        
+        GroupReport saved = groupReportRepository.save(report);
+        return mapToReportResponse(saved);
+    }
+
+    public List<GroupReportResponse> getPendingReports(String groupId, String currentUserId) {
+        GroupMember currentMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("No permission"));
+        if (!currentMember.getRole().equals("ADMIN") && !currentMember.getRole().equals("MODERATOR")) {
+            throw new RuntimeException("No permission");
+        }
+
+        return groupReportRepository.findByGroupIdAndStatusOrderByCreatedAtDesc(groupId, "PENDING")
+                .stream().map(this::mapToReportResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateReportStatus(String groupId, String reportId, String status, String currentUserId) {
+        GroupMember currentMember = groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("No permission"));
+        if (!currentMember.getRole().equals("ADMIN") && !currentMember.getRole().equals("MODERATOR")) {
+            throw new RuntimeException("No permission");
+        }
+
+        GroupReport report = groupReportRepository.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("Report not found"));
+        
+        if (!report.getGroupId().equals(groupId)) {
+            throw new RuntimeException("Report not found in this group");
+        }
+
+        report.setStatus(status);
+        groupReportRepository.save(report);
+    }
+
+    @Transactional
+    public void updateReportStatusWithNotify(String groupId, String reportId, String status, String currentUserId, String notifyUserId, String reason) {
+        updateReportStatus(groupId, reportId, status, currentUserId);
+        if (notifyUserId != null) {
+            notificationClient.groupPostReportDeleted(notifyUserId, currentUserId, groupId, reason);
+        }
+    }
+
+    private GroupReportResponse mapToReportResponse(GroupReport report) {
+        return GroupReportResponse.builder()
+                .id(report.getId())
+                .groupId(report.getGroupId())
+                .reporterId(report.getReporterId())
+                .targetType(report.getTargetType())
+                .targetId(report.getTargetId())
+                .reason(report.getReason())
+                .status(report.getStatus())
+                .createdAt(report.getCreatedAt())
+                .build();
     }
 }

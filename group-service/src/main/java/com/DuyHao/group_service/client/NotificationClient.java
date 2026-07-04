@@ -21,4 +21,11 @@ public interface NotificationClient {
             @RequestParam("receiverId") String receiverId,
             @RequestParam("senderId") String senderId,
             @RequestParam("groupId") String groupId);
+
+    @PostMapping("/group-post-report-deleted")
+    ResponseEntity<?> groupPostReportDeleted(
+            @RequestParam("receiverId") String receiverId,
+            @RequestParam("senderId") String senderId,
+            @RequestParam("groupId") String groupId,
+            @RequestParam(value = "reason", required = false) String reason);
 }

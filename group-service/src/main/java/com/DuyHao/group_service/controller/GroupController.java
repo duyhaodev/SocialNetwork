@@ -5,6 +5,8 @@ import com.DuyHao.group_service.dto.request.GroupCreateRequest;
 import com.DuyHao.group_service.dto.response.GroupMemberResponse;
 import com.DuyHao.group_service.dto.response.GroupResponse;
 import com.DuyHao.group_service.dto.request.GroupRuleUpdateRequest;
+import com.DuyHao.group_service.dto.request.GroupReportRequest;
+import com.DuyHao.group_service.dto.response.GroupReportResponse;
 import com.DuyHao.group_service.dto.response.GroupRuleDto;
 import com.DuyHao.group_service.service.GroupService;
 import lombok.RequiredArgsConstructor;
@@ -177,5 +179,41 @@ public class GroupController {
         String currentUserId = jwt.getSubject();
         java.util.List<GroupMemberResponse> bannedMembers = groupService.getBannedMembers(id, currentUserId);
         return ApiResponse.<java.util.List<GroupMemberResponse>>builder().result(bannedMembers).build();
+    }
+
+    @PostMapping("/{id}/reports")
+    public ApiResponse<GroupReportResponse> createReport(
+            @PathVariable String id,
+            @RequestBody GroupReportRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        GroupReportResponse response = groupService.createReport(id, request, currentUserId);
+        return ApiResponse.<GroupReportResponse>builder().result(response).build();
+    }
+
+    @GetMapping("/{id}/reports/pending")
+    public ApiResponse<List<GroupReportResponse>> getPendingReports(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        List<GroupReportResponse> response = groupService.getPendingReports(id, currentUserId);
+        return ApiResponse.<List<GroupReportResponse>>builder().result(response).build();
+    }
+
+    @PutMapping("/{id}/reports/{reportId}/status")
+    public ApiResponse<Void> updateReportStatus(
+            @PathVariable String id,
+            @PathVariable String reportId,
+            @RequestParam String status,
+            @RequestParam(required = false) String notifyUserId,
+            @RequestParam(required = false) String reason,
+            @AuthenticationPrincipal Jwt jwt) {
+        String currentUserId = jwt.getSubject();
+        if (notifyUserId != null) {
+            groupService.updateReportStatusWithNotify(id, reportId, status, currentUserId, notifyUserId, reason);
+        } else {
+            groupService.updateReportStatus(id, reportId, status, currentUserId);
+        }
+        return ApiResponse.<Void>builder().message("Report status updated to " + status).build();
     }
 }

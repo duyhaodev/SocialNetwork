@@ -28,6 +28,7 @@ export function PostHeader({
   reposterName,
   isGroupAdminOrMod,
   onPinToggle,
+  onReportClick,
 }) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
@@ -202,6 +203,21 @@ export function PostHeader({
                   <div className="flex items-center gap-2 w-full text-red-500">
                     <Trash2 className="w-4 h-4 text-red-500" />
                     <span className="font-medium">Delete post</span>
+                  </div>
+                </DropdownMenuItem>
+              )}
+
+              {post.groupId && !canDelete && (
+                <DropdownMenuItem
+                  className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-lg px-3 py-2 transition-colors"
+                  onClick={() => {
+                    onReportClick?.();
+                    setMoreMenuOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-2 w-full text-orange-500">
+                    <Sparkles className="w-4 h-4 text-orange-500" /> {/* Replaced with appropriate icon later, Sparkles for now or flag */}
+                    <span className="font-medium">Báo cáo vi phạm</span>
                   </div>
                 </DropdownMenuItem>
               )}

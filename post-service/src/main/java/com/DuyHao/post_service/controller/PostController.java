@@ -202,6 +202,18 @@ public class PostController {
         return ApiResponse.<List<PostResponse>>builder().result(posts).build();
     }
 
+    @GetMapping("/posts/group/{groupId}/search")
+    public ApiResponse<List<PostResponse>> searchGroupPosts(
+            @PathVariable String groupId,
+            @RequestParam("keyword") String keyword,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        List<PostResponse> posts = postService.searchGroupPosts(groupId, keyword, userId, page, size);
+        return ApiResponse.<List<PostResponse>>builder().result(posts).build();
+    }
+
     @PutMapping("/posts/{postId}/status")
     public ApiResponse<Void> updatePostStatus(
             @PathVariable String postId,

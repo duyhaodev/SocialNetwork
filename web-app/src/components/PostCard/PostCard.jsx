@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toggleRepost, syncLikeByOriginalId, deletePost } from "@/store/postsSlice";
-import { toast } from "sonner";
 
 // Import subcomponents
 import { PostHeader } from "./PostHeader";
@@ -9,8 +8,10 @@ import { PostMedia } from "./PostMedia";
 import { PostActions } from "./PostActions";
 import { PostTranslation } from "./PostTranslation";
 
-import { ImageViewer } from "../ImageViewer/ImageViewer.jsx";
+import { ImageViewer } from "../ImageViewer/ImageViewer";
 import ConfirmDeleteModal from "../Modals/ConfirmDeleteModal";
+import { ReportPostModal } from "../ReportPostModal/ReportPostModal";
+import { toast } from "sonner";
 import likeApi from "@/api/likeApi";
 import { franc } from "franc";
 import { Pin } from "lucide-react";
@@ -53,7 +54,9 @@ export function PostCard({ post, onProfileClick, onPostClick, isGroupAdminOrMod,
   // ====== STATE & MODALS ======
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+
   const [openDelete, setOpenDelete] = useState(false);
+  const [openReport, setOpenReport] = useState(false);
 
   const [isLiked, setIsLiked] = useState(post.liked ?? post.likedByCurrentUser ?? post.isLikedByCurrentUser ?? false);
   const [likes, setLikes] = useState(post.likeCount ?? 0);
@@ -209,6 +212,7 @@ export function PostCard({ post, onProfileClick, onPostClick, isGroupAdminOrMod,
         reposterName={reposterName}
         isGroupAdminOrMod={isGroupAdminOrMod}
         onPinToggle={onPinToggle}
+        onReportClick={() => setOpenReport(true)}
       />
 
       {/* Main post contents */}
@@ -272,6 +276,15 @@ export function PostCard({ post, onProfileClick, onPostClick, isGroupAdminOrMod,
         onClose={() => setOpenDelete(false)}
         onConfirm={handleDeletePost}
       />
+
+      {/* Report post modal */}
+      {openReport && (
+        <ReportPostModal
+          isOpen={openReport}
+          onClose={() => setOpenReport(false)}
+          post={post}
+        />
+      )}
     </div>
   );
 }

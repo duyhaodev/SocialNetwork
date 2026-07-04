@@ -71,6 +71,21 @@ const groupApi = {
 
   getBannedMembers(groupId) {
     return axiosClient.get(`/group/${groupId}/members/banned`);
+  },
+
+  createReport(groupId, payload) {
+    return axiosClient.post(`/group/${groupId}/reports`, payload);
+  },
+
+  getPendingReports(groupId) {
+    return axiosClient.get(`/group/${groupId}/reports/pending`);
+  },
+
+  updateReportStatus(groupId, reportId, status, notifyUserId = null, reason = null) {
+    const params = { status };
+    if (notifyUserId) params.notifyUserId = notifyUserId;
+    if (reason) params.reason = reason;
+    return axiosClient.put(`/group/${groupId}/reports/${reportId}/status`, null, { params });
   }
 };
 

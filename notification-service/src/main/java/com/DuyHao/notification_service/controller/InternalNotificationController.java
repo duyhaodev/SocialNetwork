@@ -139,4 +139,14 @@ public class InternalNotificationController {
         notificationService.createGroupPostRejectedNotification(receiverId, senderId, postId, reason);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/group-post-report-deleted")
+    public ResponseEntity<?> groupPostReportDeleted(
+            @RequestParam String receiverId,
+            @RequestParam String senderId,
+            @RequestParam String groupId,
+            @RequestParam(required = false) String reason) {
+        notificationService.createGroupPostReportDeletedNotification(receiverId, senderId, groupId, reason);
+        return ResponseEntity.ok().build();
+    }
 }

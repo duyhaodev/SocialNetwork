@@ -36,6 +36,7 @@ public class NotificationMapper {
             case "group_join_request" -> "requested to join your group";
             case "group_join_approved" -> "approved your request to join the group";
             case "group_post_rejected" -> "rejected your post in the group";
+            case "group_post_report_deleted" -> "deleted your post due to a report violation";
             default -> "did something";
         };
     }

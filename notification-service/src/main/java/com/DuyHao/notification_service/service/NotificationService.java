@@ -199,6 +199,29 @@ public class NotificationService {
         return notification;
     }
 
+    public Notification createGroupPostReportDeletedNotification(
+            String toUserId, String fromUserId, String groupId, String reason) {
+        if (Objects.equals(toUserId, fromUserId)) return null;
+
+        String baseMessage = NotificationMapper.buildMessage("group_post_report_deleted");
+        final String message =
+                (reason != null && !reason.trim().isEmpty()) ? baseMessage + ". Lỗi vi phạm: " + reason : baseMessage;
+
+        Notification notification = notificationRepo
+                .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, fromUserId, "group_post_report_deleted", null)
+                .map(n -> {
+                    n.setCreatedAt(LocalDateTime.now());
+                    n.setMessage(message);
+                    n.setIsRead(false);
+                    return notificationRepo.save(n);
+                })
+                .orElseGet(() -> notificationRepo.save(
+                        buildNotification(toUserId, fromUserId, "group_post_report_deleted", null, null, message)));
+
+        pushRealtime(notification, "new_notification");
+        return notification;
+    }
+
     private Notification buildNotification(
             String toUserId, String fromUserId, String type, String postId, String commentId, String customMessage) {
         return Notification.builder()
