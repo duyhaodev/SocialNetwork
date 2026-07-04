@@ -148,6 +148,14 @@ export function GroupDetailPage() {
     }
   };
 
+  const handleProfileClick = (username) => {
+    navigate(`/profile/${username}`);
+  };
+
+  const handlePostClick = (postId) => {
+    navigate(`/post/${postId}`);
+  };
+
   const handleApprovePost = async (postId, status, reason = null) => {
     try {
       await postApi.updatePostStatus(postId, status, reason);
@@ -397,6 +405,8 @@ export function GroupDetailPage() {
                           post={post} 
                           isGroupAdminOrMod={group.currentUserRole === 'ADMIN' || group.currentUserRole === 'MODERATOR'}
                           onPinToggle={() => fetchGroupPosts()}
+                          onProfileClick={handleProfileClick}
+                          onPostClick={handlePostClick}
                         />
                       ))
                     )}
@@ -427,7 +437,11 @@ export function GroupDetailPage() {
                     ) : (
                       pendingPosts.map((post) => (
                         <div key={post.id} className="relative">
-                          <PostCard post={post} />
+                          <PostCard 
+                            post={post} 
+                            onProfileClick={handleProfileClick}
+                            onPostClick={handlePostClick}
+                          />
                           <div className="absolute top-4 right-4 flex gap-2">
                             <Button size="sm" onClick={() => handleApprovePost(post.id, 'APPROVED')} className="bg-green-500 hover:bg-green-600 text-white gap-1">
                               <Check className="w-4 h-4"/> Duyệt
