@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { formatTimeAgo } from "@/utils/dateUtils";
 import { Globe, Shield, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -17,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GroupMembersTab } from "./components/GroupMembersTab";
 import { GroupRulesTab } from "./components/GroupRulesTab";
 import { GroupReportsTab } from "./components/GroupReportsTab";
+import { GroupUserHistoryTab } from "./components/GroupUserHistoryTab";
 import { JoinGroupRulesModal } from "./components/JoinGroupRulesModal";
 import { RejectPostModal } from "./components/RejectPostModal";
 import { motion } from "framer-motion";
@@ -393,6 +395,9 @@ export function GroupDetailPage() {
                   <TabsTrigger value="feed" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Bảng tin</TabsTrigger>
                   <TabsTrigger value="members" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Thành viên</TabsTrigger>
                   <TabsTrigger value="rules" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Nội quy</TabsTrigger>
+                  {isMember && (
+                    <TabsTrigger value="history" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Lịch sử của bạn</TabsTrigger>
+                  )}
                   {isAdminOrMod && (
                     <TabsTrigger value="pending" className="flex-1 rounded-full text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background">Chờ duyệt</TabsTrigger>
                   )}
@@ -503,6 +508,16 @@ export function GroupDetailPage() {
                   groupName={group.name}
                 />
               </TabsContent>
+
+              {isMember && (
+                <TabsContent value="history" className="m-0 focus-visible:outline-none">
+                  <GroupUserHistoryTab
+                    groupId={groupId}
+                    onProfileClick={handleProfileClick}
+                    onPostClick={handlePostClick}
+                  />
+                </TabsContent>
+              )}
 
               {isAdminOrMod && (
                 <TabsContent value="pending" className="mt-6 border-none focus:outline-none">

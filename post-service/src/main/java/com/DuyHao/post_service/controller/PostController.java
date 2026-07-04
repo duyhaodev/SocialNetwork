@@ -214,6 +214,17 @@ public class PostController {
         return ApiResponse.<List<PostResponse>>builder().result(posts).build();
     }
 
+    @GetMapping("/posts/group/{groupId}/user-history")
+    public ApiResponse<List<PostResponse>> getUserGroupPostHistory(
+            @PathVariable String groupId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        List<PostResponse> posts = postService.getUserGroupPostHistory(groupId, userId, page, size);
+        return ApiResponse.<List<PostResponse>>builder().result(posts).build();
+    }
+
     @PutMapping("/posts/{postId}/status")
     public ApiResponse<Void> updatePostStatus(
             @PathVariable String postId,

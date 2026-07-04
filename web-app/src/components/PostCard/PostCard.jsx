@@ -157,6 +157,7 @@ export function PostCard({ post, onProfileClick, onPostClick, isGroupAdminOrMod,
   };
 
   const handleOpenPost = () => {
+    if (['PENDING', 'REJECTED', 'HIDDEN'].includes(post.status)) return;
     const id = post.id ?? post.postId;
     if (!id) return;
     onPostClick?.(id);
@@ -217,8 +218,8 @@ export function PostCard({ post, onProfileClick, onPostClick, isGroupAdminOrMod,
 
       {/* Main post contents */}
       <div
-        className={`pl-13 ${onPostClick ? "cursor-pointer" : ""}`}
-        onClick={onPostClick ? handleOpenPost : undefined}
+        className={`pl-13 ${onPostClick && !['PENDING', 'REJECTED', 'HIDDEN'].includes(post.status) ? "cursor-pointer" : ""}`}
+        onClick={onPostClick && !['PENDING', 'REJECTED', 'HIDDEN'].includes(post.status) ? handleOpenPost : undefined}
       >
         <p className="whitespace-pre-wrap text-[15px] leading-relaxed mt-1 text-foreground">
           {isRepost ? post.originalContent : post.content}
@@ -245,7 +246,7 @@ export function PostCard({ post, onProfileClick, onPostClick, isGroupAdminOrMod,
         <PostMedia mediaList={mediaList} mediaCount={mediaCount} onMediaClick={handleMediaClick} />
 
         {/* Actions buttons */}
-        {post.status !== 'PENDING' && (
+        {!['PENDING', 'REJECTED', 'HIDDEN'].includes(post.status) && (
           <PostActions
             postId={originalPostId}
             isLiked={isLiked}

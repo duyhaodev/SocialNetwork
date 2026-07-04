@@ -118,6 +118,12 @@ const postApi = {
     });
   },
 
+  getUserGroupPostHistory(groupId, { page = 0, size = 20 } = {}) {
+    return axiosClient.get(`/post/posts/group/${groupId}/user-history`, {
+      params: { page, size }
+    });
+  },
+
   updatePostStatus(postId, status, reason = null) {
     const params = { status };
     if (reason) params.reason = reason;

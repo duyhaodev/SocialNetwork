@@ -61,19 +61,19 @@ export function GroupReportsTab({ groupId }) {
     }
   };
 
-  const handleDeletePostAndResolve = async (reportId, postId, notifyUserId, reason) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa bài viết này không? Tác giả sẽ nhận được thông báo.")) return;
+  const handleHidePostAndResolve = async (reportId, postId, notifyUserId, reason) => {
+    if (!confirm("Bạn có chắc chắn muốn ẩn bài viết này không? Bài viết sẽ chuyển sang trạng thái bị ẩn do vi phạm.")) return;
     try {
-      // Xóa bài viết ở post-service
-      await postApi.deletePost(postId);
+      // Thay vì xóa cứng, cập nhật trạng thái bài viết thành HIDDEN
+      await postApi.updatePostStatus(postId, "HIDDEN", reason);
       
       // Update report status = RESOLVED and send notification via group-service
       await groupApi.updateReportStatus(groupId, reportId, "RESOLVED", notifyUserId, reason);
       
-      toast.success("Đã xóa bài viết và xử lý báo cáo");
+      toast.success("Đã ẩn bài viết và xử lý báo cáo");
       fetchReports();
     } catch (error) {
-      toast.error("Lỗi khi xử lý báo cáo hoặc xóa bài viết");
+      toast.error("Lỗi khi xử lý báo cáo hoặc ẩn bài viết");
     }
   };
 
@@ -143,9 +143,9 @@ export function GroupReportsTab({ groupId }) {
                   size="sm" 
                   className="bg-red-500 hover:bg-red-600 text-white gap-2"
                   disabled={!post}
-                  onClick={() => handleDeletePostAndResolve(report.id, report.targetId, post?.userId, report.reason)}
+                  onClick={() => handleHidePostAndResolve(report.id, report.targetId, post?.userId, report.reason)}
                 >
-                  <Trash2 className="w-4 h-4" /> Xóa bài viết
+                  <Trash2 className="w-4 h-4" /> Ẩn bài viết
                 </Button>
               </div>
             </div>

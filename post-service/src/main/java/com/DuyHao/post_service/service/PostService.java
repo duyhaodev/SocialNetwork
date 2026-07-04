@@ -444,6 +444,19 @@ public class PostService {
         return buildPostResponse(post, currentUserId, userMap);
     }
 
+    public List<PostResponse> getUserGroupPostHistory(String groupId, String userId, int page, int size) {
+        List<Post> posts = postRepository.findUserGroupPostHistory(groupId, userId, PageRequest.of(page, size));
+
+        if (posts.isEmpty()) return List.of();
+
+        Map<String, UserResponse> userMap = userClient.getUsers(List.of(userId)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        return posts.stream()
+                .map(post -> buildPostResponse(post, userId, userMap))
+                .collect(Collectors.toList());
+    }
+
     // Interaction Service gọi lấy bài viết
     public List<PostResponse> getPostsByIds(List<String> ids) {
         List<Post> posts = postRepository.findAllById(ids);
@@ -729,6 +742,13 @@ public class PostService {
                 } catch (Exception e) {
                     System.err.println("Lỗi gửi thông báo từ chối bài viết: " + e.getMessage());
                 }
+            }
+        } else if ("HIDDEN".equals(status)) {
+            // Có thể thêm logic gửi thông báo bài viết bị ẩn do vi phạm (tương tự reject)
+            try {
+                notificationClient.groupPostRejected(post.getUserId(), currentUserId, post.getId(), reason);
+            } catch (Exception e) {
+                System.err.println("Lỗi gửi thông báo ẩn bài viết: " + e.getMessage());
             }
         }
     }
