@@ -22,6 +22,12 @@ public class InternalInteractionController {
         return interactionService.getInteractionStats(postId, userId);
     }
 
+    @PostMapping("/bulk")
+    public java.util.Map<String, InteractionResponse> getBulkInteractionStats(
+            @RequestBody java.util.List<String> postIds) {
+        return interactionService.getBulkInteractionStats(postIds);
+    }
+
     // Xóa tất cả comments của 1 post (gọi từ post-service khi xóa post)
     @DeleteMapping("/{postId}/comments")
     @org.springframework.transaction.annotation.Transactional

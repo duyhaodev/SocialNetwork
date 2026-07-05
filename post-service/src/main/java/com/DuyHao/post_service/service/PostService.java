@@ -306,21 +306,33 @@ public class PostService {
 
         List<Post> candidates = new ArrayList<>();
         // Lấy bài Global
-        candidates.addAll(postRepository.findRecentGlobalPosts(PageRequest.of(0, 100)));
+        candidates.addAll(postRepository.findRecentGlobalPosts(PageRequest.of(0, 50)));
         // Lấy bài Group mà user đã join
         if (!groupIds.isEmpty()) {
-            candidates.addAll(postRepository.findRecentGroupPosts(groupIds, PageRequest.of(0, 100)));
+            candidates.addAll(postRepository.findRecentGroupPosts(groupIds, PageRequest.of(0, 50)));
+        }
+
+        // Fetch Bulk Interactions
+        List<String> candidatePostIds = candidates.stream().map(Post::getId).toList();
+        Map<String, InteractionResponse> bulkInteractions = new HashMap<>();
+        try {
+            bulkInteractions = interactionClient.getBulkInteractions(candidatePostIds);
+        } catch (Exception e) {
+            System.err.println("Lỗi lấy bulk interactions: " + e.getMessage());
         }
 
         // 4. Scoring (Hybrid Fusion)
-        double W_CONTENT = 0.3; // Trọng số sở thích/tag
-        double W_SOCIAL = 0.4; // Trọng số quan hệ bạn bè
-        double W_GROUP = 0.2; // Trọng số nhóm
+        double W_CONTENT = 0.2; // Trọng số sở thích/tag
+        double W_SOCIAL = 0.3; // Trọng số quan hệ bạn bè
+        double W_GROUP = 0.15; // Trọng số nhóm
         double W_RECENCY = 0.1; // Trọng số độ mới của bài viết
+        double W_ENGAGEMENT = 0.25; // Trọng số độ phổ biến
 
         final Map<String, Double> finalWeights = userWeights;
         final List<String> finalFollowingIds = followingIds;
+        final Map<String, InteractionResponse> finalInteractions = bulkInteractions;
         LocalDateTime now = LocalDateTime.now();
+        Random random = new Random();
 
         List<PostScorePair> scoredPosts = candidates.stream()
                 .map(post -> {
@@ -352,11 +364,29 @@ public class PostService {
                     if (hours < 0) hours = 0;
                     double recencyScore = Math.exp(-0.01 * hours); // Phân rã theo thời gian
 
-                    // e. Tổng hợp điểm số theo trọng số
+                    // e. Tính điểm mức độ phổ biến (Engagement Score)
+                    double engagementScore = 0.0;
+                    InteractionResponse interaction = finalInteractions.get(post.getId());
+                    if (interaction != null) {
+                        long likes = interaction.getLikeCount() != null ? interaction.getLikeCount() : 0;
+                        long comments = interaction.getCommentCount() != null ? interaction.getCommentCount() : 0;
+                        long reposts = interaction.getRepostCount() != null ? interaction.getRepostCount() : 0;
+                        double rawEngagement = (likes * 1) + (comments * 2) + (reposts * 3);
+                        engagementScore = rawEngagement / (hours + 1.0);
+                    }
+
+                    // f. Tổng hợp điểm số theo trọng số
                     double finalScore = W_CONTENT * contentScore
                             + W_SOCIAL * socialScore
                             + W_GROUP * groupScore
-                            + W_RECENCY * recencyScore;
+                            + W_RECENCY * recencyScore
+                            + W_ENGAGEMENT * engagementScore;
+
+                    // g. Yếu tố tình cờ (Serendipity)
+                    // Bốc ngẫu nhiên khoảng 10% số bài viết để boost điểm lên một chút
+                    if (random.nextDouble() < 0.10) {
+                        finalScore += 0.5 + random.nextDouble(); // Boost ngẫu nhiên từ 0.5 đến 1.5
+                    }
 
                     return new PostScorePair(post, finalScore);
                 })

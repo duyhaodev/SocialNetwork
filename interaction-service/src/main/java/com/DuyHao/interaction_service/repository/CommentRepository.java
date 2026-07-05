@@ -23,4 +23,8 @@ public interface CommentRepository extends JpaRepository<Comment, String> {
 
     // Xóa toàn bộ thread replies khi xóa comment gốc
     void deleteByRootCommentId(String rootCommentId);
+
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT c.postId, COUNT(c) FROM Comment c WHERE c.postId IN :postIds GROUP BY c.postId")
+    List<Object[]> countBulkByPostIds(@org.springframework.data.repository.query.Param("postIds") List<String> postIds);
 }

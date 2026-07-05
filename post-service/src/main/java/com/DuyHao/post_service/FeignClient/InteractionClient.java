@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.*;
 public interface InteractionClient {
 
     @GetMapping("/internal/interactions/{postId}")
-    InteractionResponse getInteraction(@PathVariable String postId);
+    InteractionResponse getInteraction(@PathVariable("postId") String postId);
+
+    @PostMapping("/internal/interactions/bulk")
+    java.util.Map<String, InteractionResponse> getBulkInteractions(@RequestBody java.util.List<String> postIds);
 
     @GetMapping("/internal/interactions")
     List<InteractionResponse> getInteractions(@RequestParam List<String> postIds);

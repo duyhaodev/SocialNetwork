@@ -31,4 +31,7 @@ public interface LikeRepository extends JpaRepository<Like, String> {
     // Lấy danh sách userId đã like bài viết, sắp xếp mới nhất, giới hạn số lượng
     @Query("SELECT l.userId FROM Like l WHERE l.postId = :postId AND l.commentId IS NULL ORDER BY l.createdAt DESC")
     List<String> findUserIdsByPostId(@Param("postId") String postId, Pageable pageable);
+
+    @Query("SELECT l.postId, COUNT(l) FROM Like l WHERE l.postId IN :postIds AND l.commentId IS NULL GROUP BY l.postId")
+    List<Object[]> countBulkByPostIds(@Param("postIds") List<String> postIds);
 }

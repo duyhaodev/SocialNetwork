@@ -14,4 +14,9 @@ public interface RepostRepository extends JpaRepository<Repost, String> {
     long countByPostId(String postId);
 
     boolean existsByPostIdAndUserId(String postId, String userId);
+
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT r.postId, COUNT(r) FROM Repost r WHERE r.postId IN :postIds GROUP BY r.postId")
+    java.util.List<Object[]> countBulkByPostIds(
+            @org.springframework.data.repository.query.Param("postIds") java.util.List<String> postIds);
 }
