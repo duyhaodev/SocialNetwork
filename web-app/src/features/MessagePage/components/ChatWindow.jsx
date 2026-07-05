@@ -435,6 +435,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
       }
     } catch (err) {
       console.error("Failed to send message:", err);
+      toast.error(err.message || "Không thể gửi tin nhắn");
     } finally {
       setIsUploading(false);
     }

@@ -35,6 +35,18 @@ public class LikeService {
 
             String postOwnerId = post.getUserId();
 
+            if (postOwnerId != null) {
+                try {
+                    List<String> blockList = userClient.getBlockList(userId);
+                    if (blockList.contains(postOwnerId)) {
+                        throw new RuntimeException("Bạn không thể tương tác với bài viết này");
+                    }
+                } catch (RuntimeException re) {
+                    throw re;
+                } catch (Exception e) {
+                }
+            }
+
             if (alreadyLiked) {
                 likeRepository.deleteByUserIdAndPostId(userId, postId);
                 safeNotify(() -> notificationClient.unlikePost(postOwnerId, userId, postId));

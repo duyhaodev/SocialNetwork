@@ -23,6 +23,21 @@ const userApi = {
   getUsersBatch(userIds) {
     const url = "profile/users/batch";
     return axiosClient.post(url, userIds);
+  },
+
+  blockUser(targetId) {
+    const url = `profile/users/block/${targetId}`;
+    return axiosClient.post(url);
+  },
+
+  unblockUser(targetId) {
+    const url = `profile/users/block/${targetId}`;
+    return axiosClient.delete(url);
+  },
+
+  getBlockedUsers() {
+    const url = `profile/users/block`;
+    return axiosClient.get(url);
   }
 };
 

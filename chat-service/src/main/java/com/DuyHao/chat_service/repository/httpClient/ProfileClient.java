@@ -11,4 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface ProfileClient {
     @GetMapping(value = "/internal/users/id/{profileId}")
     UserProfileResponse getProfile(@PathVariable("profileId") String profileId);
+
+    @GetMapping("/internal/users/{userId}/block-list")
+    java.util.List<String> getBlockList(@PathVariable("userId") String userId);
 }

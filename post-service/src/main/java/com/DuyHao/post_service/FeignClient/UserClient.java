@@ -24,4 +24,7 @@ public interface UserClient {
     @PostMapping("/internal/users/{id}/preferences/update")
     java.util.Map<String, Double> updateCategoryWeights(
             @PathVariable("id") String userId, @RequestBody WeightUpdateRequest request);
+
+    @GetMapping("/internal/users/{userId}/block-list")
+    List<String> getBlockList(@PathVariable("userId") String userId);
 }

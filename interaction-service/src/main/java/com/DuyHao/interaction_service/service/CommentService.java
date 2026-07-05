@@ -38,6 +38,20 @@ public class CommentService {
     public CommentResponse create(String userId, CommentRequest request) {
         String rootCommentId = null; // comment gốc
 
+        // Check if user is blocked by post owner
+        try {
+            var post = postClient.getPost(request.getPostId());
+            if (post != null && post.getUserId() != null) {
+                List<String> blockList = userClient.getBlockList(userId);
+                if (blockList.contains(post.getUserId())) {
+                    throw new RuntimeException("Bạn không thể bình luận trên bài viết này");
+                }
+            }
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+        }
+
         if (request.getParentId() != null) { // Nếu đây là một reply
             Comment parent = commentRepository
                     .findById(request.getParentId())
@@ -119,6 +133,20 @@ public class CommentService {
 
     // ================= HELPER  =================
     private List<CommentResponse> buildCommentResponses(List<Comment> comments, String currentUserId) {
+        if (comments.isEmpty()) return Collections.emptyList();
+
+        List<String> blockList = new ArrayList<>();
+        if (currentUserId != null) {
+            try {
+                blockList = userClient.getBlockList(currentUserId);
+            } catch (Exception e) {
+            }
+        }
+        final List<String> finalBlockList = blockList;
+        comments = comments.stream()
+                .filter(c -> !finalBlockList.contains(c.getUserId()))
+                .collect(Collectors.toList());
+
         if (comments.isEmpty()) return Collections.emptyList();
 
         Set<String> userIds = comments.stream().map(Comment::getUserId).collect(Collectors.toSet());

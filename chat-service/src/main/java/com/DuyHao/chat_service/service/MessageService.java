@@ -5,6 +5,8 @@ import com.DuyHao.chat_service.dto.request.MessageRequest;
 import com.DuyHao.chat_service.dto.response.MessageResponse;
 import com.DuyHao.chat_service.dto.response.UserProfileResponse;
 import com.DuyHao.chat_service.dto.response.StreakResponse;
+import com.DuyHao.chat_service.exception.AppException;
+import com.DuyHao.chat_service.exception.ErrorCode;
 import com.DuyHao.chat_service.entity.Conversation;
 import com.DuyHao.chat_service.entity.Message;
 import com.DuyHao.chat_service.repository.ConversationRepository;
@@ -72,6 +74,27 @@ public class MessageService {
 
         Conversation conversation = conversationRepository.findById(request.getConversationId())
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        if ("DIRECT".equals(conversation.getType())) {
+            String otherUserId = conversation.getParticipants().stream()
+                    .filter(p -> !p.getUserId().equals(currentUserId))
+                    .map(com.DuyHao.chat_service.entity.Conversation.Participant::getUserId)
+                    .findFirst()
+                    .orElse(null);
+
+            if (otherUserId != null) {
+                try {
+                    List<String> blockList = profileClient.getBlockList(currentUserId);
+                    if (blockList.contains(otherUserId)) {
+                        throw new AppException(ErrorCode.USER_BLOCKED);
+                    }
+                } catch (RuntimeException re) {
+                    throw re;
+                } catch (Exception e) {
+                    log.error("Failed to check block list", e);
+                }
+            }
+        }
 
         // Update conversation participants' unread status and last message
         String lastMessageContent = request.getContent();

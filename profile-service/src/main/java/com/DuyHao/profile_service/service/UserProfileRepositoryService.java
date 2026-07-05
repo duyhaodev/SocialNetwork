@@ -27,6 +27,8 @@ public class UserProfileRepositoryService {
     UserProfileRepository userProfileRepository;
     UserProfileMapper userProfileMapper;
     MediaClient mediaClient;
+    com.DuyHao.profile_service.repository.BlockRepository blockRepository;
+    com.DuyHao.profile_service.FeignClient.FollowClient followClient;
 
     public UserProfileResponse createProfile(ProfileCreationRequest request) {
         var existing = userProfileRepository.findByUserId(request.getUserId());
@@ -103,6 +105,15 @@ public class UserProfileRepositoryService {
         UserProfile userProfile = userProfileRepository
                 .findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+
+        String currentUserId =
+                SecurityContextHolder.getContext().getAuthentication().getName();
+        if (currentUserId != null && !currentUserId.equals("anonymousUser")) {
+            List<String> blockedList = blockRepository.findInvolvedBlockIds(currentUserId);
+            if (blockedList.contains(userProfile.getUserId())) {
+                throw new RuntimeException("Tài khoản này không tồn tại hoặc bạn không có quyền xem");
+            }
+        }
         return userProfileMapper.toUserProfileResponse(userProfile);
     }
 
@@ -168,8 +179,10 @@ public class UserProfileRepositoryService {
         String currentUserId =
                 SecurityContextHolder.getContext().getAuthentication().getName();
         String normalizedKeyword = TextNormalizer.normalize(keyword);
+        List<String> blockedList = blockRepository.findInvolvedBlockIds(currentUserId);
         return userProfileRepository.findAll().stream()
                 .filter(p -> !p.getUserId().equals(currentUserId))
+                .filter(p -> !blockedList.contains(p.getUserId()))
                 .filter(p -> TextNormalizer.normalize(p.getUsername()).contains(normalizedKeyword)
                         || TextNormalizer.normalize(p.getFullName()).contains(normalizedKeyword))
                 .map(userProfileMapper::toUserProfileResponse)
@@ -243,5 +256,42 @@ public class UserProfileRepositoryService {
         interests.add(java.util.Map.of("tag", "vibe_mood", "displayName", "Mood Vibe / Tâm trạng & Cảm xúc"));
         interests.add(java.util.Map.of("tag", "vibe_motivation", "displayName", "Motivation Vibe / Truyền cảm hứng"));
         return interests;
+    }
+
+    @Transactional("transactionManager")
+    public void blockUser(String blockerId, String blockedId) {
+        if (blockerId.equals(blockedId)) return;
+        if (!blockRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId)) {
+            blockRepository.save(com.DuyHao.profile_service
+                    .entity
+                    .Block
+                    .builder()
+                    .blockerId(blockerId)
+                    .blockedId(blockedId)
+                    .build());
+
+            // Xóa quan hệ follow 2 chiều
+            try {
+                followClient.removeRelation(blockerId, blockedId);
+            } catch (Exception e) {
+                log.error("Failed to remove follow relation when blocking", e);
+            }
+        }
+    }
+
+    @Transactional("transactionManager")
+    public void unblockUser(String blockerId, String blockedId) {
+        blockRepository.deleteByBlockerIdAndBlockedId(blockerId, blockedId);
+    }
+
+    public List<UserProfileResponse> getBlockedUsers(String userId) {
+        List<String> blockedIds = blockRepository.findByBlockerId(userId).stream()
+                .map(com.DuyHao.profile_service.entity.Block::getBlockedId)
+                .toList();
+        return getUsers(blockedIds);
+    }
+
+    public List<String> getInvolvedBlockIds(String userId) {
+        return blockRepository.findInvolvedBlockIds(userId);
     }
 }

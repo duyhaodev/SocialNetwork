@@ -15,6 +15,7 @@ import { fetchMyStories, selectMyStories } from "../../store/storySlice";
 import postApi from "../../api/postApi";
 import followApi from "../../api/followApi";
 import storyApi from "../../api/storyApi";
+import userApi from "../../api/userApi";
 import { EditProfileDialog } from "./EditProfileDialog.jsx";
 import SpotifyView from "../../components/SpotifySection/SpotifyView";
 import StoryViewer from "../../components/Story/StoryViewer";
@@ -72,6 +73,15 @@ export function ProfilePage() {
   // mở dialog Edit profile
   const [editOpen, setEditOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("threads");
+
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [isBlocked, setIsBlocked] = useState(false); // am I blocking this user
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  
+  // MoreMenu
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef(null);
+
   const isOwnProfile = !cleanUsername || cleanUsername === profile.username;
   const user = isOwnProfile
     ? {
@@ -99,11 +109,13 @@ export function ProfilePage() {
 
   // LẤY BÀI VIẾT + PROFILE
   useEffect(() => {
+    setActiveTab("threads");
     if (isOwnProfile) {
       dispatch(fetchMyPosts());
       dispatch(fetchMyReposts());
       dispatch(fetchMyStories());
       dispatch(fetchMyInfo()); // refresh follower/following count
+      userApi.getBlockedUsers().then(res => setBlockedUsers(res.result || [])).catch(() => {});
       return;
     }
 
@@ -122,6 +134,12 @@ export function ProfilePage() {
           const statusRes = await followApi.getFollowStatus(followingUser.userId);
           setIsFollowing(!!statusRes?.isFollowing);
           setIsFriend(!!statusRes?.isFriend);
+
+          // Check if blocked
+          userApi.getBlockedUsers().then(res => {
+            const blocked = res.result || [];
+            setIsBlocked(blocked.includes(followingUser.userId));
+          }).catch(() => {});
         }
       } catch (err) {
         console.error("Error loading profile:", err);
@@ -187,6 +205,18 @@ export function ProfilePage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [friendsMenuOpen]);
+
+  // Close more menu when clicking outside
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [moreMenuOpen]);
 
   // Format số follower/following cho đẹp (1.2K, 3.4M,...)
   const formatNumber = (num) => {
@@ -257,6 +287,31 @@ export function ProfilePage() {
     }
   }, [user?.userId, user?.displayName]);
 
+  const handleBlockUser = async () => {
+    if (!user?.userId) return;
+    try {
+      await userApi.blockUser(user.userId);
+      setIsBlocked(true);
+      setIsFollowing(false);
+      setIsFriend(false);
+      setBlockDialogOpen(false);
+      toast.success("Đã chặn người dùng này");
+    } catch (err) {
+      toast.error("Lỗi khi chặn");
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    if (!user?.userId) return;
+    try {
+      await userApi.unblockUser(user.userId);
+      setIsBlocked(false);
+      toast.success("Đã bỏ chặn người dùng này");
+    } catch (err) {
+      toast.error("Lỗi khi bỏ chặn");
+    }
+  };
+
   // Threads để render
   const postsToRender = isOwnProfile ? myPosts : otherPosts;
   // Reposts để render
@@ -298,13 +353,51 @@ export function ProfilePage() {
               {postsToRender?.length || 0} threads
             </p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer text-foreground flex items-center justify-center"
-          >
-            <MoreHorizontal className="w-5 h-5 stroke-[1.8]" />
-          </motion.button>
+          <div className="relative" ref={moreMenuRef}>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+              className="p-2 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer text-foreground flex items-center justify-center"
+            >
+              <MoreHorizontal className="w-5 h-5 stroke-[1.8]" />
+            </motion.button>
+            <AnimatePresence>
+              {moreMenuOpen && !isOwnProfile && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="absolute right-0 mt-1.5 w-40 z-30 rounded-2xl border border-border/40 bg-card/95 shadow-xl backdrop-blur-md p-1"
+                >
+                  {isBlocked ? (
+                    <button
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold text-foreground hover:bg-muted/30 active:bg-muted/40 rounded-xl transition-colors cursor-pointer text-left"
+                      onClick={() => {
+                        setMoreMenuOpen(false);
+                        handleUnblockUser();
+                      }}
+                    >
+                      <UserCheck className="w-4.5 h-4.5 stroke-[1.5] shrink-0" />
+                      <span>Unblock</span>
+                    </button>
+                  ) : (
+                    <button
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-500/10 active:bg-red-500/20 rounded-xl transition-colors cursor-pointer text-left"
+                      onClick={() => {
+                        setMoreMenuOpen(false);
+                        setBlockDialogOpen(true);
+                      }}
+                    >
+                      <UserMinus className="w-4.5 h-4.5 stroke-[1.5] shrink-0" />
+                      <span>Block</span>
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -557,6 +650,7 @@ export function ProfilePage() {
                 </div>
               )}
 
+
               <motion.button
                 whileHover={{ scale: 1.02, y: -0.5 }}
                 whileTap={{ scale: 0.98 }}
@@ -581,88 +675,174 @@ export function ProfilePage() {
       {/* Tabs Threads / Replies / Reposts */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex justify-center w-full border-b border-border/40 py-3 bg-background/50 backdrop-blur-sm sticky top-14 md:top-0 z-10">
-          <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[320px] grid grid-cols-2 relative overflow-hidden">
+          <TabsList className={`bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-full max-w-[320px] grid ${isOwnProfile ? 'grid-cols-3' : 'grid-cols-2'} relative overflow-hidden`}>
             <TabsTrigger
               value="threads"
-              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
             >
               Threads
+              {activeTab === "threads" && (
+                <motion.div
+                  layoutId="profileActiveTabIndicator"
+                  className="absolute inset-1 bg-foreground rounded-full shadow-sm -z-10"
+                  transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                />
+              )}
             </TabsTrigger>
             <TabsTrigger
               value="reposts"
-              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
             >
               Reposts
+              {activeTab === "reposts" && (
+                <motion.div
+                  layoutId="profileActiveTabIndicator"
+                  className="absolute inset-1 bg-foreground rounded-full shadow-sm -z-10"
+                  transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                />
+              )}
             </TabsTrigger>
-
-            {/* Sliding Indicator background pill */}
-            <div className="absolute inset-1 w-[calc(50%-4px)] h-[calc(100%-8px)] pointer-events-none z-0">
-              <motion.div
-                className="w-full h-full bg-foreground rounded-full shadow-sm"
-                animate={{
-                  x: activeTab === "threads" ? 0 : "100%",
-                }}
-                transition={{ type: "spring", stiffness: 350, damping: 28 }}
-              />
-            </div>
+            {isOwnProfile && (
+              <TabsTrigger
+                value="blocked"
+                className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
+              >
+                Blocked
+                {activeTab === "blocked" && (
+                  <motion.div
+                    layoutId="profileActiveTabIndicator"
+                    className="absolute inset-1 bg-foreground rounded-full shadow-sm -z-10"
+                    transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                  />
+                )}
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
-        {/* Tab Threads */}
-        <TabsContent value="threads" className="mt-0">
-          {(isOwnProfile && loadingMyPosts) || (!isOwnProfile && loadingOther) ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Đang tải threads...
-            </div>
-          ) : postsToRender?.length > 0 ? (
-            <div>
-              {postsToRender.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onProfileClick={handleProfileClick}
-                  onPostClick={handleOpenPost}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              No threads yet
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Tab Replies */}
-        <TabsContent value="replies" className="mt-0">
+        {isBlocked ? (
           <div className="p-8 text-center text-muted-foreground">
-            No replies yet
+            Bạn đã chặn người dùng này
           </div>
-        </TabsContent>
+        ) : (
+          <>
+            {/* Tab Threads */}
+            <TabsContent value="threads" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                {(isOwnProfile && loadingMyPosts) || (!isOwnProfile && loadingOther) ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    Đang tải threads...
+                  </div>
+                ) : postsToRender?.length > 0 ? (
+                  <div>
+                    {postsToRender.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onProfileClick={handleProfileClick}
+                        onPostClick={handleOpenPost}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No threads yet
+                  </div>
+                )}
+              </motion.div>
+            </TabsContent>
 
-        {/* Tab Reposts */}
-        <TabsContent value="reposts" className="mt-0">
-          {(isOwnProfile && loadingMyReposts) || (!isOwnProfile && loadingUserReposts) ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Đang tải reposts...
-            </div>
-          ) : repostsToRender?.length > 0 ? (
-            <div>
-              {repostsToRender.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onProfileClick={handleProfileClick}
-                  onPostClick={handleOpenPost}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              No reposts yet
-            </div>
-          )}
-        </TabsContent>
+            {/* Tab Replies */}
+            <TabsContent value="replies" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="p-8 text-center text-muted-foreground">
+                  No replies yet
+                </div>
+              </motion.div>
+            </TabsContent>
 
+            {/* Tab Reposts */}
+            <TabsContent value="reposts" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                {(isOwnProfile && loadingMyReposts) || (!isOwnProfile && loadingUserReposts) ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    Đang tải reposts...
+                  </div>
+                ) : repostsToRender?.length > 0 ? (
+                  <div>
+                    {repostsToRender.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onProfileClick={handleProfileClick}
+                        onPostClick={handleOpenPost}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-muted-foreground">
+                    No reposts yet
+                  </div>
+                )}
+              </motion.div>
+            </TabsContent>
+
+        {/* Tab Blocked */}
+        {isOwnProfile && (
+          <TabsContent value="blocked" className="mt-0">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="p-4">
+                 {blockedUsers.length > 0 ? (
+                   <div className="space-y-4">
+                     {blockedUsers.map(blockedUser => (
+                       <div key={blockedUser.userId} className="p-4 rounded-xl border border-border/40 bg-card/50 flex justify-between items-center gap-4">
+                         <div className="flex items-center gap-3" onClick={() => handleProfileClick(blockedUser.username)} style={{cursor: 'pointer'}}>
+                            <Avatar className="w-10 h-10 ring-1 ring-border/20">
+                              <AvatarImage src={blockedUser.avatarUrl} style={{ objectFit: 'cover' }} />
+                              <AvatarFallback>{blockedUser.fullName?.charAt(0) || blockedUser.username?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-sm hover:underline">{blockedUser.fullName || blockedUser.username}</span>
+                              <span className="text-xs text-muted-foreground">@{blockedUser.username}</span>
+                            </div>
+                         </div>
+                         <Button variant="outline" size="sm" onClick={async () => {
+                           try {
+                             await userApi.unblockUser(blockedUser.userId);
+                             setBlockedUsers(prev => prev.filter(u => u.userId !== blockedUser.userId));
+                             toast.success("Đã bỏ chặn người dùng");
+                           } catch(err) {
+                             toast.error("Lỗi bỏ chặn");
+                           }
+                         }}>Unblock</Button>
+                       </div>
+                     ))}
+                   </div>
+                 ) : (
+                   <div className="text-center text-muted-foreground">Chưa chặn ai</div>
+                 )}
+              </div>
+            </motion.div>
+          </TabsContent>
+        )}
+          </>
+        )}
       </Tabs>
 
       {/* ImageViewer để xem ảnh đại diện */}
@@ -725,6 +905,44 @@ export function ProfilePage() {
             <div className="h-px bg-border/20" />
             <AlertDialogCancel className="rounded-none h-12 text-sm font-semibold text-foreground bg-transparent hover:bg-muted/30 border-0 shadow-none mt-0 cursor-pointer">
               Cancel
+            </AlertDialogCancel>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <AlertDialogContent className="w-fit min-w-[280px] rounded-3xl p-0 overflow-hidden gap-0 bg-card/75 backdrop-blur-xl border border-border/40 shadow-2xl text-foreground">
+          <AlertDialogTitle className="sr-only">Block User</AlertDialogTitle>
+          <AlertDialogDescription className="sr-only">Confirm block action</AlertDialogDescription>
+          {/* Header — avatar + name */}
+          <div className="flex flex-col items-center gap-3 px-6 pt-6 pb-4">
+            <Avatar style={{ width: 56, height: 56, minWidth: 56, minHeight: 56 }} className="shrink-0 ring-2 ring-border/20">
+              <AvatarImage src={user?.avatar} alt={user?.displayName} style={{ objectFit: "cover" }} />
+              <AvatarFallback className="text-base">{user?.displayName?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="text-center">
+              <p className="font-bold text-base leading-snug">{user?.displayName}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">@{user?.username}</p>
+            </div>
+            <p className="text-xs text-muted-foreground text-center leading-relaxed max-w-[220px] mt-1">
+              Họ sẽ không thể tìm thấy trang cá nhân, bài viết hay xem người theo dõi của bạn. Bạn cũng sẽ không thể thấy nội dung của họ.
+            </p>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-border/20" />
+
+          {/* Actions */}
+          <div className="flex flex-col">
+            <AlertDialogAction
+              className="rounded-none h-12 text-sm font-bold text-red-500 bg-transparent hover:bg-red-500/10 active:bg-red-500/15 transition-colors border-0 shadow-none cursor-pointer"
+              onClick={handleBlockUser}
+            >
+              Chặn
+            </AlertDialogAction>
+            <div className="h-px bg-border/20" />
+            <AlertDialogCancel className="rounded-none h-12 text-sm font-semibold text-foreground bg-transparent hover:bg-muted/30 border-0 shadow-none mt-0 cursor-pointer">
+              Hủy
             </AlertDialogCancel>
           </div>
         </AlertDialogContent>

@@ -21,9 +21,14 @@ public class InternalFollowController {
         return followService.getFollowingIds(userId);
     }
 
-    // Kiểm tra userId có follow targetId không
     @GetMapping("/is-following")
     public boolean isFollowing(@RequestParam String followerId, @RequestParam String followingId) {
         return followService.isFollowing(followerId, followingId);
+    }
+
+    @DeleteMapping("/remove-relation")
+    public void removeRelation(@RequestParam String userId1, @RequestParam String userId2) {
+        followService.unfollowInternal(userId1, userId2);
+        followService.unfollowInternal(userId2, userId1);
     }
 }

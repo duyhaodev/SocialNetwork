@@ -142,4 +142,18 @@ public class FollowService {
                 .filter(followings::contains)
                 .toList();
     }
+
+    @Transactional
+    public void unfollowInternal(String followerId, String followingId) {
+        if (followRepo.existsByFollowerIdAndFollowingId(followerId, followingId)) {
+            followRepo.deleteByFollowerIdAndFollowingId(followerId, followingId);
+            try {
+                notificationClient.deleteFollowNotification(followingId, followerId);
+            } catch (Exception e) {
+                // ignore
+            }
+            userClient.decrementFollowers(followingId);
+            userClient.decrementFollowing(followerId);
+        }
+    }
 }

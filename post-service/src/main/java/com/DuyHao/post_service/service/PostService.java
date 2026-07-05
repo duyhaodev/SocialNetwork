@@ -147,6 +147,17 @@ public class PostService {
         if (repostOfId == null || repostOfId.isBlank()) {
             localFeedCacheService.addPost(city, saved.getId(), saved.getCreatedAt());
         }
+        // Check block list
+        List<String> blockList = new ArrayList<>();
+        try {
+            if (userId != null) {
+                blockList = userClient.getBlockList(userId);
+            }
+        } catch (Exception e) {
+        }
+        if (blockList.contains(saved.getUserId())) {
+            throw new RuntimeException("Bạn không thể tương tác với người dùng này");
+        }
 
         return getPostById(saved.getId(), userId);
     }
@@ -208,6 +219,21 @@ public class PostService {
             return List.of();
         }
 
+        // Fetch Block List
+        List<String> blockList = new ArrayList<>();
+        if (currentUserId != null) {
+            try {
+                blockList = userClient.getBlockList(currentUserId);
+            } catch (Exception e) {
+            }
+        }
+        final List<String> finalBlockList = blockList;
+        posts = posts.stream()
+                .filter(p -> !finalBlockList.contains(p.getUserId()))
+                .collect(Collectors.toList());
+
+        if (posts.isEmpty()) return List.of();
+
         Set<String> userIds = posts.stream()
                 .flatMap(p -> {
                     Set<String> ids = new HashSet<>();
@@ -259,6 +285,21 @@ public class PostService {
             return new LocalFeedResult(List.of(), isFallback);
         }
 
+        // Fetch Block List
+        List<String> blockList = new ArrayList<>();
+        if (currentUserId != null) {
+            try {
+                blockList = userClient.getBlockList(currentUserId);
+            } catch (Exception e) {
+            }
+        }
+        final List<String> finalBlockList = blockList;
+        posts = posts.stream()
+                .filter(p -> !finalBlockList.contains(p.getUserId()))
+                .collect(Collectors.toList());
+
+        if (posts.isEmpty()) return new LocalFeedResult(List.of(), isFallback);
+
         // Enrich user info, media, interaction
         Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
         Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
@@ -285,6 +326,16 @@ public class PostService {
     public record LocalFeedResult(List<PostResponse> posts, boolean isFallback) {}
 
     public List<PostResponse> getRecommendedFeed(String currentUserId, int page, int size) {
+        // Fetch Block List
+        List<String> blockList = new ArrayList<>();
+        try {
+            if (currentUserId != null) {
+                blockList = userClient.getBlockList(currentUserId);
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi lấy block list: " + e.getMessage());
+        }
+
         // 1. Fetch Preferences
         Map<String, Double> userWeights = userClient.getUserPreferences(currentUserId);
         if (userWeights == null) userWeights = new HashMap<>();
@@ -311,6 +362,10 @@ public class PostService {
         if (!groupIds.isEmpty()) {
             candidates.addAll(postRepository.findRecentGroupPosts(groupIds, PageRequest.of(0, 50)));
         }
+
+        // Loại bỏ các bài viết từ những người bị block hoặc block mình
+        final List<String> finalBlockList = blockList;
+        candidates.removeIf(p -> finalBlockList.contains(p.getUserId()));
 
         // Fetch Bulk Interactions
         List<String> candidatePostIds = candidates.stream().map(Post::getId).toList();
@@ -438,6 +493,17 @@ public class PostService {
     // ==================== PROFILE ====================
     public List<PostResponse> getPostsByUserId(String userId, String currentUserId) {
         UserResponse user = userClient.getUser(userId);
+
+        if (currentUserId != null) {
+            try {
+                List<String> blockList = userClient.getBlockList(currentUserId);
+                if (blockList.contains(userId)) {
+                    throw new RuntimeException("Tài khoản này không tồn tại hoặc bạn không có quyền xem");
+                }
+            } catch (Exception e) {
+            }
+        }
+
         List<Post> posts = postRepository.findByUserIdAndRepostOfIsNullOrderByCreatedAtDesc(user.getUserId());
 
         Map<String, UserResponse> userMap = Map.of(user.getUserId(), user);
@@ -461,6 +527,16 @@ public class PostService {
     // ==================== GET ONE ====================
     public PostResponse getPostById(String postId, String currentUserId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (currentUserId != null) {
+            try {
+                List<String> blockList = userClient.getBlockList(currentUserId);
+                if (blockList.contains(post.getUserId())) {
+                    throw new RuntimeException("Bạn không thể xem bài viết này");
+                }
+            } catch (Exception e) {
+            }
+        }
 
         // Tracking hành vi View Detail (+0.02)
         if (currentUserId != null && !currentUserId.equals(post.getUserId())) {
@@ -743,6 +819,21 @@ public class PostService {
         }
 
         List<Post> posts = postRepository.findGroupPosts(groupId, "APPROVED", PageRequest.of(page, size));
+        if (posts.isEmpty()) return Collections.emptyList();
+
+        // Fetch Block List
+        List<String> blockList = new ArrayList<>();
+        if (currentUserId != null) {
+            try {
+                blockList = userClient.getBlockList(currentUserId);
+            } catch (Exception e) {
+            }
+        }
+        final List<String> finalBlockList = blockList;
+        posts = posts.stream()
+                .filter(p -> !finalBlockList.contains(p.getUserId()))
+                .collect(Collectors.toList());
+
         if (posts.isEmpty()) return Collections.emptyList();
 
         Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
