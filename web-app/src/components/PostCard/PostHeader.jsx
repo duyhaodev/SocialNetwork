@@ -1,4 +1,4 @@
-import { MoreHorizontal, Trash2, Link, Repeat2, Globe, Sparkles, Pin } from "lucide-react";
+import { MoreHorizontal, Trash2, Link, Repeat2, Globe, Sparkles, Pin, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
@@ -109,7 +109,20 @@ export function PostHeader({
                   </span>
                 </UserHoverCard>
               </button>
-              <span className="text-xs text-muted-foreground font-normal">@{handle}</span>
+              {post.groupId && post.groupName ? (
+                <>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                  <a
+                    href={`/groups/${post.groupId}`}
+                    className="font-semibold text-foreground hover:text-primary hover:underline transition-colors cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {post.groupName}
+                  </a>
+                </>
+              ) : (
+                <span className="text-xs text-muted-foreground font-normal">@{handle}</span>
+              )}
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
               <span title={createdAt ? new Date(createdAt).toLocaleString() : ""}>

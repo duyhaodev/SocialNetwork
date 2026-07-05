@@ -277,6 +277,16 @@ public class GroupService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    public java.util.Map<String, String> getUserGroupMap(String userId) {
+        java.util.List<GroupMember> members = groupMemberRepository.findByUserId(userId);
+        return members.stream()
+                .filter(m -> m.getRole().equals("ADMIN") || m.getRole().equals("MODERATOR") || m.getRole().equals("MEMBER"))
+                .map(m -> groupRepository.findById(m.getGroupId()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(java.util.stream.Collectors.toMap(Group::getId, Group::getName));
+    }
+
     public java.util.List<GroupResponse> getAllGroups() {
         return groupRepository.findAll().stream()
                 .map(groupMapper::toGroupResponse)

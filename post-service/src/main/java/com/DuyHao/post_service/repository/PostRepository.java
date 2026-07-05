@@ -58,6 +58,12 @@ public interface PostRepository extends JpaRepository<Post, String> {
             "SELECT p FROM Post p WHERE p.groupId = :groupId AND p.status = :status ORDER BY COALESCE(p.isPinned, false) DESC, p.createdAt DESC")
     List<Post> findGroupPosts(@Param("groupId") String groupId, @Param("status") String status, Pageable pageable);
 
+    @Query("SELECT p FROM Post p WHERE p.groupId IS NULL ORDER BY p.createdAt DESC")
+    List<Post> findRecentGlobalPosts(Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.groupId IN :groupIds AND p.status = 'APPROVED' ORDER BY p.createdAt DESC")
+    List<Post> findRecentGroupPosts(@Param("groupIds") List<String> groupIds, Pageable pageable);
+
     @Query("SELECT p FROM Post p WHERE p.groupId = :groupId AND p.userId = :userId ORDER BY p.createdAt DESC")
     List<Post> findUserGroupPostHistory(
             @Param("groupId") String groupId, @Param("userId") String userId, Pageable pageable);

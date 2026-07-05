@@ -56,7 +56,10 @@ public class Post {
 
     @Column(length = 20)
     @Builder.Default
-    String status = "APPROVED"; // APPROVED, PENDING, REJECTED
+    String status = "APPROVED"; // APPROVED, PENDING, REJECTED, HIDDEN
+
+    @Column(name = "status_reason", columnDefinition = "TEXT")
+    String statusReason;
 
     @Column(name = "is_ai_generated")
     Boolean isAiGenerated; // true nếu bài đăng chứa ảnh do AI tạo ra

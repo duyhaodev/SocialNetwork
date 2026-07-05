@@ -89,6 +89,19 @@ export function GroupUserHistoryTab({ groupId, onProfileClick, onPostClick }) {
                 onPostClick={onPostClick}
               />
             </div>
+            
+            {/* Reason if rejected/hidden */}
+            {post.statusReason && (post.status === 'REJECTED' || post.status === 'HIDDEN') && (
+              <div className="mt-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-600 dark:text-red-400 flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="font-semibold block mb-0.5">
+                    Lý do {post.status === 'REJECTED' ? 'từ chối' : 'ẩn'}:
+                  </span>
+                  {post.statusReason}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

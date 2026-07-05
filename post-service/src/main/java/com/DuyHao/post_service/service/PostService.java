@@ -224,7 +224,7 @@ public class PostService {
                         .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return posts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .collect(Collectors.toList());
     }
 
@@ -265,7 +265,7 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         List<PostResponse> result = posts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .collect(Collectors.toList());
 
         return new LocalFeedResult(result, isFallback);
@@ -300,15 +300,23 @@ public class PostService {
             System.err.println("Lỗi gọi follow-service lấy danh sách following: " + e.getMessage());
         }
 
-        // 3. Candidate Generation (Top 200 recent posts)
-        List<Post> candidates = postRepository
-                .findAll(PageRequest.of(0, 200, Sort.by("createdAt").descending()))
-                .getContent();
+        // 3. Candidate Generation
+        Map<String, String> userGroups = groupClient.getUserGroupMap(currentUserId);
+        List<String> groupIds = new ArrayList<>(userGroups.keySet());
+
+        List<Post> candidates = new ArrayList<>();
+        // Lấy bài Global
+        candidates.addAll(postRepository.findRecentGlobalPosts(PageRequest.of(0, 100)));
+        // Lấy bài Group mà user đã join
+        if (!groupIds.isEmpty()) {
+            candidates.addAll(postRepository.findRecentGroupPosts(groupIds, PageRequest.of(0, 100)));
+        }
 
         // 4. Scoring (Hybrid Fusion)
         double W_CONTENT = 0.3; // Trọng số sở thích/tag
-        double W_SOCIAL = 0.5; // Trọng số quan hệ bạn bè
-        double W_RECENCY = 0.2; // Trọng số độ mới của bài viết
+        double W_SOCIAL = 0.4; // Trọng số quan hệ bạn bè
+        double W_GROUP = 0.2; // Trọng số nhóm
+        double W_RECENCY = 0.1; // Trọng số độ mới của bài viết
 
         final Map<String, Double> finalWeights = userWeights;
         final List<String> finalFollowingIds = followingIds;
@@ -333,13 +341,22 @@ public class PostService {
                         socialScore = 1.0;
                     }
 
-                    // c. Tính điểm độ mới (Recency Score)
+                    // c. Tính điểm nhóm (Group Score)
+                    double groupScore = 0.0;
+                    if (post.getGroupId() != null && groupIds.contains(post.getGroupId())) {
+                        groupScore = 1.0;
+                    }
+
+                    // d. Tính điểm độ mới (Recency Score)
                     long hours = ChronoUnit.HOURS.between(post.getCreatedAt(), now);
                     if (hours < 0) hours = 0;
                     double recencyScore = Math.exp(-0.01 * hours); // Phân rã theo thời gian
 
-                    // d. Tổng hợp điểm số theo trọng số
-                    double finalScore = W_CONTENT * contentScore + W_SOCIAL * socialScore + W_RECENCY * recencyScore;
+                    // e. Tổng hợp điểm số theo trọng số
+                    double finalScore = W_CONTENT * contentScore
+                            + W_SOCIAL * socialScore
+                            + W_GROUP * groupScore
+                            + W_RECENCY * recencyScore;
 
                     return new PostScorePair(post, finalScore);
                 })
@@ -370,7 +387,11 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return pagedPosts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(
+                        post,
+                        currentUserId,
+                        userMap,
+                        post.getGroupId() != null ? userGroups.get(post.getGroupId()) : null))
                 .collect(Collectors.toList());
     }
 
@@ -392,7 +413,7 @@ public class PostService {
         Map<String, UserResponse> userMap = Map.of(user.getUserId(), user);
 
         return posts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .toList();
     }
 
@@ -403,7 +424,7 @@ public class PostService {
         Map<String, UserResponse> userMap = Map.of(user.getUserId(), user);
 
         return posts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .toList();
     }
 
@@ -441,7 +462,7 @@ public class PostService {
         Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(ids)).stream()
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
-        return buildPostResponse(post, currentUserId, userMap);
+        return buildPostResponse(post, currentUserId, userMap, null);
     }
 
     public List<PostResponse> getUserGroupPostHistory(String groupId, String userId, int page, int size) {
@@ -453,7 +474,7 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return posts.stream()
-                .map(post -> buildPostResponse(post, userId, userMap))
+                .map(post -> buildPostResponse(post, userId, userMap, null))
                 .collect(Collectors.toList());
     }
 
@@ -466,7 +487,7 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return posts.stream()
-                .map(post -> buildPostResponse(post, null, userMap))
+                .map(post -> buildPostResponse(post, null, userMap, null))
                 .toList();
     }
 
@@ -539,7 +560,7 @@ public class PostService {
         });
 
         return reposts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .toList();
     }
 
@@ -558,7 +579,7 @@ public class PostService {
         });
 
         return reposts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .toList();
     }
 
@@ -582,7 +603,7 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return matched.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .collect(Collectors.toList());
     }
 
@@ -605,7 +626,7 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return matched.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .collect(Collectors.toList());
     }
 
@@ -626,13 +647,14 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return posts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .collect(Collectors.toList());
     }
 
     // ==================== HELPER ====================
 
-    private PostResponse buildPostResponse(Post post, String currentUserId, Map<String, UserResponse> userMap) {
+    private PostResponse buildPostResponse(
+            Post post, String currentUserId, Map<String, UserResponse> userMap, String groupName) {
         UserResponse user = userMap.get(post.getUserId());
         boolean isRepost = post.getRepostOf() != null;
         UserResponse originalUser = isRepost ? userMap.get(post.getRepostOf().getUserId()) : null;
@@ -661,7 +683,7 @@ public class PostService {
             System.err.println("Lỗi gọi Media Service: " + e.getMessage());
         }
 
-        return postMapper.toResponse(post, user, mediaUrls, interaction, originalUser);
+        return postMapper.toResponse(post, user, mediaUrls, interaction, originalUser, groupName);
     }
 
     public List<String> getPostTags(String id) {
@@ -677,8 +699,10 @@ public class PostService {
         } catch (Exception e) {
         }
 
+        com.DuyHao.post_service.dto.ApiResponse<com.DuyHao.post_service.FeignClient.GroupClient.GroupInfo>
+                groupResponse = null;
         try {
-            var groupResponse = groupClient.getGroup(groupId);
+            groupResponse = groupClient.getGroup(groupId);
             if (groupResponse != null && groupResponse.getResult() != null) {
                 if ("PRIVATE".equals(groupResponse.getResult().privacy()) && !isMember) {
                     throw new RuntimeException("Group is private");
@@ -695,8 +719,12 @@ public class PostService {
         Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
+        final String fetchedGroupName = groupResponse != null && groupResponse.getResult() != null
+                ? groupResponse.getResult().name()
+                : null;
+
         return posts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, fetchedGroupName))
                 .collect(Collectors.toList());
     }
 
@@ -711,7 +739,7 @@ public class PostService {
                 .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
 
         return posts.stream()
-                .map(post -> buildPostResponse(post, currentUserId, userMap))
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .collect(Collectors.toList());
     }
 
@@ -721,6 +749,9 @@ public class PostService {
         // Check admin/mod permission via group-service if needed
         String oldStatus = post.getStatus();
         post.setStatus(status);
+        if (reason != null && !reason.isBlank()) {
+            post.setStatusReason(reason);
+        }
         postRepository.save(post);
 
         // If approved, add to LocalFeed Cache if needed

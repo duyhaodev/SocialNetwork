@@ -26,4 +26,9 @@ public class InternalGroupController {
             @RequestParam String userId) {
         return groupService.getMemberRole(id, userId);
     }
+
+    @GetMapping("/internal/users/{userId}/groups")
+    public java.util.Map<String, String> getUserGroupMap(@PathVariable String userId) {
+        return groupService.getUserGroupMap(userId);
+    }
 }

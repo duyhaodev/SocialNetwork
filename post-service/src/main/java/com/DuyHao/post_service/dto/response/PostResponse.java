@@ -14,7 +14,9 @@ public class PostResponse {
     private String content;
     private String scope;
     private String groupId;
+    private String groupName;
     private String status;
+    private String statusReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

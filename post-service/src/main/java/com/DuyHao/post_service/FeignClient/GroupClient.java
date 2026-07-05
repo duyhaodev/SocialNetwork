@@ -13,11 +13,14 @@ public interface GroupClient {
     boolean checkMember(@PathVariable("id") String id, @RequestParam("userId") String userId);
 
     // Define a basic class to receive group info
-    record GroupInfo(String id, String privacy, Boolean requiresApproval) {}
+    record GroupInfo(String id, String privacy, Boolean requiresApproval, String name) {}
 
     @GetMapping("/{id}")
     ApiResponse<GroupInfo> getGroup(@PathVariable("id") String id);
 
     @GetMapping("/internal/{id}/member-role")
     String getMemberRole(@PathVariable("id") String id, @RequestParam("userId") String userId);
+
+    @GetMapping("/internal/users/{userId}/groups")
+    java.util.Map<String, String> getUserGroupMap(@PathVariable("userId") String userId);
 }

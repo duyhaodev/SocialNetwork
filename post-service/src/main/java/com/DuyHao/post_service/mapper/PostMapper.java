@@ -15,14 +15,17 @@ public class PostMapper {
             UserResponse user,
             List<String> mediaUrls,
             InteractionResponse interaction,
-            UserResponse originalUser) {
+            UserResponse originalUser,
+            String groupName) {
 
         return PostResponse.builder()
                 .id(post.getId())
                 .content(post.getContent())
                 .scope(post.getScope())
                 .groupId(post.getGroupId())
+                .groupName(groupName)
                 .status(post.getStatus())
+                .statusReason(post.getStatusReason())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
 
