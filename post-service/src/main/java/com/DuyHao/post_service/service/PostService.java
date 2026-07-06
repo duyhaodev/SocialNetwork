@@ -925,7 +925,32 @@ public class PostService {
     @PreAuthorize("hasRole('ADMIN')")
     public org.springframework.data.domain.Page<PostResponse> getAllPosts(
             org.springframework.data.domain.Pageable pageable) {
-        return postRepository.findAll(pageable).map(postMapper::toPostResponse);
+        Page<Post> page = postRepository.findAll(pageable);
+        List<Post> posts = page.getContent();
+
+        if (posts.isEmpty()) {
+            return new PageImpl<>(Collections.emptyList(), pageable, page.getTotalElements());
+        }
+
+        Set<String> userIds = posts.stream()
+                .flatMap(p -> {
+                    Set<String> ids = new HashSet<>();
+                    ids.add(p.getUserId());
+                    if (p.getRepostOf() != null) ids.add(p.getRepostOf().getUserId());
+                    return ids.stream();
+                })
+                .collect(Collectors.toSet());
+
+        Map<String, UserResponse> userMap = userIds.isEmpty()
+                ? Map.of()
+                : userClient.getUsers(new ArrayList<>(userIds)).stream()
+                        .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        List<PostResponse> responses = posts.stream()
+                .map(post -> buildPostResponse(post, null, userMap, null))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, page.getTotalElements());
     }
 
     @PreAuthorize("hasRole('ADMIN')")

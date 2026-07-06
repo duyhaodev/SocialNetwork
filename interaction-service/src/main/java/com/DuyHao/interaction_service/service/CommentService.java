@@ -132,7 +132,10 @@ public class CommentService {
     public void deleteCommentByAdmin(String commentId) {
         Comment comment =
                 commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
-        commentRepository.delete(comment);
+
+        // Soft delete: Change content instead of hard delete
+        comment.setContent("Bình luận đã bị ẩn bởi Quản trị viên");
+        commentRepository.save(comment);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

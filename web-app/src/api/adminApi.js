@@ -2,8 +2,12 @@ import axiosClient from './axiosClient';
 
 const adminApi = {
   // --- USERS ---
-  getAllUsers: (page = 0, size = 10) => {
-    return axiosClient.get(`/identity/admin/users?page=${page}&size=${size}`);
+  getAllUsers: (page = 0, size = 10, keyword = '') => {
+    let url = `/identity/admin/users?page=${page}&size=${size}`;
+    if (keyword) {
+      url += `&keyword=${encodeURIComponent(keyword)}`;
+    }
+    return axiosClient.get(url);
   },
   banUser: (userId) => {
     return axiosClient.put(`/identity/admin/users/${userId}/ban`);
@@ -44,6 +48,9 @@ const adminApi = {
   },
 
   // --- COMMENTS ---
+  getPostComments: (postId, page = 0, size = 50) => {
+    return axiosClient.get(`/interaction/comments/post/${postId}?page=${page}&size=${size}`);
+  },
   getAllComments: (page = 0, size = 10) => {
     return axiosClient.get(`/interaction/admin/comments?page=${page}&size=${size}`);
   },

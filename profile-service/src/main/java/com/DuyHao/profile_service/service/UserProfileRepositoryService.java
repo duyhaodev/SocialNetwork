@@ -79,10 +79,23 @@ public class UserProfileRepositoryService {
     public UserProfileResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String userId = context.getAuthentication().getName();
+        boolean isAdmin = context.getAuthentication().getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-        UserProfile userProfile = userProfileRepository
-                .findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Profile not found!"));
+        UserProfile userProfile = userProfileRepository.findByUserId(userId).orElseGet(() -> {
+            if (isAdmin) {
+                ProfileCreationRequest adminReq = ProfileCreationRequest.builder()
+                        .userId(userId)
+                        .username("admin")
+                        .fullName("System Admin")
+                        .build();
+                createProfile(adminReq);
+                return userProfileRepository
+                        .findByUserId(userId)
+                        .orElseThrow(() -> new RuntimeException("Profile not found!"));
+            }
+            throw new RuntimeException("Profile not found!");
+        });
 
         return userProfileMapper.toUserProfileResponse(userProfile);
     }
