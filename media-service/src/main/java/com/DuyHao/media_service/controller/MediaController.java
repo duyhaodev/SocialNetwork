@@ -4,6 +4,7 @@ import com.DuyHao.media_service.dto.ApiResponse;
 import com.DuyHao.media_service.dto.response.MediaResponse;
 import com.DuyHao.media_service.service.MediaService;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,13 @@ public class MediaController {
         return mediaService.getByConversationId(conversationId);
     }
 
+    @GetMapping("/conversation/{conversationId}/paged")
+    public Map<String, Object> getByConversationIdPaged(
+            @PathVariable String conversationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "18") int size) {
+        return mediaService.getByConversationIdPaged(conversationId, page, size);
+    }
     // ==================== DELETE BY COMMENT ====================
     @DeleteMapping("/comment/{commentId}")
     public ApiResponse<Void> deleteByCommentId(@PathVariable("commentId") String commentId) {

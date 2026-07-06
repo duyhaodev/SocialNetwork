@@ -29,6 +29,8 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [hasMoreNewer, setHasMoreNewer] = useState(false);
+  const [loadingNewer, setLoadingNewer] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [messageInput, setMessageInput] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -316,6 +318,98 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
     }
   };
 
+  // Load tin mới hơn khi scroll xuống cuối (chỉ khi đang ở context mode)
+  const handleLoadNewer = async () => {
+    if (loadingNewer || !hasMoreNewer || !conversation?.id || currentPage <= 0) return;
+
+    setLoadingNewer(true);
+    shouldScrollToBottom.current = false;
+    const prevPage = currentPage - 1;
+
+    const container = scrollContainerRef.current;
+    const prevScrollTop = container?.scrollTop || 0;
+    const prevScrollHeight = container?.scrollHeight || 0;
+
+    try {
+      const res = await messageApi.getMessagesPaged(conversation.id, prevPage, 30);
+      const data = res.data || res;
+
+      if (data && data.code === 1000) {
+        const result = data.result;
+        const newerMsgs = (result.messages || [])
+          .slice()
+          .reverse()
+          .map((m) => ({ ...m, isMe: checkIsMe(m) }));
+
+        setMessages(prev => [...prev, ...newerMsgs]);
+        setHasMoreNewer(prevPage > 0);
+        setCurrentPage(prevPage);
+
+        // Giữ vị trí scroll
+        requestAnimationFrame(() => {
+          if (container) {
+            container.style.scrollBehavior = "auto";
+            container.scrollTop = prevScrollTop;
+          }
+        });
+      }
+    } catch (err) {
+      console.error("❌ loadNewer error:", err);
+    } finally {
+      setLoadingNewer(false);
+    }
+  };
+
+  const handleScrollToMessage = async (messageId) => {
+    setIsInfoOpen(false);
+
+    const doScroll = (id) => {
+      const el = scrollContainerRef.current?.querySelector(`[data-message-id="${id}"]`);
+      if (!el) return false;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('msg-highlight');
+      setTimeout(() => el.classList.remove('msg-highlight'), 1800);
+      return true;
+    };
+
+    // Chờ panel đóng
+    await new Promise(r => setTimeout(r, 350));
+
+    // Nếu đã có trong DOM → scroll ngay
+    if (doScroll(messageId)) return;
+
+    // Chưa có → hỏi BE page nào chứa tin nhắn đó
+    try {
+      const res = await messageApi.getMessageContext(conversation.id, messageId);
+      const data = res.data || res;
+      const pageIndex = data?.result?.pageIndex ?? 0;
+
+      // Load đúng page đó
+      shouldScrollToBottom.current = false;
+      const pageRes = await messageApi.getMessagesPaged(conversation.id, pageIndex, 30);
+      const pageData = pageRes.data || pageRes;
+
+      if (pageData?.code === 1000) {
+        const result = pageData.result;
+        const msgs = (result.messages || [])
+          .slice()
+          .reverse()
+          .map(m => ({ ...m, isMe: checkIsMe(m) }));
+
+        setMessages(msgs);
+        setHasMore(result.hasMore || false);
+        setHasMoreNewer(pageIndex > 0); // còn trang mới hơn nếu không phải page 0
+        setCurrentPage(pageIndex);
+
+        // Chờ DOM render rồi scroll
+        await new Promise(r => setTimeout(r, 100));
+        doScroll(messageId);
+      }
+    } catch (err) {
+      console.error('Failed to jump to message:', err);
+    }
+  };
+
   const handleInitiateCall = async (type) => {
     const partnerId = conversation.partnerId || (conversation.user && conversation.user.userId) || conversation.userId;
     if (!partnerId) return;
@@ -528,7 +622,12 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
               if (e.target.scrollTop < 100 && hasMore && !loadingMore) {
                 handleLoadMore();
               }
-            }, 500);
+              // Scroll xuống gần cuối → load tin mới hơn (context mode)
+              const { scrollTop, scrollHeight, clientHeight } = e.target;
+              if (scrollHeight - scrollTop - clientHeight < 100 && hasMoreNewer && !loadingNewer) {
+                handleLoadNewer();
+              }
+            }, 300);
           }}
         >
           {/* Load more indicator */}
@@ -561,7 +660,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
               const isLastInGroup = !nextMsg || !!nextMsg.type || isTimeGapAfter || (getSenderId(nextMsg) !== getSenderId(msg));
 
               return (
-              <div key={msg.id} className="space-y-1">
+              <div key={msg.id} data-message-id={msg.id} className="space-y-1">
 
                 {/* System message — mất streak */}
                 {msg.type === "SYSTEM_STREAK_LOST" && (
@@ -663,7 +762,16 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
 
                           {/* Message Content Bubble */}
                           {msg.content && !msg.content.startsWith("📞 Cuộc gọi") && (
-                            <div className="relative">
+                            <div className="relative msg-bubble-wrap">
+                              {/* Timestamp tooltip — hiện sau 600ms hover */}
+                              {msg.createdAt && (
+                                <div className={`msg-timestamp-tooltip${msg.isMe ? '' : ' is-other'}`}>
+                                  {new Date(msg.createdAt).toLocaleString('vi-VN', {
+                                    day: '2-digit', month: '2-digit', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                  })}
+                                </div>
+                              )}
                               <div
                                 className={`px-4 pt-2 pb-1.5 rounded-2xl break-words ${
                                   msg.reactions && Object.keys(msg.reactions).length > 0 ? "mb-3" : ""
@@ -783,6 +891,11 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
             </div>
           )}
           <div ref={messagesEndRef} />
+          {loadingNewer && (
+            <div className="flex justify-center py-2">
+              <Spinner className="w-5 h-5 text-gray-500" />
+            </div>
+          )}
         </div>
 
         {/* Message Input */}
@@ -863,7 +976,7 @@ export function ChatWindow({ conversation, onSendMessageSuccess, incomingMessage
       </div>
       <AnimatePresence>
         {isInfoOpen && (
-          <ConversationDetails conversation={conversation} messages={messages} onClose={() => setIsInfoOpen(false)} onLeaveGroup={onLeaveGroup} />
+          <ConversationDetails conversation={conversation} messages={messages} onClose={() => setIsInfoOpen(false)} onLeaveGroup={onLeaveGroup} onScrollToMessage={handleScrollToMessage} />
         )}
       </AnimatePresence>
 

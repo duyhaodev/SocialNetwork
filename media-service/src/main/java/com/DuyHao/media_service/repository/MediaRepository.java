@@ -2,6 +2,8 @@ package com.DuyHao.media_service.repository;
 
 import com.DuyHao.media_service.entity.Media;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MediaRepository extends JpaRepository<Media, String> {
@@ -11,6 +13,9 @@ public interface MediaRepository extends JpaRepository<Media, String> {
     List<Media> findByCommentId(String commentId);
 
     List<Media> findByConversationId(String conversationId);
+
+    // Phân trang cho conversation media
+    Page<Media> findByConversationId(String conversationId, Pageable pageable);
 
     // Tìm danh sách media theo list ID
     List<Media> findAllByIdIn(List<String> ids);

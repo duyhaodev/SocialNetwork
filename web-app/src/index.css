@@ -107,3 +107,53 @@
   padding: 3px 14px;
   letter-spacing: 0.02em;
 }
+
+/* ── Message timestamp tooltip — hiện sau khi hover 600ms ── */
+.msg-bubble-wrap {
+  position: relative;
+}
+
+/* Tin của mình — tooltip hiện bên trái bubble */
+.msg-timestamp-tooltip {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+  background: rgba(20, 20, 20, 0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: rgba(255,255,255,0.65);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  transition-delay: 0s;
+  z-index: 50;
+}
+
+/* Tin người khác — tooltip hiện bên phải bubble */
+.msg-timestamp-tooltip.is-other {
+  right: auto;
+  left: calc(100% + 8px);
+}
+
+.msg-bubble-wrap:hover .msg-timestamp-tooltip {
+  opacity: 1;
+  transition-delay: 0.6s;
+}
+
+/* ── Message highlight khi scroll đến từ search ── */
+@keyframes msgHighlight {
+  0%   { background-color: rgba(0, 149, 246, 0.25); }
+  60%  { background-color: rgba(0, 149, 246, 0.15); }
+  100% { background-color: transparent; }
+}
+.msg-highlight {
+  border-radius: 12px;
+  animation: msgHighlight 1.8s ease-out forwards;
+}

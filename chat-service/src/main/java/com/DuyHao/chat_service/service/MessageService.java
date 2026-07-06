@@ -19,10 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,10 +40,6 @@ public class MessageService {
     RedisPublisherService redisPublisherService;
     StreakService streakService;
 
-    /**
-     * Lấy messages có phân trang — trả về mới nhất trước (page 0 = tin mới nhất).
-     * hasMore = true nếu còn trang tiếp theo (tin cũ hơn).
-     */
     public record PagedMessagesResult(List<MessageResponse> messages, boolean hasMore) {}
 
     public PagedMessagesResult getMessagesPaged(String conversationId, int page, int size) {
@@ -67,9 +65,62 @@ public class MessageService {
         return new PagedMessagesResult(responses, messagePage.hasNext());
     }
 
-    public MessageResponse create(MessageRequest request) {
+    /**
+     * Search tin nhắn theo keyword — case-insensitive, bỏ qua tin đã thu hồi.
+     */
+    public PagedMessagesResult searchMessages(String conversationId, String keyword, int page, int size) {
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
 
+        Conversation conv = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        boolean isParticipant = conv.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+
+        if (!isParticipant) {
+            throw new RuntimeException("Access denied");
+        }
+
+        // Escape regex special chars để tránh injection
+        String escaped = keyword.replaceAll("([\\[\\](){}*+?^$.|\\\\])", "\\\\$1");
+
+        Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+        Page<Message> messagePage = messageRepository.searchByKeywordInConversation(conversationId, escaped, pageable);
+
+        List<MessageResponse> responses = messagePage.getContent().stream()
+                .map(msg -> toMessageResponse(msg, currentUserId))
+                .collect(Collectors.toList());
+
+        return new PagedMessagesResult(responses, messagePage.hasNext());
+    }
+
+    /**
+     * Tính page index chứa tin nhắn cụ thể.
+     * FE dùng để load đúng trang rồi scroll đến tin nhắn đó.
+     */
+    public int getPageOfMessage(String conversationId, String messageId, int pageSize) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Conversation conv = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        boolean isParticipant = conv.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+
+        if (!isParticipant) throw new RuntimeException("Access denied");
+
+        Message target = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        // Đếm số tin nhắn mới hơn tin này trong conversation
+        long newerCount = messageRepository.countByConversationIdAndCreatedAtAfter(
+                conversationId, target.getCreatedAt());
+
+        return (int) (newerCount / pageSize);
+    }
+
+    public MessageResponse create(MessageRequest request) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
         Conversation conversation = conversationRepository.findById(request.getConversationId())
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
 

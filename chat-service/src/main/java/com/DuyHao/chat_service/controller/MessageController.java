@@ -40,6 +40,33 @@ public class MessageController {
                 .build();
     }
 
+    @GetMapping("/{conversationId}/search")
+    ApiResponse<Map<String, Object>> searchMessages(
+            @PathVariable String conversationId,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        MessageService.PagedMessagesResult result = messageService.searchMessages(conversationId, keyword, page, size);
+        return ApiResponse.<Map<String, Object>>builder()
+                .result(Map.of(
+                        "messages", result.messages(),
+                        "hasMore", result.hasMore(),
+                        "page", page
+                ))
+                .build();
+    }
+
+    @GetMapping("/{conversationId}/page-of/{messageId}")
+    ApiResponse<Map<String, Object>> getPageOfMessage(
+            @PathVariable String conversationId,
+            @PathVariable String messageId,
+            @RequestParam(defaultValue = "30") int pageSize) {
+        int pageIndex = messageService.getPageOfMessage(conversationId, messageId, pageSize);
+        return ApiResponse.<Map<String, Object>>builder()
+                .result(Map.of("pageIndex", pageIndex))
+                .build();
+    }
+
     @PutMapping("/revoke/{messageId}")
     ApiResponse<MessageResponse> revoke(@PathVariable String messageId) {
         return ApiResponse.<MessageResponse>builder()
