@@ -151,10 +151,7 @@ public class MediaService {
     public Map<String, Object> getByConversationIdPaged(String conversationId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
         Page<Media> result = mediaRepository.findByConversationId(conversationId, pageable);
-        return Map.of(
-            "content", mediaMapper.toResponseList(result.getContent()),
-            "hasMore", !result.isLast()
-        );
+        return Map.of("content", mediaMapper.toResponseList(result.getContent()), "hasMore", !result.isLast());
     }
 
     // ==================== STORY ====================
