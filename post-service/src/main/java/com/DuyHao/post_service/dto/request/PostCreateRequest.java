@@ -17,4 +17,5 @@ public class PostCreateRequest {
     private List<String> tags;
     List<String> mediaIds;
     private Boolean isAiGenerated; // true nếu ảnh do AI tạo ra
+    private Boolean isSensitiveContent; // true nếu user nhấn "Post anyway" khi bị cảnh báo mild
 }

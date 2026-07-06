@@ -22,6 +22,24 @@ export const messageApi = {
         return axiosClient.get(url);
     },
 
+    searchMessages(conversationId, keyword, page = 0, size = 20) {
+        return axiosClient.get(`chat/messages/${conversationId}/search`, {
+            params: { keyword, page, size }
+        });
+    },
+
+    getLinks(conversationId, page = 0, size = 20) {
+        return axiosClient.get(`chat/messages/${conversationId}/links`, {
+            params: { page, size }
+        });
+    },
+
+    getMessageContext(conversationId, messageId) {
+        return axiosClient.get(`chat/messages/${conversationId}/page-of/${messageId}`, {
+            params: { pageSize: 30 }
+        });
+    },
+
     // Gửi tin nhắn mới
     sendMessage({ conversationId, content, media }) {
         const url = "chat/messages/create";

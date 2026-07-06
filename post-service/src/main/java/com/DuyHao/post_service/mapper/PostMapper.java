@@ -50,6 +50,8 @@ public class PostMapper {
                 .originalFullName(originalUser != null ? originalUser.getFullName() : null)
                 .originalAvatarUrl(originalUser != null ? originalUser.getAvatarUrl() : null)
                 .isAiGenerated(Boolean.TRUE.equals(post.getIsAiGenerated()))
+                .isSensitiveContent(Boolean.TRUE.equals(post.getIsSensitiveContent()))
+                .tags(post.getTags())
                 .isPinned(Boolean.TRUE.equals(post.getIsPinned()))
                 .build();
     }
@@ -67,6 +69,8 @@ public class PostMapper {
                 .userId(post.getUserId())
                 .isAiGenerated(Boolean.TRUE.equals(post.getIsAiGenerated()))
                 .isPinned(Boolean.TRUE.equals(post.getIsPinned()))
+                .isSensitiveContent(Boolean.TRUE.equals(post.getIsSensitiveContent()))
+                .tags(post.getTags())
                 .build();
     }
 }

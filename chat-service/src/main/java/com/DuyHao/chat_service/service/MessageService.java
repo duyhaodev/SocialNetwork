@@ -1,5 +1,6 @@
 package com.DuyHao.chat_service.service;
 
+import com.DuyHao.chat_service.dto.response.LinkItemResponse;
 import com.DuyHao.chat_service.dto.RealtimeMessage;
 import com.DuyHao.chat_service.dto.request.MessageRequest;
 import com.DuyHao.chat_service.dto.response.MessageResponse;
@@ -9,6 +10,7 @@ import com.DuyHao.chat_service.exception.AppException;
 import com.DuyHao.chat_service.exception.ErrorCode;
 import com.DuyHao.chat_service.entity.Conversation;
 import com.DuyHao.chat_service.entity.Message;
+import com.DuyHao.chat_service.entity.Conversation;
 import com.DuyHao.chat_service.repository.ConversationRepository;
 import com.DuyHao.chat_service.repository.MessageRepository;
 import com.DuyHao.chat_service.repository.httpClient.MediaClient;
@@ -21,10 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,10 +44,6 @@ public class MessageService {
     RedisPublisherService redisPublisherService;
     StreakService streakService;
 
-    /**
-     * Lấy messages có phân trang — trả về mới nhất trước (page 0 = tin mới nhất).
-     * hasMore = true nếu còn trang tiếp theo (tin cũ hơn).
-     */
     public record PagedMessagesResult(List<MessageResponse> messages, boolean hasMore) {}
 
     public PagedMessagesResult getMessagesPaged(String conversationId, int page, int size) {
@@ -67,6 +67,60 @@ public class MessageService {
                 .collect(Collectors.toList());
 
         return new PagedMessagesResult(responses, messagePage.hasNext());
+    }
+
+    /**
+     * Search tin nhắn theo keyword — case-insensitive, bỏ qua tin đã thu hồi.
+     */
+    public PagedMessagesResult searchMessages(String conversationId, String keyword, int page, int size) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Conversation conv = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        boolean isParticipant = conv.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+
+        if (!isParticipant) {
+            throw new RuntimeException("Access denied");
+        }
+
+        // Escape regex special chars để tránh injection
+        String escaped = keyword.replaceAll("([\\[\\](){}*+?^$.|\\\\])", "\\\\$1");
+
+        Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+        Page<Message> messagePage = messageRepository.searchByKeywordInConversation(conversationId, escaped, pageable);
+
+        List<MessageResponse> responses = messagePage.getContent().stream()
+                .map(msg -> toMessageResponse(msg, currentUserId))
+                .collect(Collectors.toList());
+
+        return new PagedMessagesResult(responses, messagePage.hasNext());
+    }
+
+    /**
+     * Tính page index chứa tin nhắn cụ thể.
+     * FE dùng để load đúng trang rồi scroll đến tin nhắn đó.
+     */
+    public int getPageOfMessage(String conversationId, String messageId, int pageSize) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Conversation conv = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        boolean isParticipant = conv.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+
+        if (!isParticipant) throw new RuntimeException("Access denied");
+
+        Message target = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found"));
+
+        // Đếm số tin nhắn mới hơn tin này trong conversation
+        long newerCount = messageRepository.countByConversationIdAndCreatedAtAfter(
+                conversationId, target.getCreatedAt());
+
+        return (int) (newerCount / pageSize);
     }
 
     public MessageResponse create(MessageRequest request) {
@@ -319,6 +373,77 @@ public class MessageService {
         redisPublisherService.publish(rtMessage);
 
         return response;
+    }
+
+    public record PagedLinksResult(List<LinkItemResponse> links, boolean hasMore) {}
+
+    /**
+     * Lấy tất cả links trong conversation — query DB trực tiếp, có pagination.
+     * BE dùng regex để tìm messages chứa http:// hoặc https://, sau đó extract từng URL ra.
+     */
+    public PagedLinksResult getLinks(String conversationId, int page, int size) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Conversation conv = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        boolean isParticipant = conv.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(currentUserId));
+        if (!isParticipant) throw new RuntimeException("Access denied");
+
+        // Regex pattern để extract URLs
+        java.util.regex.Pattern URL_PATTERN = java.util.regex.Pattern.compile(
+                "https?://[^\\s<>\"']+", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+        // Dùng một page size lớn hơn để compensate việc expand URLs từ mỗi message
+        // Lấy tối đa 100 message mỗi lần để extract links
+        int fetchSize = Math.max(size * 5, 100);
+        Pageable pageable = PageRequest.of(page, fetchSize, Sort.by("createdAt").descending());
+        Page<Message> messagePage = messageRepository.findLinksByConversationId(conversationId, pageable);
+
+        List<LinkItemResponse> links = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.LinkedHashSet<>();
+
+        for (Message msg : messagePage.getContent()) {
+            if (msg.getContent() == null) continue;
+            java.util.regex.Matcher matcher = URL_PATTERN.matcher(msg.getContent());
+
+            // Lấy profile của sender (cached per message batch)
+            LinkItemResponse.SenderInfo senderInfo = null;
+            try {
+                if (!"SYSTEM".equals(msg.getSenderId())) {
+                    UserProfileResponse profile = profileClient.getProfile(msg.getSenderId());
+                    if (profile != null) {
+                        senderInfo = LinkItemResponse.SenderInfo.builder()
+                                .id(profile.getUserId())
+                                .fullName(profile.getFullName())
+                                .avatarUrl(profile.getAvatarUrl())
+                                .build();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch profile for sender {}: {}", msg.getSenderId(), e.getMessage());
+            }
+
+            while (matcher.find()) {
+                String url = matcher.group().replaceAll("[.,;!?)]+$", ""); // Trim trailing punctuation
+                if (!seen.contains(url)) {
+                    seen.add(url);
+                    links.add(LinkItemResponse.builder()
+                            .messageId(msg.getId())
+                            .url(url)
+                            .createdAt(msg.getCreatedAt())
+                            .sender(senderInfo)
+                            .build());
+                }
+            }
+        }
+
+        // Trim to requested size
+        boolean hasMore = links.size() > size || messagePage.hasNext();
+        if (links.size() > size) links = links.subList(0, size);
+
+        return new PagedLinksResult(links, hasMore);
     }
 
     private MessageResponse toMessageResponse(Message message, String currentUserId) {

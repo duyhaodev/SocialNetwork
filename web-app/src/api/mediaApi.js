@@ -9,6 +9,12 @@ const mediaApi = {
     // Thêm hàm mới vào đây
     getConversationMedia(conversationId) {
         return axiosClient.get(`/media/conversation/${conversationId}`);
+    },
+
+    getConversationMediaPaged(conversationId, page = 0, size = 18) {
+        return axiosClient.get(`/media/conversation/${conversationId}/paged`, {
+            params: { page, size }
+        });
     }
 };
 

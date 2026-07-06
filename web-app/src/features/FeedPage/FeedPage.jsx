@@ -238,7 +238,8 @@ export function FeedPage() {
   };
 
   // Thực hiện đăng bài (bỏ qua moderation)
-  const doPost = async (skipImageModeration = false) => {
+  // isSensitive = true khi user nhấn "Post anyway" sau cảnh báo mild
+  const doPost = async (skipImageModeration = false, isSensitive = false) => {
     const content = (newPost || "").trim();
     if (!content && mediaFiles.length === 0) return;
 
@@ -319,7 +320,8 @@ export function FeedPage() {
       const payload = {
         content,
         mediaIds,
-        isAiGenerated: hasAiGenerated, // post-service sẽ dùng để gắn tag
+        isAiGenerated: hasAiGenerated,
+        isSensitiveContent: isSensitive, // true nếu user nhấn "Post anyway"
       };
 
       const action = await dispatch(createPost(payload));
@@ -582,7 +584,7 @@ export function FeedPage() {
           onPostAnyway={() => {
             setShowModWarning(false);
             setModerationResult(null);
-            doPost(true);
+            doPost(true, true); // skipImageModeration=true, isSensitive=true
           }}
         />
       </Tabs>

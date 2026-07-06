@@ -48,4 +48,10 @@ public class PostResponse {
     private Boolean isAiGenerated;
 
     private Boolean isPinned;
+
+    // Sensitive content flag — true nếu user nhấn "Post anyway" khi bị cảnh báo nội dung nhạy cảm
+    private Boolean isSensitiveContent;
+
+    // tags
+    private List<String> tags;
 }

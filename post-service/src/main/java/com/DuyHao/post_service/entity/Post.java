@@ -68,6 +68,9 @@ public class Post {
     @Builder.Default
     Boolean isPinned = false;
 
+    @Column(name = "is_sensitive_content")
+    Boolean isSensitiveContent; // true nếu user chọn "Post anyway" khi bị cảnh báo nội dung nhạy cảm mức mild
+
     // Repost
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "repost_of_id")

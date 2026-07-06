@@ -12,6 +12,10 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -142,6 +146,15 @@ public class MediaService {
 
     public List<MediaResponse> getByConversationId(String conversationId) {
         return mediaMapper.toResponseList(mediaRepository.findByConversationId(conversationId));
+    }
+
+    public Map<String, Object> getByConversationIdPaged(String conversationId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<Media> result = mediaRepository.findByConversationId(conversationId, pageable);
+        return Map.of(
+            "content", mediaMapper.toResponseList(result.getContent()),
+            "hasMore", !result.isLast()
+        );
     }
 
     // ==================== STORY ====================

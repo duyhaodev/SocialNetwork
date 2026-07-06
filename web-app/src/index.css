@@ -40,3 +40,120 @@
 .streak-count {
   display: inline-block;
 }
+
+/* ── PostMedia scroll ── */
+.post-media-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.post-media-scroll::-webkit-scrollbar { display: none; }
+
+/* ── SensitiveOverlay — Threads blur + dot + shimmer + lock pulse ── */
+.sensitive-overlay .blur-base {
+  position: absolute; inset: 0;
+  backdrop-filter: blur(18px) saturate(0.6);
+  -webkit-backdrop-filter: blur(18px) saturate(0.6);
+  background: rgba(0,0,0,0.35);
+}
+
+.sensitive-overlay .dot-layer {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px);
+  background-size: 6px 6px;
+  animation: dotMove 3s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes dotMove {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 24px; }
+}
+
+.sensitive-overlay .shimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.07) 50%, transparent 65%);
+  background-size: 200% 100%;
+  animation: shimmerMove 5s ease-in-out infinite;
+}
+
+@keyframes shimmerMove {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.sensitive-overlay .label {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; color: #fff;
+}
+
+.sensitive-overlay .icon-ring {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  animation: lockPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.15); }
+  50%       { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+}
+
+.sensitive-overlay .pill {
+  font-size: 11px; opacity: 0.6;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 3px 14px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Message timestamp tooltip — hiện sau khi hover 600ms ── */
+.msg-bubble-wrap {
+  position: relative;
+}
+
+/* Tin của mình — tooltip hiện bên trái bubble */
+.msg-timestamp-tooltip {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+  background: rgba(20, 20, 20, 0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: rgba(255,255,255,0.65);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  transition-delay: 0s;
+  z-index: 50;
+}
+
+/* Tin người khác — tooltip hiện bên phải bubble */
+.msg-timestamp-tooltip.is-other {
+  right: auto;
+  left: calc(100% + 8px);
+}
+
+.msg-bubble-wrap:hover .msg-timestamp-tooltip {
+  opacity: 1;
+  transition-delay: 0.6s;
+}
+
+/* ── Message highlight khi scroll đến từ search ── */
+@keyframes msgHighlight {
+  0%   { background-color: rgba(0, 149, 246, 0.25); }
+  60%  { background-color: rgba(0, 149, 246, 0.15); }
+  100% { background-color: transparent; }
+}
+.msg-highlight {
+  border-radius: 12px;
+  animation: msgHighlight 1.8s ease-out forwards;
+}
