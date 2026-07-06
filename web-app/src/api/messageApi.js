@@ -28,6 +28,12 @@ export const messageApi = {
         });
     },
 
+    getLinks(conversationId, page = 0, size = 20) {
+        return axiosClient.get(`chat/messages/${conversationId}/links`, {
+            params: { page, size }
+        });
+    },
+
     getMessageContext(conversationId, messageId) {
         return axiosClient.get(`chat/messages/${conversationId}/page-of/${messageId}`, {
             params: { pageSize: 30 }

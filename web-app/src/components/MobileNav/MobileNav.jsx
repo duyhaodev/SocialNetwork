@@ -1,4 +1,4 @@
-import { Home, Search, Heart, User, PlusSquare, Archive, LogOut, Menu, Edit, X } from "lucide-react";
+import { Home, Search, Heart, User, Users, PlusSquare, Archive, LogOut, Menu, Edit, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { openComposer } from "../../store/composerSlice";
@@ -44,7 +44,7 @@ export function MobileNav() {
     { id: "search", icon: Search, path: "/search" },
     { id: "new", icon: PlusSquare, action: () => dispatch(openComposer({ text: "", files: [] })) },
     { id: "activity", icon: Heart, path: "/activity" },
-    { id: "story", icon: Archive, path: "/story/archive" },
+    { id: "groups", icon: Users, path: "/groups" },
     { id: "profile", icon: User, path: "/profile" },
   ];
 

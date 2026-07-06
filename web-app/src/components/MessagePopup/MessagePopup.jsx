@@ -49,10 +49,10 @@ export function MessagePopup() {
                 <div className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full" />
               )}
             </div>
-            <span className="font-medium">Message</span>
+            <span className="font-medium hidden md:inline">Message</span>
             
             {/* Recent avatars (taking top 3 from Redux data) */}
-            <div className="flex -space-x-2">
+            <div className="hidden md:flex -space-x-2">
               {conversations.slice(0, 3).map((conv, index) => (
                 <img
                   key={conv.id}

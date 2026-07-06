@@ -57,6 +57,13 @@ export function ConversationDetails({ conversation, messages = [], onClose, onLe
   const [mediaHasMore, setMediaHasMore] = useState(true);
   const [mediaLoadingMore, setMediaLoadingMore] = useState(false);
   const mediaLoadMoreRef = useRef(null);
+  // Links from API
+  const [links, setLinks] = useState([]);
+  const [linksLoading, setLinksLoading] = useState(false);
+  const [linksPage, setLinksPage] = useState(0);
+  const [linksHasMore, setLinksHasMore] = useState(false);
+  const [linksLoadingMore, setLinksLoadingMore] = useState(false);
+  const linksLoadMoreRef = useRef(null);
 
   useEffect(() => {
     setAvatarUrl(conversation?.user?.avatar || conversation?.conversationAvatar || null);
@@ -118,6 +125,48 @@ export function ConversationDetails({ conversation, messages = [], onClose, onLe
     observer.observe(el);
     return () => observer.disconnect();
   }, [mediaHasMore, mediaLoadingMore, isMediaOpen, mediaPage, conversation?.id]);
+
+  // Fetch links ngay khi mở Details (để hiện count trên badge)
+  useEffect(() => {
+    if (!conversation?.id) return;
+    setLinksLoading(true);
+    setLinks([]);
+    setLinksPage(0);
+    setLinksHasMore(false);
+    messageApi.getLinks(conversation.id, 0, 20)
+      .then(res => {
+        const data = res.data || res;
+        const result = data?.result || {};
+        setLinks(result?.links || []);
+        setLinksHasMore(result?.hasMore ?? false);
+        setLinksPage(1);
+      })
+      .catch(() => {})
+      .finally(() => setLinksLoading(false));
+  }, [conversation?.id]);
+
+  // Infinite scroll cho Links panel
+  useEffect(() => {
+    if (!linksHasMore || linksLoadingMore || !isLinksOpen) return;
+    const el = linksLoadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setLinksLoadingMore(true);
+      messageApi.getLinks(conversation.id, linksPage, 20)
+        .then(res => {
+          const data = res.data || res;
+          const result = data?.result || {};
+          setLinks(prev => [...prev, ...(result?.links || [])]);
+          setLinksHasMore(result?.hasMore ?? false);
+          setLinksPage(p => p + 1);
+        })
+        .catch(() => {})
+        .finally(() => setLinksLoadingMore(false));
+    }, { threshold: 0.1 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [linksHasMore, linksLoadingMore, isLinksOpen, linksPage, conversation?.id]);
 
   // Search messages qua BE — debounce 400ms
   useEffect(() => {
@@ -250,26 +299,6 @@ export function ConversationDetails({ conversation, messages = [], onClose, onLe
 
   const isGroup = conversation.type === "GROUP";
   const name = conversation.user?.displayName || conversation.conversationName || "Unknown";
-
-  // Extract tất cả links từ messages
-  const URL_REGEX = /(https?:\/\/[^\s]+)/g;
-  const extractedLinks = [];
-  messages.forEach((msg) => {
-    if (!msg.content || msg.isRevoked) return;
-    const matches = msg.content.match(URL_REGEX);
-    if (matches) {
-      matches.forEach((url) => {
-        extractedLinks.push({ url, createdAt: msg.createdAt, sender: msg.sender });
-      });
-    }
-  });
-  // Mới nhất lên đầu, deduplicate theo url
-  const seen = new Set();
-  const uniqueLinks = extractedLinks.reverse().filter(({ url }) => {
-    if (seen.has(url)) return false;
-    seen.add(url);
-    return true;
-  });
 
   // Animation variants
   const slideIn = {
@@ -544,9 +573,9 @@ export function ConversationDetails({ conversation, messages = [], onClose, onLe
                   <LinkIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-200 transition-colors" />
                 </div>
                 <span className="text-sm font-medium text-gray-400 group-hover:text-gray-200 transition-colors">Links</span>
-                {uniqueLinks.length > 0 && (
+                {links.length > 0 && (
                   <span className="text-[10px] font-semibold bg-white/[0.1] text-gray-400 px-1.5 py-0.5 rounded-full">
-                    {uniqueLinks.length}
+                    {links.length}
                   </span>
                 )}
               </div>
@@ -775,7 +804,11 @@ export function ConversationDetails({ conversation, messages = [], onClose, onLe
 
         {/* List */}
         <div className="flex-1 overflow-y-auto details-scroll py-2">
-          {uniqueLinks.length === 0 ? (
+          {linksLoading ? (
+            <div className="flex justify-center py-12">
+              <Spinner className="w-5 h-5 text-gray-600" />
+            </div>
+          ) : links.length === 0 ? (
             <div className="flex flex-col items-center py-12 gap-2">
               <div className="w-10 h-10 rounded-2xl bg-white/[0.04] flex items-center justify-center">
                 <LinkIcon className="w-5 h-5 text-gray-600" />
@@ -784,7 +817,8 @@ export function ConversationDetails({ conversation, messages = [], onClose, onLe
             </div>
           ) : (
             <div className="px-3 pt-1 space-y-0.5">
-              {uniqueLinks.map(({ url }, idx) => {
+              {links.map((item, idx) => {
+                const url = item.url;
                 let displayUrl = url;
                 try {
                   const u = new URL(url);
@@ -803,12 +837,23 @@ export function ConversationDetails({ conversation, messages = [], onClose, onLe
                     <div className="w-8 h-8 rounded-xl bg-white/[0.07] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.11] transition-colors">
                       <LinkIcon className="w-3.5 h-3.5 text-blue-400" />
                     </div>
-                    <span className="text-sm text-gray-300 group-hover:text-blue-400 truncate transition-colors">
-                      {displayUrl}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-gray-300 group-hover:text-blue-400 truncate transition-colors block">
+                        {displayUrl}
+                      </span>
+                      {item.sender?.fullName && (
+                        <span className="text-[11px] text-gray-600 truncate block">{item.sender.fullName}</span>
+                      )}
+                    </div>
                   </a>
                 );
               })}
+              {/* Infinite scroll trigger */}
+              {linksHasMore && (
+                <div ref={linksLoadMoreRef} className="flex justify-center py-4">
+                  {linksLoadingMore && <Spinner className="w-4 h-4 text-gray-600" />}
+                </div>
+              )}
             </div>
           )}
         </div>

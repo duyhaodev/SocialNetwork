@@ -2,6 +2,7 @@ package com.DuyHao.chat_service.controller;
 
 import com.DuyHao.chat_service.dto.ApiResponse;
 import com.DuyHao.chat_service.dto.request.MessageRequest;
+import com.DuyHao.chat_service.dto.response.LinkItemResponse;
 import com.DuyHao.chat_service.dto.response.MessageResponse;
 import com.DuyHao.chat_service.service.MessageService;
 import lombok.AccessLevel;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -85,6 +87,21 @@ public class MessageController {
     ApiResponse<MessageResponse> react(@PathVariable String messageId, @RequestParam String emoji) {
         return ApiResponse.<MessageResponse>builder()
                 .result(messageService.reactToMessage(messageId, emoji))
+                .build();
+    }
+
+    @GetMapping("/{conversationId}/links")
+    ApiResponse<Map<String, Object>> getLinks(
+            @PathVariable String conversationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        MessageService.PagedLinksResult result = messageService.getLinks(conversationId, page, size);
+        return ApiResponse.<Map<String, Object>>builder()
+                .result(Map.of(
+                        "links", result.links(),
+                        "hasMore", result.hasMore(),
+                        "page", page
+                ))
                 .build();
     }
 }

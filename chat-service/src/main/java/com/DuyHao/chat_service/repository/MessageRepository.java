@@ -23,4 +23,8 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     // Đếm tin mới hơn timestamp → dùng để tính page index
     long countByConversationIdAndCreatedAtAfter(String conversationId, java.time.LocalDateTime after);
+
+    // Tìm tất cả tin nhắn chứa URL (http:// hoặc https://) — bỏ qua tin thu hồi và tin hệ thống
+    @Query("{ 'conversationId': ?0, 'content': { $regex: 'https?://', $options: 'i' }, 'isRevoked': false, 'type': null }")
+    Page<Message> findLinksByConversationId(String conversationId, Pageable pageable);
 }
