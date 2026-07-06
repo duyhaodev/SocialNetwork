@@ -18,7 +18,7 @@ import { TagFeedPage } from "./features/TagFeedPage/TagFeedPage.jsx";
 import { ConnectionsPage } from "./features/ConnectionsPage/ConnectionsPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import PublicRoute from "./components/PublicRoute.jsx";
-import { getAccessToken } from "./api/localStorageService.js";
+import { getAccessToken, isAdmin } from "./api/localStorageService.js";
 import { VerifyAccountPage } from "./features/VerifyAccountPage/VerifyAccountPage.jsx";
 import { ForgotPasswordPage } from "./features/ForgotPasswordPage/ForgotPasswordPage.jsx";
 import CallOverlay from "./features/MessagePage/components/CallOverlay.jsx";
@@ -27,6 +27,13 @@ import StoryArchivePage from "./features/StoryPage/StoryArchivePage.jsx";
 import { OnboardingInterestsPage } from "./features/OnboardingInterestsPage/OnboardingInterestsPage.jsx";
 import { GroupListPage } from "./features/GroupPage/GroupListPage.jsx";
 import { GroupDetailPage } from "./features/GroupPage/GroupDetailPage.jsx";
+
+// Admin Imports
+import AdminLayout from "./features/Admin/AdminLayout.jsx";
+import AdminDashboard from "./features/Admin/AdminDashboard.jsx";
+import AdminUsers from "./features/Admin/AdminUsers.jsx";
+import AdminPosts from "./features/Admin/AdminPosts.jsx";
+import AdminReports from "./features/Admin/AdminReports.jsx";
 
 export default function App() {
   const dispatch = useDispatch();
@@ -105,8 +112,18 @@ export default function App() {
             </Route>
           </Route>
 
+          {/* Admin Routes - Also protected */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="posts" element={<AdminPosts />} />
+              <Route path="reports" element={<AdminReports />} />
+            </Route>
+          </Route>
+
           {/* Catch-all for logged-in users - redirect to feed. For non-logged in, ProtectedRoute handles redirect to login. */}
-          <Route path="*" element={<Navigate to="/feed" replace />} />
+          <Route path="*" element={isAdmin() ? <Navigate to="/admin" replace /> : <Navigate to="/feed" replace />} />
         </Routes>
       </BrowserRouter>
     </>

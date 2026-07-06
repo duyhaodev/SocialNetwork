@@ -96,6 +96,14 @@ public class UserProfileRepositoryService {
         return userProfileMapper.toUserProfileResponse(userProfile);
     }
 
+    public void toggleVerify(String userId) {
+        UserProfile userProfile = userProfileRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Profile not found!"));
+        userProfile.setVerified(!userProfile.isVerified());
+        userProfileRepository.save(userProfile);
+    }
+
     public List<UserProfileResponse> getUsers(List<String> userIds) {
         var profiles = userProfileRepository.findAllByUserIdIn(userIds);
         return profiles.stream().map(userProfileMapper::toUserProfileResponse).toList();

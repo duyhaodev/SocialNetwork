@@ -53,4 +53,20 @@ public class PostMapper {
                 .isPinned(Boolean.TRUE.equals(post.getIsPinned()))
                 .build();
     }
+
+    public PostResponse toPostResponse(Post post) {
+        return PostResponse.builder()
+                .id(post.getId())
+                .content(post.getContent())
+                .scope(post.getScope())
+                .groupId(post.getGroupId())
+                .status(post.getStatus())
+                .statusReason(post.getStatusReason())
+                .createdAt(post.getCreatedAt())
+                .updatedAt(post.getUpdatedAt())
+                .userId(post.getUserId())
+                .isAiGenerated(Boolean.TRUE.equals(post.getIsAiGenerated()))
+                .isPinned(Boolean.TRUE.equals(post.getIsPinned()))
+                .build();
+    }
 }

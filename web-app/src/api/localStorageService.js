@@ -26,3 +26,21 @@ export const removeToken = () => {
   localStorage.removeItem(KEY_ACCESS_TOKEN);
   localStorage.removeItem(KEY_REFRESH_TOKEN);
 };
+
+export const parseJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return null;
+  }
+};
+
+export const isAdmin = () => {
+  const token = getAccessToken();
+  if (!token) return false;
+  const decoded = parseJwt(token);
+  if (!decoded) return false;
+  // scope might be a space-separated string e.g. "ROLE_ADMIN ROLE_USER"
+  return decoded.scope && decoded.scope.includes("ROLE_ADMIN");
+};
+

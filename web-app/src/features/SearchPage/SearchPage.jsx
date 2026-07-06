@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Verified, Check } from "lucide-react";
+import { Search, Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { VerifiedBadge } from "../../components/ui/VerifiedBadge.jsx";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -339,7 +340,7 @@ function UserCard({ user, onProfileClick, currentUserId, authLoading }) {
               {user.fullName}
             </button>
             {user.verified && (
-              <Verified className="w-4 h-4 text-blue-500 fill-blue-500 flex-shrink-0" />
+              <VerifiedBadge className="w-4 h-4" />
             )}
           </div>
           <p className="text-xs text-muted-foreground mb-1.5">

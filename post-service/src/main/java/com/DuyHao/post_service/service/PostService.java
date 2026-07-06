@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -916,5 +917,24 @@ public class PostService {
         }
         post.setIsPinned(!Boolean.TRUE.equals(post.getIsPinned()));
         postRepository.save(post);
+    }
+
+    // --- ADMIN METHODS ---
+    @PreAuthorize("hasRole('ADMIN')")
+    public org.springframework.data.domain.Page<PostResponse> getAllPosts(
+            org.springframework.data.domain.Pageable pageable) {
+        return postRepository.findAll(pageable).map(postMapper::toPostResponse);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deletePostByAdmin(String postId) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        // Additional cleanup: media, interactions, etc. could be placed here.
+        postRepository.delete(post);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public long getPostCount() {
+        return postRepository.count();
     }
 }

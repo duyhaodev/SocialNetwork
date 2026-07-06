@@ -21,7 +21,9 @@ public enum ErrorCode {
     FULLNAME_NOT_BLANK(1008, "Full name must not be blank", HttpStatus.BAD_REQUEST),
     MAX_OTP_ATTEMPTS(1020,"Max verification attempts reached. Please request a new code.", HttpStatus.TOO_MANY_REQUESTS),
     OTP_EXPIRED(1019,"Verification code expired", HttpStatus.BAD_REQUEST),
-    INVALID_OTP_KEY(1018,"Invalid verification code", HttpStatus.BAD_REQUEST)
+    INVALID_OTP_KEY(1018,"Invalid verification code", HttpStatus.BAD_REQUEST),
+    USER_NOT_VERIFIED(1023, "Your account is not verified. Please verify your email.", HttpStatus.FORBIDDEN),
+    USER_BANNED(1024, "Your account has been banned.", HttpStatus.FORBIDDEN)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {

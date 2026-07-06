@@ -63,4 +63,12 @@ public class UserProfileController {
                 .result(userProfileRepositoryService.getAvailableInterests())
                 .build();
     }
+
+    @PutMapping("/admin/profiles/{userId}/verify")
+    ApiResponse<String> toggleVerify(@PathVariable String userId) {
+        userProfileRepositoryService.toggleVerify(userId);
+        return ApiResponse.<String>builder()
+                .result("Profile verification toggled")
+                .build();
+    }
 }

@@ -24,8 +24,7 @@ public class User {
     String fullName;
 
 
-    @ManyToMany
-    Set<Role> roles;
+    String roles;
 
     String verification_code;
 

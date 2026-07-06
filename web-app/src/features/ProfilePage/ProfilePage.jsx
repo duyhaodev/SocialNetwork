@@ -5,9 +5,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { Button } from "../../components/ui/button.js";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
-import { MoreHorizontal, Share, Verified, ArrowLeft, ChevronDown, UserMinus, Users, UserCheck, BookOpen, UserCircle } from "lucide-react";
+import { MoreHorizontal, Share, ArrowLeft, ChevronDown, UserMinus, Users, UserCheck, BookOpen, UserCircle } from "lucide-react";
 import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import { ImageViewer } from "../../components/ImageViewer/ImageViewer.jsx";
+import { VerifiedBadge } from "../../components/ui/VerifiedBadge.jsx";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, } from "../../components/ui/alert-dialog.js";
 import { fetchMyPosts, selectMyPosts, selectMyPostsLoading, fetchUserPosts, selectUserPosts, selectUserPostsLoading, fetchMyReposts, fetchUserReposts, selectMyReposts, selectMyRepostsLoading, selectUserReposts, selectUserRepostsLoading, } from "../../store/postsSlice";
 import { fetchMyInfo, selectUser } from "../../store/userSlice";
@@ -408,7 +409,7 @@ export function ProfilePage() {
             <div className="flex items-center gap-2 mb-2">
               <h1 className="text-2xl font-bold">{user?.displayName}</h1>
               {user?.verified && (
-                <Verified className="w-6 h-6 text-blue-500 fill-blue-500" />
+                <VerifiedBadge className="w-5.5 h-5.5" />
               )}
             </div>
             <p className="text-muted-foreground mb-1">@{user?.username}</p>

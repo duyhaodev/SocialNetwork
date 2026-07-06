@@ -83,6 +83,14 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.WRONG_EMAIL_PASSWORD);
         }
 
+        if (!user.isEnabled()) {
+            if (user.getVerification_code() != null) {
+                throw new AppException(ErrorCode.USER_NOT_VERIFIED);
+            } else {
+                throw new AppException(ErrorCode.USER_BANNED);
+            }
+        }
+
         var accessToken = generateToken(user, false);
         var refreshToken = generateToken(user, true);
 
@@ -187,15 +195,11 @@ public class AuthenticationService {
     private String buildScope(User user) {
         StringJoiner stringJoiner = new StringJoiner(" ");
 
-        if(!CollectionUtils.isEmpty(user.getRoles())){
-            user.getRoles().forEach(role -> {
-                stringJoiner.add("ROLE_" + role.getName());
-                if (!CollectionUtils.isEmpty(role.getPermissions())){
-                    role.getPermissions().forEach(permission -> {
-                        stringJoiner.add(permission.getName());
-                    });
-                }
-            });
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            String[] roleArray = user.getRoles().split(",");
+            for (String role : roleArray) {
+                stringJoiner.add("ROLE_" + role.trim());
+            }
         }
         return stringJoiner.toString();
     }

@@ -41,4 +41,6 @@ public class UserProfile {
 
     @CompositeProperty(prefix = "weights")
     Map<String, Double> categoryWeights;
+
+    boolean verified;
 }

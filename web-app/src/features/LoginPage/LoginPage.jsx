@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { login, fetchMyInfo } from "../../store/userSlice";
+import { isAdmin } from "../../api/localStorageService";
 
 
 export function LoginPage() {
@@ -27,13 +28,18 @@ export function LoginPage() {
       await dispatch(login(values)).unwrap();
       // login thành công -> fetchMyInfo is now dispatched inside the login thunk.
       toast.success("Login successful!");
-      navigate("/feed");
+      
+      if (isAdmin()) {
+        navigate("/admin");
+      } else {
+        navigate("/feed");
+      }
     } catch (error) {
-        if (error === "Your account is not verified. Please verify your email.") {
+        const message = error?.message || (typeof error === 'string' ? error : "Login failed. Please check your credentials.");
+        if (message === "Your account is not verified. Please verify your email.") {
           toast.error("Your account is not verified. Please verify your email.");
           navigate("/verify", { state: { email } });
         } else {
-          const message = error?.message || (typeof error === 'string' ? error : "Login failed. Please check your credentials.");
           toast.error(message);
         }
     } finally {

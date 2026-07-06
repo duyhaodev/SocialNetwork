@@ -2,7 +2,6 @@ package com.DuyHao.identify_service.configuration;
 
 
 import com.DuyHao.identify_service.entity.User;
-import com.DuyHao.identify_service.enums.Role;
 import com.DuyHao.identify_service.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -30,11 +29,12 @@ public class ApplicationInitConfig {
         return args -> {
             if (userRepository.findByUsername("admin").isEmpty()) {
 
-                var role = new HashSet<String>();
-                role.add(Role.ADMIN.name());
                 User user = User.builder()
                         .username("admin")
-                        //.roles(role)
+                        .email("admin@admin.com")
+                        .fullName("System Admin")
+                        .enabled(true)
+                        .roles("ADMIN")
                         .password(passwordEncoder.encode("admin"))
                         .build();
 

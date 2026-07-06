@@ -27,4 +27,5 @@ public class UserProfileResponse {
     long followingCount;
     String connectionsPrivacy; // EVERYONE | FRIENDS_ONLY | ONLY_ME
     java.util.Map<String, Double> categoryWeights;
+    boolean verified;
 }

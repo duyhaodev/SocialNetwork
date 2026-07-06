@@ -16,13 +16,17 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CommentService {
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
@@ -114,7 +118,26 @@ public class CommentService {
         // Tăng sở thích khi comment (+0.15)
         triggerWeightUpdate(userId, request.getPostId(), 0.15);
 
-        return commentMapper.toResponse(comment, user, mediaUrls, 0, false, 0);
+        return commentMapper.toCommentResponse(commentRepository.save(comment));
+    }
+
+    // --- ADMIN METHODS ---
+    @PreAuthorize("hasRole('ADMIN')")
+    public org.springframework.data.domain.Page<CommentResponse> getAllComments(
+            org.springframework.data.domain.Pageable pageable) {
+        return commentRepository.findAll(pageable).map(commentMapper::toCommentResponse);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteCommentByAdmin(String commentId) {
+        Comment comment =
+                commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
+        commentRepository.delete(comment);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public long getCommentCount() {
+        return commentRepository.count();
     }
 
     // ================= GET ROOT COMMENTS (Chỉ lấy comment gốc) =================

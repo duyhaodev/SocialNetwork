@@ -5,12 +5,10 @@ import com.DuyHao.identify_service.dto.request.UserCreationRequest;
 import com.DuyHao.identify_service.dto.request.UserUpdateRequest;
 import com.DuyHao.identify_service.dto.response.UserResponse;
 import com.DuyHao.identify_service.entity.User;
-import com.DuyHao.identify_service.entity.Role;
 import com.DuyHao.identify_service.exception.AppException;
 import com.DuyHao.identify_service.exception.ErrorCode;
 import com.DuyHao.identify_service.mapper.ProfileMapper;
 import com.DuyHao.identify_service.mapper.UserMapper;
-import com.DuyHao.identify_service.repository.RoleRepository;
 import com.DuyHao.identify_service.repository.UserRepository;
 import com.DuyHao.identify_service.repository.httpClient.ProfileClient;
 import com.DuyHao.identify_service.event.UserRegistrationEvent;
@@ -35,7 +33,6 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserService {
     UserRepository userRepository;
-    RoleRepository roleRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     ProfileClient profileClient;
@@ -56,6 +53,7 @@ public class UserService {
         user.setUsername(derivedUserName);
         user.setFullName(request.getFullName());
         user.setEnabled(false);
+        user.setRoles("USER");
 
         user = userRepository.save(user);
 
@@ -135,15 +133,42 @@ public class UserService {
         userMapper.updateUser(user, request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        var roles = roleRepository.findAllById(request.getRoles());
-
-        user.setRoles(new HashSet<>(roles));
+        if (request.getRoles() != null) {
+            user.setRoles(request.getRoles());
+        }
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
     public void deleteUser(String userId) {
         userRepository.deleteById(userId);
+    }
+
+    // --- ADMIN METHODS ---
+    @PreAuthorize("hasRole('ADMIN')")
+    public org.springframework.data.domain.Page<UserResponse> getAllUsers(org.springframework.data.domain.Pageable pageable) {
+        return userRepository.findAll(pageable).map(userMapper::toUserResponse);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public void banUser(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setEnabled(false);
+        userRepository.save(user);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public void unbanUser(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public long getUserCount() {
+        return userRepository.count();
     }
 
     public UserResponse getMyInfo() {

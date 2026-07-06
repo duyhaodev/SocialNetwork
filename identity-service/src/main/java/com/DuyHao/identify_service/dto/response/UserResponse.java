@@ -1,6 +1,5 @@
 package com.DuyHao.identify_service.dto.response;
 
-import com.DuyHao.identify_service.entity.Role;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -17,5 +16,6 @@ public class UserResponse {
     String username;
     String email;
     String fullName;
-    Set<RoleResponse> roles;
+    String roles;
+    boolean enabled;
 }
