@@ -1,65 +1,30 @@
-import axiosClient from './axiosClient';
-
+import axiosClient from "./axiosClient";
 const adminApi = {
-  // --- USERS ---
-  getAllUsers: (page = 0, size = 10, keyword = '') => {
+  getAllUsers: (page = 0, size = 10, keyword = "") => {
     let url = `/identity/admin/users?page=${page}&size=${size}`;
     if (keyword) {
       url += `&keyword=${encodeURIComponent(keyword)}`;
     }
     return axiosClient.get(url);
   },
-  banUser: (userId) => {
-    return axiosClient.put(`/identity/admin/users/${userId}/ban`);
-  },
-  unbanUser: (userId) => {
-    return axiosClient.put(`/identity/admin/users/${userId}/unban`);
-  },
-  getUserStats: () => {
-    return axiosClient.get('/identity/admin/users/stats');
-  },
-  verifyUser: (userId) => {
-    return axiosClient.put(`/profile/admin/profiles/${userId}/verify`);
-  },
+  banUser: (userId) => axiosClient.put(`/identity/admin/users/${userId}/ban`),
+  unbanUser: (userId) => axiosClient.put(`/identity/admin/users/${userId}/unban`),
+  getUserStats: () => axiosClient.get("/identity/admin/users/stats"),
+  verifyUser: (userId) => axiosClient.put(`/profile/admin/profiles/${userId}/verify`),
 
-  // --- POSTS ---
-  getAllPosts: (page = 0, size = 10) => {
-    return axiosClient.get(`/post/admin/posts?page=${page}&size=${size}`);
-  },
-  deletePost: (postId) => {
-    return axiosClient.delete(`/post/admin/posts/${postId}`);
-  },
-  getPostStats: () => {
-    return axiosClient.get('/post/admin/posts/stats');
-  },
+  getAllPosts: (page = 0, size = 10) => axiosClient.get(`/post/admin/posts?page=${page}&size=${size}`),
+  deletePost: (postId) => axiosClient.delete(`/post/admin/posts/${postId}`),
+  getPostStats: () => axiosClient.get("/post/admin/posts/stats"),
 
-  // --- REPORTS ---
-  createReport: (data) => {
-    return axiosClient.post('/post/reports', data);
-  },
-  getPendingReports: (page = 0, size = 10) => {
-    return axiosClient.get(`/post/admin/reports?page=${page}&size=${size}`);
-  },
-  resolveReport: (reportId) => {
-    return axiosClient.put(`/post/admin/reports/${reportId}/resolve`);
-  },
-  dismissReport: (reportId) => {
-    return axiosClient.put(`/post/admin/reports/${reportId}/dismiss`);
-  },
+  createReport: (data) => axiosClient.post("/post/reports", data),
+  getPendingReports: (page = 0, size = 10) => axiosClient.get(`/post/admin/reports?page=${page}&size=${size}`),
+  resolveReport: (reportId) => axiosClient.put(`/post/admin/reports/${reportId}/resolve`),
+  dismissReport: (reportId) => axiosClient.put(`/post/admin/reports/${reportId}/dismiss`),
 
-  // --- COMMENTS ---
-  getPostComments: (postId, page = 0, size = 50) => {
-    return axiosClient.get(`/interaction/comments/post/${postId}?page=${page}&size=${size}`);
-  },
-  getAllComments: (page = 0, size = 10) => {
-    return axiosClient.get(`/interaction/admin/comments?page=${page}&size=${size}`);
-  },
-  deleteComment: (commentId) => {
-    return axiosClient.delete(`/interaction/admin/comments/${commentId}`);
-  },
-  getCommentStats: () => {
-    return axiosClient.get('/interaction/admin/comments/stats');
-  }
+  getPostComments: (postId, page = 0, size = 50) => axiosClient.get(`/interaction/admin/comments/post/${postId}?page=${page}&size=${size}`),
+  getAllComments: (page = 0, size = 10) => axiosClient.get(`/interaction/admin/comments?page=${page}&size=${size}`),
+  deleteComment: (commentId) => axiosClient.delete(`/interaction/admin/comments/${commentId}`),
+  restoreComment: (commentId) => axiosClient.put(`/interaction/admin/comments/${commentId}/restore`),
+  getCommentStats: () => axiosClient.get("/interaction/admin/comments/stats")
 };
-
 export default adminApi;

@@ -15,6 +15,7 @@ public interface CommentMapper {
     @Mapping(target = "postId", source = "comment.postId")
     @Mapping(target = "parentId", source = "comment.parentId")
     @Mapping(target = "createdAt", source = "comment.createdAt")
+    @Mapping(target = "isHidden", source = "comment.isHidden")
 
     // Map User Info
     @Mapping(target = "userId", source = "user.userId")

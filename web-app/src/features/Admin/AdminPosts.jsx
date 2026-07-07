@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import adminApi from '../../api/adminApi';
-import { Trash2, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { Trash2, MessageSquare, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
+import { ImageViewer } from '../../components/ImageViewer/ImageViewer';
 
 const AdminPosts = () => {
   const [posts, setPosts] = useState([]);
@@ -10,6 +11,8 @@ const AdminPosts = () => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [postComments, setPostComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const fetchPosts = async () => {
     try {
@@ -56,7 +59,7 @@ const AdminPosts = () => {
     setLoadingComments(true);
     try {
       const res = await adminApi.getPostComments(post.id, 0, 50);
-      if (res.result) {
+      if (res && Array.isArray(res.result)) {
         setPostComments(res.result);
       } else {
         setPostComments([]);
@@ -84,6 +87,30 @@ const AdminPosts = () => {
             }
           } catch (e) {
             toast.error("Failed to delete comment");
+          }
+        }
+      },
+      cancel: {
+        label: 'Cancel'
+      },
+      duration: 5000,
+    });
+  };
+
+  const handleRestoreComment = (commentId) => {
+    toast("Are you sure you want to restore this comment?", {
+      action: {
+        label: 'Confirm',
+        onClick: async () => {
+          try {
+            await adminApi.restoreComment(commentId);
+            toast.success("Comment restored");
+            if (selectedPost) {
+              const res = await adminApi.getPostComments(selectedPost.id, 0, 50);
+              if (res.result) setPostComments(res.result);
+            }
+          } catch (e) {
+            toast.error("Failed to restore comment");
           }
         }
       },
@@ -158,12 +185,20 @@ const AdminPosts = () => {
 
       {/* Post Detail Modal */}
       <Dialog open={!!selectedPost} onOpenChange={(open) => !open && setSelectedPost(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-border">
+        <DialogContent 
+          className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-border"
+          onEscapeKeyDown={(e) => {
+            if (viewerOpen) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            if (viewerOpen) e.preventDefault();
+          }}
+        >
           <DialogHeader className="p-6 pb-4 border-b border-border">
             <DialogTitle>Post Details</DialogTitle>
             <DialogDescription className="text-xs font-mono mt-1">
               Post ID: {selectedPost?.id} <br />
-              User ID: {selectedPost?.userId}
+              User: {selectedPost?.fullName || selectedPost?.username || selectedPost?.userId}
             </DialogDescription>
           </DialogHeader>
 
@@ -180,7 +215,15 @@ const AdminPosts = () => {
                       {url.endsWith('.mp4') ? (
                         <video src={url} className="w-full h-full object-cover" controls />
                       ) : (
-                        <img src={url} alt={`Media ${i}`} className="w-full h-full object-cover" />
+                        <img 
+                          src={url} 
+                          alt={`Media ${i}`} 
+                          className="w-full h-full object-cover cursor-pointer" 
+                          onClick={() => {
+                            setViewerIndex(i);
+                            setViewerOpen(true);
+                          }}
+                        />
                       )}
                     </div>
                   ))}
@@ -204,24 +247,37 @@ const AdminPosts = () => {
               ) : (
                 <div className="space-y-4">
                   {postComments.map(comment => (
-                    <div key={comment.id} className="bg-muted/30 p-4 rounded-lg border border-border flex justify-between group">
-                      <div className="flex-1 mr-4">
+                    <div key={comment.id} className={`p-4 rounded-lg border flex justify-between group ${comment.isHidden ? 'bg-muted/10 border-dashed border-border' : 'bg-muted/30 border-border'}`}>
+                      <div className={`flex-1 mr-4 ${comment.isHidden ? 'opacity-50 grayscale' : ''}`}>
                         <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-semibold text-sm">{comment.author?.fullName || comment.userId}</span>
+                          <span className="font-semibold text-sm">{comment.fullName || comment.username || comment.userId}</span>
                           <span className="text-xs text-muted-foreground">{new Date(comment.createdAt).toLocaleString()}</span>
+                          {comment.isHidden && (
+                            <span className="text-[10px] font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Hidden by Admin</span>
+                          )}
                         </div>
-                        <p className={`text-sm ${comment.content === 'Bình luận đã bị ẩn bởi Quản trị viên' ? 'text-red-500 italic' : ''}`}>
+                        <p className={`text-sm ${comment.isHidden ? 'italic line-through' : ''}`}>
                           {comment.content}
                         </p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-2 h-fit rounded-lg hover:bg-destructive/10"
-                        title="Delete Comment"
-                        disabled={comment.content === 'Bình luận đã bị ẩn bởi Quản trị viên'}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      
+                      {comment.isHidden ? (
+                        <button
+                          onClick={() => handleRestoreComment(comment.id)}
+                          className="text-muted-foreground hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 h-fit rounded-lg hover:bg-green-500/10"
+                          title="Restore Comment"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-2 h-fit rounded-lg hover:bg-destructive/10"
+                          title="Hide Comment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -230,6 +286,19 @@ const AdminPosts = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Image Viewer */}
+      {selectedPost?.mediaUrls && (
+        <ImageViewer
+          open={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          mediaList={selectedPost.mediaUrls.map(url => ({
+            mediaUrl: url,
+            mediaType: url.endsWith('.mp4') ? 'video' : 'image'
+          }))}
+          index={viewerIndex}
+        />
+      )}
     </div>
   );
 };
