@@ -37,8 +37,10 @@ public class AdminPostController {
     }
 
     @PutMapping("/admin/reports/{reportId}/resolve")
-    ApiResponse<String> resolveReport(@PathVariable String reportId) {
-        reportService.resolveReport(reportId);
+    ApiResponse<String> resolveReport(
+            @PathVariable String reportId,
+            @RequestBody com.DuyHao.post_service.dto.request.ResolveReportRequest request) {
+        reportService.resolveReport(reportId, request.getActionReason());
         return ApiResponse.<String>builder().result("Report resolved").build();
     }
 

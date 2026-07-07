@@ -15,10 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 public interface PostRepository extends JpaRepository<Post, String> {
 
     // Lấy danh sách bài viết gốc (không phải repost)
-    List<Post> findByUserIdAndRepostOfIsNullOrderByCreatedAtDesc(String userId);
+    @Query(
+            "SELECT p FROM Post p WHERE p.userId = :userId AND p.repostOf IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
+    List<Post> findByUserIdAndRepostOfIsNullOrderByCreatedAtDesc(@Param("userId") String userId);
 
     // Lấy danh sách các bài đã repost
-    List<Post> findByUserIdAndRepostOfIsNotNullOrderByCreatedAtDesc(String userId);
+    @Query(
+            "SELECT p FROM Post p WHERE p.userId = :userId AND p.repostOf IS NOT NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
+    List<Post> findByUserIdAndRepostOfIsNotNullOrderByCreatedAtDesc(@Param("userId") String userId);
 
     Optional<Post> findByUserIdAndRepostOfId(String userId, String originalPostId);
 
@@ -26,23 +30,28 @@ public interface PostRepository extends JpaRepository<Post, String> {
     @Transactional
     void deleteByRepostOfId(String originalPostId);
 
-    @Query("SELECT p FROM Post p WHERE p.repostOf IS NULL ORDER BY p.createdAt DESC")
+    @Query(
+            "SELECT p FROM Post p WHERE p.repostOf IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
     List<Post> findAllOriginalPosts(Pageable pageable);
 
     // Lấy post theo danh sách id tử Redis không lấy repost
-    @Query("SELECT p FROM Post p WHERE p.id IN :ids AND p.repostOf IS NULL")
+    @Query(
+            "SELECT p FROM Post p WHERE p.id IN :ids AND p.repostOf IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN')")
     List<Post> findByIdInAndRepostOfIsNull(@Param("ids") List<String> ids);
 
     // lấy post theo city (khi redis miss)
-    @Query("SELECT p FROM Post p WHERE p.city = :city AND p.repostOf IS NULL ORDER BY p.createdAt DESC")
+    @Query(
+            "SELECT p FROM Post p WHERE p.city = :city AND p.repostOf IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
     List<Post> findByCityOrderByCreatedAtDesc(@Param("city") String city, Pageable pageable);
 
     // Lấy bài mowiss nhất khi local chưa có bài nào
-    @Query("SELECT p FROM Post p WHERE p.repostOf IS NULL ORDER BY p.createdAt DESC")
+    @Query(
+            "SELECT p FROM Post p WHERE p.repostOf IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
     List<Post> findLatestGlobalPosts(Pageable pageable);
 
     @Query(
             value = "SELECT tag, COUNT(*) as tag_count " + "FROM posts, jsonb_array_elements_text(tags) as tag "
+                    + "WHERE status IS NULL OR status != 'HIDDEN' "
                     + "GROUP BY tag "
                     + "ORDER BY tag_count DESC "
                     + "LIMIT :limit",
@@ -50,15 +59,17 @@ public interface PostRepository extends JpaRepository<Post, String> {
     List<Object[]> findTopTrendingTags(int limit);
 
     @Query(
-            value = "SELECT * FROM posts WHERE tags @> CAST(:tagJson AS jsonb) ORDER BY created_at DESC",
+            value =
+                    "SELECT * FROM posts WHERE tags @> CAST(:tagJson AS jsonb) AND (status IS NULL OR status != 'HIDDEN') ORDER BY created_at DESC",
             nativeQuery = true)
-    List<Post> findByTag(String tagJson, Pageable pageable);
+    List<Post> findByTag(@Param("tagJson") String tagJson, Pageable pageable);
 
     @Query(
             "SELECT p FROM Post p WHERE p.groupId = :groupId AND p.status = :status ORDER BY COALESCE(p.isPinned, false) DESC, p.createdAt DESC")
     List<Post> findGroupPosts(@Param("groupId") String groupId, @Param("status") String status, Pageable pageable);
 
-    @Query("SELECT p FROM Post p WHERE p.groupId IS NULL ORDER BY p.createdAt DESC")
+    @Query(
+            "SELECT p FROM Post p WHERE p.groupId IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
     List<Post> findRecentGlobalPosts(Pageable pageable);
 
     @Query("SELECT p FROM Post p WHERE p.groupId IN :groupIds AND p.status = 'APPROVED' ORDER BY p.createdAt DESC")

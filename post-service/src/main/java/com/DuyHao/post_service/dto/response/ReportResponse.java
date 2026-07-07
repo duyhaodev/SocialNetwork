@@ -12,8 +12,12 @@ import lombok.experimental.FieldDefaults;
 public class ReportResponse {
     String id;
     String reporterId;
+    String reporterName;
+    String reporterAvatar;
     String targetType;
     String targetId;
+    String postContent;
+    java.util.List<String> postMediaUrls;
     String reason;
     String status;
     LocalDateTime createdAt;

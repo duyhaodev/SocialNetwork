@@ -149,4 +149,14 @@ public class InternalNotificationController {
         notificationService.createGroupPostReportDeletedNotification(receiverId, senderId, groupId, reason);
         return ResponseEntity.ok().build();
     }
+
+    // ===== ADMIN =====
+    @PostMapping("/post-hidden-admin")
+    public ResponseEntity<?> postHiddenByAdmin(
+            @RequestParam String receiverId,
+            @RequestParam String postId,
+            @RequestParam(required = false) String reason) {
+        notificationService.createPostHiddenByAdminNotification(receiverId, postId, reason);
+        return ResponseEntity.ok().build();
+    }
 }

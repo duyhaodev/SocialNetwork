@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, createEntityAdapter } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, createEntityAdapter, createSelector } from "@reduxjs/toolkit";
 import postApi from "../api/postApi";
 import repostApi from "../api/repostApi";
 
@@ -454,7 +454,14 @@ export const { resetFeed, resetTagFeed, syncLikeByOriginalId, setSearchPosts, sy
 export default postsSlice.reducer;
 
 // 5. SELECTORS
-export const selectPosts = (state) => state.posts.feedIds.map(id => state.posts.entities[id]).filter(Boolean);
+const selectFeedIds = (state) => state.posts.feedIds;
+const selectEntities = (state) => state.posts.entities;
+
+export const selectPosts = createSelector(
+  [selectFeedIds, selectEntities],
+  (feedIds, entities) => feedIds.map(id => entities[id]).filter(Boolean)
+);
+
 export const selectPostsLoading = (state) => state.posts.loading;
 export const selectPostsCreating = (state) => state.posts.creating;
 export const selectPostsHasMore = (state) => state.posts.hasMore;
@@ -465,7 +472,13 @@ export const selectLastMutatedAt = (state) => state.posts.lastMutatedAt;
 export const selectTrendingTags = (state) => state.posts.trendingTags;
 export const selectTrendingLoading = (state) => state.posts.loadingTrending;
 
-export const selectTagPosts = (state) => state.posts.tagPostsIds.map(id => state.posts.entities[id]).filter(Boolean);
+const selectTagPostsIds = (state) => state.posts.tagPostsIds;
+
+export const selectTagPosts = createSelector(
+  [selectTagPostsIds, selectEntities],
+  (tagPostsIds, entities) => tagPostsIds.map(id => entities[id]).filter(Boolean)
+);
+
 export const selectTagPostsLoading = (state) => state.posts.loadingTagPosts;
 export const selectTagHasMore = (state) => state.posts.tagHasMore;
 export const selectTagPage = (state) => state.posts.tagPage;

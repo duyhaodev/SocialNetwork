@@ -1,4 +1,4 @@
-import { MoreHorizontal, Trash2, Link, Repeat2, Globe, Sparkles, Pin, ChevronRight } from "lucide-react";
+import { MoreHorizontal, Trash2, Link, Repeat2, Globe, Sparkles, Pin, ChevronRight, AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
@@ -220,7 +220,7 @@ export function PostHeader({
                 </DropdownMenuItem>
               )}
 
-              {post.groupId && !canDelete && (
+              {!canDelete && (
                 <DropdownMenuItem
                   className="cursor-pointer hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted rounded-lg px-3 py-2 transition-colors"
                   onClick={() => {
@@ -229,8 +229,10 @@ export function PostHeader({
                   }}
                 >
                   <div className="flex items-center gap-2 w-full text-orange-500">
-                    <Sparkles className="w-4 h-4 text-orange-500" /> {/* Replaced with appropriate icon later, Sparkles for now or flag */}
-                    <span className="font-medium">Báo cáo vi phạm</span>
+                    <AlertCircle className="w-4 h-4 text-orange-500" />
+                    <span className="font-medium">
+                      {post.groupId ? "Báo cáo với quản trị nhóm" : "Báo cáo với Admin hệ thống"}
+                    </span>
                   </div>
                 </DropdownMenuItem>
               )}

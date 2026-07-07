@@ -25,4 +25,10 @@ public interface NotificationClient {
             @RequestParam("senderId") String senderId,
             @RequestParam("postId") String postId,
             @RequestParam(value = "reason", required = false) String reason);
+
+    @PostMapping("/post-hidden-admin")
+    ResponseEntity<?> postHiddenByAdmin(
+            @RequestParam("receiverId") String receiverId,
+            @RequestParam("postId") String postId,
+            @RequestParam("reason") String reason);
 }

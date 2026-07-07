@@ -18,7 +18,7 @@ const adminApi = {
 
   createReport: (data) => axiosClient.post("/post/reports", data),
   getPendingReports: (page = 0, size = 10) => axiosClient.get(`/post/admin/reports?page=${page}&size=${size}`),
-  resolveReport: (reportId) => axiosClient.put(`/post/admin/reports/${reportId}/resolve`),
+  resolveReport: (reportId, data) => axiosClient.put(`/post/admin/reports/${reportId}/resolve`, data),
   dismissReport: (reportId) => axiosClient.put(`/post/admin/reports/${reportId}/dismiss`),
 
 

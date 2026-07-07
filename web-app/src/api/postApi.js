@@ -11,6 +11,11 @@ const postApi = {
     return axiosClient.delete(`/post/posts/${postId}`);
   },
 
+  // Report bài viết
+  reportPost(data) {
+    return axiosClient.post("/post/reports", data);
+  },
+
   // Lấy bảng tin chính (Feed)
   getFeed({ page = 0, size = 20 } = {}) {
     return axiosClient.get("/post/feed", {
