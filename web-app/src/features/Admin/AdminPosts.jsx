@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import adminApi from '../../api/adminApi';
-import { Trash2, MessageSquare, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Trash2, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
 import { ImageViewer } from '../../components/ImageViewer/ImageViewer';
@@ -54,71 +54,8 @@ const AdminPosts = () => {
     });
   };
 
-  const handlePostClick = async (post) => {
+  const handlePostClick = (post) => {
     setSelectedPost(post);
-    setLoadingComments(true);
-    try {
-      const res = await adminApi.getPostComments(post.id, 0, 50);
-      if (res && Array.isArray(res.result)) {
-        setPostComments(res.result);
-      } else {
-        setPostComments([]);
-      }
-    } catch (e) {
-      toast.error('Failed to load comments');
-      setPostComments([]);
-    } finally {
-      setLoadingComments(false);
-    }
-  };
-
-  const handleDeleteComment = (commentId) => {
-    toast("Are you sure you want to delete this comment?", {
-      action: {
-        label: 'Confirm',
-        onClick: async () => {
-          try {
-            await adminApi.deleteComment(commentId);
-            toast.success("Comment deleted");
-            // Tải lại danh sách comments
-            if (selectedPost) {
-              const res = await adminApi.getPostComments(selectedPost.id, 0, 50);
-              if (res.result) setPostComments(res.result);
-            }
-          } catch (e) {
-            toast.error("Failed to delete comment");
-          }
-        }
-      },
-      cancel: {
-        label: 'Cancel'
-      },
-      duration: 5000,
-    });
-  };
-
-  const handleRestoreComment = (commentId) => {
-    toast("Are you sure you want to restore this comment?", {
-      action: {
-        label: 'Confirm',
-        onClick: async () => {
-          try {
-            await adminApi.restoreComment(commentId);
-            toast.success("Comment restored");
-            if (selectedPost) {
-              const res = await adminApi.getPostComments(selectedPost.id, 0, 50);
-              if (res.result) setPostComments(res.result);
-            }
-          } catch (e) {
-            toast.error("Failed to restore comment");
-          }
-        }
-      },
-      cancel: {
-        label: 'Cancel'
-      },
-      duration: 5000,
-    });
   };
 
   if (loading) {
@@ -224,59 +161,6 @@ const AdminPosts = () => {
                             setViewerOpen(true);
                           }}
                         />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <hr className="border-border" />
-
-            {/* Comments Section */}
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <MessageSquare className="w-5 h-5 text-muted-foreground" />
-                <h3 className="text-lg font-semibold">Comments ({postComments.length})</h3>
-              </div>
-              
-              {loadingComments ? (
-                <div className="text-center py-4 text-muted-foreground text-sm">Loading comments...</div>
-              ) : postComments.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground text-sm border border-dashed border-border rounded-lg">No comments found</div>
-              ) : (
-                <div className="space-y-4">
-                  {postComments.map(comment => (
-                    <div key={comment.id} className={`p-4 rounded-lg border flex justify-between group ${comment.isHidden ? 'bg-muted/10 border-dashed border-border' : 'bg-muted/30 border-border'}`}>
-                      <div className={`flex-1 mr-4 ${comment.isHidden ? 'opacity-50 grayscale' : ''}`}>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-semibold text-sm">{comment.fullName || comment.username || comment.userId}</span>
-                          <span className="text-xs text-muted-foreground">{new Date(comment.createdAt).toLocaleString()}</span>
-                          {comment.isHidden && (
-                            <span className="text-[10px] font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full uppercase tracking-wider">Hidden by Admin</span>
-                          )}
-                        </div>
-                        <p className={`text-sm ${comment.isHidden ? 'italic line-through' : ''}`}>
-                          {comment.content}
-                        </p>
-                      </div>
-                      
-                      {comment.isHidden ? (
-                        <button
-                          onClick={() => handleRestoreComment(comment.id)}
-                          className="text-muted-foreground hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 h-fit rounded-lg hover:bg-green-500/10"
-                          title="Restore Comment"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-2 h-fit rounded-lg hover:bg-destructive/10"
-                          title="Hide Comment"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       )}
                     </div>
                   ))}
