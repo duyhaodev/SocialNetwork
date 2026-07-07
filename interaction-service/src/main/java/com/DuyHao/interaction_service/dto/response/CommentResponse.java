@@ -25,11 +25,9 @@ public class CommentResponse {
     String parentId;
     LocalDateTime createdAt;
     // interaction
-    // interaction
     long likeCount;
     boolean likedByCurrentUser;
     long replyCount;
-    Boolean isHidden;
     // media
     List<String> mediaUrls;
 }

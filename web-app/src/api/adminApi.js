@@ -21,10 +21,8 @@ const adminApi = {
   resolveReport: (reportId) => axiosClient.put(`/post/admin/reports/${reportId}/resolve`),
   dismissReport: (reportId) => axiosClient.put(`/post/admin/reports/${reportId}/dismiss`),
 
-  getPostComments: (postId, page = 0, size = 50) => axiosClient.get(`/interaction/admin/comments/post/${postId}?page=${page}&size=${size}`),
+
   getAllComments: (page = 0, size = 10) => axiosClient.get(`/interaction/admin/comments?page=${page}&size=${size}`),
-  deleteComment: (commentId) => axiosClient.delete(`/interaction/admin/comments/${commentId}`),
-  restoreComment: (commentId) => axiosClient.put(`/interaction/admin/comments/${commentId}/restore`),
   getCommentStats: () => axiosClient.get("/interaction/admin/comments/stats")
 };
 export default adminApi;

@@ -32,18 +32,16 @@ public class Comment {
     @Column(name = "parent_id")
     String parentId;
 
-    // ID comment gốc
     @Column(name = "root_comment_id")
     String rootCommentId;
+
+    Boolean isEdited;
 
     @Column(name = "created_at")
     LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
-
-    @Column(name = "is_hidden")
-    Boolean isHidden;
 
     @PrePersist
     public void prePersist() {
