@@ -132,7 +132,14 @@ public class UserProfileRepositoryService {
         if (currentUserId != null && !currentUserId.equals("anonymousUser")) {
             List<String> blockedList = blockRepository.findInvolvedBlockIds(currentUserId);
             if (blockedList.contains(userProfile.getUserId())) {
-                throw new RuntimeException("Tài khoản này không tồn tại hoặc bạn không có quyền xem");
+                // Trả về response với blocked=true thay vì throw exception
+                // Chỉ expose tên và username — không expose thông tin nhạy cảm
+                return UserProfileResponse.builder()
+                        .userId(userProfile.getUserId())
+                        .username(userProfile.getUsername())
+                        .fullName(userProfile.getFullName())
+                        .blocked(true)
+                        .build();
             }
         }
         return userProfileMapper.toUserProfileResponse(userProfile);

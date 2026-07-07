@@ -77,6 +77,7 @@ export function ProfilePage() {
 
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [isBlocked, setIsBlocked] = useState(false); // am I blocking this user
+  const [blockCheckDone, setBlockCheckDone] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   
   // MoreMenu
@@ -111,12 +112,15 @@ export function ProfilePage() {
   // LẤY BÀI VIẾT + PROFILE
   useEffect(() => {
     setActiveTab("threads");
+    setBlockCheckDone(false);
+    setIsBlocked(false);
     if (isOwnProfile) {
       dispatch(fetchMyPosts());
       dispatch(fetchMyReposts());
       dispatch(fetchMyStories());
       dispatch(fetchMyInfo()); // refresh follower/following count
       userApi.getBlockedUsers().then(res => setBlockedUsers(res.result || [])).catch(() => {});
+      setBlockCheckDone(true);
       return;
     }
 
@@ -129,21 +133,32 @@ export function ProfilePage() {
 
         const userRes = await postApi.getUserByUsername(cleanUsername);
         const followingUser = userRes?.result;
+        
+        // BE trả về blocked=true nếu user này bị block hoặc block mình
+        if (followingUser?.blocked) {
+          setOtherProfile(followingUser);
+          setIsBlocked(true);
+          setBlockCheckDone(true);
+          return;
+        }
+
         setOtherProfile(followingUser);
         // lấy trạng thái follow + friend
         if (followingUser?.userId) {
-          const statusRes = await followApi.getFollowStatus(followingUser.userId);
+          const [statusRes, blockedRes] = await Promise.all([
+            followApi.getFollowStatus(followingUser.userId),
+            userApi.getBlockedUsers().catch(() => ({ result: [] })),
+          ]);
           setIsFollowing(!!statusRes?.isFollowing);
           setIsFriend(!!statusRes?.isFriend);
-
-          // Check if blocked
-          userApi.getBlockedUsers().then(res => {
-            const blocked = res.result || [];
-            setIsBlocked(blocked.includes(followingUser.userId));
-          }).catch(() => {});
+          const blockedList = blockedRes?.result || blockedRes?.data?.result || [];
+          const blockedIds = blockedList.map(u => u.userId || u.id).filter(Boolean);
+          setIsBlocked(blockedIds.includes(followingUser.userId));
         }
       } catch (err) {
         console.error("Error loading profile:", err);
+      } finally {
+        setBlockCheckDone(true);
       }
     })();
   }, [dispatch, isOwnProfile, cleanUsername, location.key]);
@@ -296,9 +311,9 @@ export function ProfilePage() {
       setIsFollowing(false);
       setIsFriend(false);
       setBlockDialogOpen(false);
-      toast.success("Đã chặn người dùng này");
+      toast.success("User blocked successfully");
     } catch (err) {
-      toast.error("Lỗi khi chặn");
+      toast.error("Failed to block user");
     }
   };
 
@@ -307,9 +322,14 @@ export function ProfilePage() {
     try {
       await userApi.unblockUser(user.userId);
       setIsBlocked(false);
-      toast.success("Đã bỏ chặn người dùng này");
+      // Reset để trigger reload toàn bộ profile data
+      setOtherProfile(null);
+      setBlockCheckDone(false);
+      toast.success("User unblocked successfully");
+      // Navigate back to reload full profile data
+      navigate(`/profile/@${cleanUsername}`, { replace: true });
     } catch (err) {
-      toast.error("Lỗi khi bỏ chặn");
+      toast.error("Failed to unblock user");
     }
   };
 
@@ -317,11 +337,20 @@ export function ProfilePage() {
   const postsToRender = isOwnProfile ? myPosts : otherPosts;
   // Reposts để render
   const repostsToRender = isOwnProfile ? myReposts : userReposts;
+  // Chờ block check xong trước khi render — tránh flash nội dung bị block
+  if (!isOwnProfile && !blockCheckDone) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        Loading profile...
+      </div>
+    );
+  }
+
   //Loading profile
   if (!user && (isOwnProfile ? loadingMyPosts : loadingOther)) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Đang tải profile...
+        Loading profile...
       </div>
     );
   }
@@ -331,6 +360,48 @@ export function ProfilePage() {
     if (!postId) return;
     navigate(`/post/${postId}`);
   };
+
+  // Nếu đã block người này → hiển thị trang blocked
+  if (!isOwnProfile && isBlocked && user) {
+    return (
+      <div className="max-w-2xl mx-auto relative min-h-screen">
+        {/* Header */}
+        <div className="border-b border-border/20 p-4 bg-background/40 backdrop-blur-md sticky top-0 z-20">
+          <div className="flex items-center gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleBack}
+              className="p-2 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer text-foreground flex items-center justify-center"
+            >
+              <ArrowLeft className="w-5 h-5 stroke-[1.8]" />
+            </motion.button>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">{user.displayName}</h2>
+          </div>
+        </div>
+
+        {/* Blocked state */}
+        <div className="flex flex-col items-center justify-center py-24 px-8 text-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center">
+            <UserMinus className="w-7 h-7 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-semibold text-foreground text-lg">You've blocked this user</p>
+            <p className="text-muted-foreground text-sm mt-1">Unblock to view their profile</p>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleUnblockUser}
+            className="mt-2 px-6 py-2.5 rounded-2xl border border-border/40 bg-muted/10 hover:bg-muted/20 font-semibold text-sm text-foreground transition-all"
+          >
+            Unblock
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto relative min-h-screen">
       {/* Decorative Glow Blobs */}
@@ -827,16 +898,16 @@ export function ProfilePage() {
                            try {
                              await userApi.unblockUser(blockedUser.userId);
                              setBlockedUsers(prev => prev.filter(u => u.userId !== blockedUser.userId));
-                             toast.success("Đã bỏ chặn người dùng");
+                             toast.success("User unblocked");
                            } catch(err) {
-                             toast.error("Lỗi bỏ chặn");
+                             toast.error("Failed to unblock");
                            }
                          }}>Unblock</Button>
                        </div>
                      ))}
                    </div>
                  ) : (
-                   <div className="text-center text-muted-foreground">Chưa chặn ai</div>
+                   <div className="text-center text-muted-foreground">No blocked users</div>
                  )}
               </div>
             </motion.div>
@@ -926,7 +997,7 @@ export function ProfilePage() {
               <p className="text-xs text-muted-foreground mt-0.5">@{user?.username}</p>
             </div>
             <p className="text-xs text-muted-foreground text-center leading-relaxed max-w-[220px] mt-1">
-              Họ sẽ không thể tìm thấy trang cá nhân, bài viết hay xem người theo dõi của bạn. Bạn cũng sẽ không thể thấy nội dung của họ.
+              They won't be able to find your profile, posts or see your followers. You also won't see their content.
             </p>
           </div>
 
@@ -939,11 +1010,11 @@ export function ProfilePage() {
               className="rounded-none h-12 text-sm font-bold text-red-500 bg-transparent hover:bg-red-500/10 active:bg-red-500/15 transition-colors border-0 shadow-none cursor-pointer"
               onClick={handleBlockUser}
             >
-              Chặn
+              Block
             </AlertDialogAction>
             <div className="h-px bg-border/20" />
             <AlertDialogCancel className="rounded-none h-12 text-sm font-semibold text-foreground bg-transparent hover:bg-muted/30 border-0 shadow-none mt-0 cursor-pointer">
-              Hủy
+              Cancel
             </AlertDialogCancel>
           </div>
         </AlertDialogContent>

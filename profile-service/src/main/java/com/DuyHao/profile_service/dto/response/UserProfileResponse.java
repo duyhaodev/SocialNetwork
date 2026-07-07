@@ -28,4 +28,7 @@ public class UserProfileResponse {
     String connectionsPrivacy; // EVERYONE | FRIENDS_ONLY | ONLY_ME
     java.util.Map<String, Double> categoryWeights;
     boolean verified;
+
+    // Block status — true nếu current user đã block hoặc bị block bởi profile này
+    boolean blocked;
 }

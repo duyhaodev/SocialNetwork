@@ -39,6 +39,15 @@ public class SuggestionService {
                 .map(f -> f.getFollowerId())
                 .collect(Collectors.toSet());
 
+        // Lấy danh sách block (cả chiều block và bị block) để loại khỏi suggest
+        Set<String> blockedIds = new HashSet<>();
+        try {
+            List<String> blockList = userClient.getBlockList(currentUserId);
+            if (blockList != null) blockedIds.addAll(blockList);
+        } catch (Exception e) {
+            log.warn("Could not fetch block list for user {}: {}", currentUserId, e.getMessage());
+        }
+
         // Lấy danh sách bạn bè
         Set<String> myFriends = new HashSet<>(myFollowings);
         myFriends.retainAll(myFollowers);
@@ -60,10 +69,11 @@ public class SuggestionService {
             Set<String> friendsOfFriend = new HashSet<>(friendFollowings);
             friendsOfFriend.retainAll(friendFollowers);
 
-            // Chỉ lấy người A chưa follow và không phải chính A
+            // Chỉ lấy người A chưa follow và không phải chính A và không bị block
             friendsOfFriend.stream()
                     .filter(id -> !id.equals(currentUserId))
                     .filter(id -> !myFollowings.contains(id))
+                    .filter(id -> !blockedIds.contains(id))
                     .forEach(candidates::add);
         }
 
@@ -82,6 +92,7 @@ public class SuggestionService {
             if (uid == null) continue;
             if (uid.equals(currentUserId)) continue; // loại chính mình
             if (myFollowings.contains(uid)) continue; // loại đã follow
+            if (blockedIds.contains(uid)) continue; // loại người bị block / block mình
             candidates.add(uid);
         }
 

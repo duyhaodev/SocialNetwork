@@ -36,4 +36,8 @@ public interface UserClient {
     // Lấy top N user có follower cao nhất
     @GetMapping("/internal/users/top-followers")
     List<UserProfileResponse> getTopFollowers(@RequestParam int limit);
+
+    // Lấy danh sách userId liên quan đến block (cả chiều block và bị block)
+    @GetMapping("/internal/users/{userId}/block-list")
+    List<String> getBlockList(@PathVariable String userId);
 }
