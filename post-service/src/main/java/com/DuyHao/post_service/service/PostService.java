@@ -531,6 +531,10 @@ public class PostService {
     public PostResponse getPostById(String postId, String currentUserId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
 
+        if ("HIDDEN".equals(post.getStatus())) {
+            throw new RuntimeException("Bài viết này đã bị ẩn bởi Quản trị viên");
+        }
+
         if (currentUserId != null) {
             try {
                 List<String> blockList = userClient.getBlockList(currentUserId);

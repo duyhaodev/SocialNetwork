@@ -12,7 +12,7 @@ const REPORT_REASONS = [
   "Spam hoặc quảng cáo trái phép",
   "Nội dung thù địch, quấy rối",
   "Thông tin sai lệch",
-  "Vi phạm nội quy nhóm",
+  "Vi phạm tiêu chuẩn cộng đồng",
   "Khác"
 ];
 
@@ -34,13 +34,24 @@ export function ReportPostModal({ isOpen, onClose, post }) {
 
     setSubmitting(true);
     try {
-      const res = await groupApi.createReport(post.groupId, {
+      const payload = {
         targetType: "POST",
         targetId: post.id ?? post.postId,
         reason: finalReason
-      });
+      };
+      
+      let res;
+      let adminText = "Quản trị viên";
+      if (post.groupId) {
+        res = await groupApi.createReport(post.groupId, payload);
+        adminText = "Quản trị nhóm";
+      } else {
+        const postApi = (await import("@/api/postApi")).default;
+        res = await postApi.reportPost(payload);
+        adminText = "Admin hệ thống";
+      }
       if (res.code === 1000) {
-        toast.success("Đã gửi báo cáo cho Quản trị viên");
+        toast.success(`Đã gửi báo cáo cho ${adminText}`);
         onClose();
       }
     } catch (error) {
@@ -49,6 +60,9 @@ export function ReportPostModal({ isOpen, onClose, post }) {
       setSubmitting(false);
     }
   };
+
+  const isAdminReport = !post.groupId;
+  const adminText = isAdminReport ? "Admin hệ thống" : "Quản trị nhóm";
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -59,7 +73,7 @@ export function ReportPostModal({ isOpen, onClose, post }) {
             Báo cáo bài viết
           </DialogTitle>
           <DialogDescription>
-            Báo cáo này sẽ được gửi đến Quản trị viên của nhóm để xem xét xử lý.
+            Báo cáo này sẽ được gửi đến {adminText} để xem xét xử lý.
           </DialogDescription>
         </DialogHeader>
 

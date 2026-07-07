@@ -222,6 +222,26 @@ public class NotificationService {
         return notification;
     }
 
+    public Notification createPostHiddenByAdminNotification(String toUserId, String postId, String reason) {
+        String baseMessage = "Bài viết của bạn đã bị Quản trị viên ẩn đi";
+        final String message =
+                (reason != null && !reason.trim().isEmpty()) ? baseMessage + ". Lý do: " + reason : baseMessage;
+
+        Notification notification = notificationRepo
+                .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, "admin", "post_hidden_admin", postId)
+                .map(n -> {
+                    n.setCreatedAt(LocalDateTime.now());
+                    n.setMessage(message);
+                    n.setIsRead(false);
+                    return notificationRepo.save(n);
+                })
+                .orElseGet(() -> notificationRepo.save(
+                        buildNotification(toUserId, "admin", "post_hidden_admin", postId, null, message)));
+
+        pushRealtime(notification, "new_notification");
+        return notification;
+    }
+
     private Notification buildNotification(
             String toUserId, String fromUserId, String type, String postId, String commentId, String customMessage) {
         return Notification.builder()
@@ -322,7 +342,18 @@ public class NotificationService {
 
     private void pushRealtime(Notification notification, String event) {
         try {
-            UserResponse fromUser = userClient.getUser(notification.getFromUserId());
+            UserResponse fromUser;
+            if ("admin".equals(notification.getFromUserId())) {
+                fromUser = UserResponse.builder()
+                        .id("admin")
+                        .userName("admin")
+                        .fullName("Quản trị viên")
+                        .avatarUrl("https://ui-avatars.com/api/?name=Admin&background=f97316&color=fff")
+                        .build();
+            } else {
+                fromUser = userClient.getUser(notification.getFromUserId());
+            }
+
             boolean followed = false;
             if ("follow".equals(notification.getType())) {
                 followed = followClient.isFollowing(notification.getUserId(), notification.getFromUserId());
@@ -427,7 +458,17 @@ public class NotificationService {
                     .map(Notification::getFromUserId)
                     .distinct()
                     .map(uid -> {
-                        var u = userClient.getUser(uid);
+                        UserResponse u;
+                        if ("admin".equals(uid)) {
+                            u = UserResponse.builder()
+                                    .id("admin")
+                                    .userName("admin")
+                                    .fullName("Quản trị viên")
+                                    .avatarUrl("https://ui-avatars.com/api/?name=Admin&background=f97316&color=fff")
+                                    .build();
+                        } else {
+                            u = userClient.getUser(uid);
+                        }
 
                         boolean followed = false;
 
