@@ -118,7 +118,7 @@ public class CommentService {
         // Tăng sở thích khi comment (+0.15)
         triggerWeightUpdate(userId, request.getPostId(), 0.15);
 
-        return commentMapper.toCommentResponse(commentRepository.save(comment));
+        return commentMapper.toResponse(commentRepository.save(comment), user, mediaUrls, 0, false, 0);
     }
 
     // --- ADMIN METHODS ---
