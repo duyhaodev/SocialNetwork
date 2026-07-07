@@ -132,7 +132,18 @@ public class CommentService {
     public void deleteCommentByAdmin(String commentId) {
         Comment comment =
                 commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
-        commentRepository.delete(comment);
+
+        comment.setIsHidden(true);
+        commentRepository.save(comment);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public void restoreCommentByAdmin(String commentId) {
+        Comment comment =
+                commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        comment.setIsHidden(false);
+        commentRepository.save(comment);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -146,12 +157,28 @@ public class CommentService {
         Page<Comment> commentPage =
                 commentRepository.findByPostIdAndParentIdIsNullOrderByCreatedAtDesc(postId, pageable);
 
-        return buildCommentResponses(commentPage.getContent(), currentUserId);
+        List<Comment> filtered = commentPage.getContent().stream()
+                .filter(c -> !Boolean.TRUE.equals(c.getIsHidden()))
+                .collect(Collectors.toList());
+
+        return buildCommentResponses(filtered, currentUserId);
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<CommentResponse> getCommentsByPostForAdmin(String postId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Comment> commentPage =
+                commentRepository.findByPostIdAndParentIdIsNullOrderByCreatedAtDesc(postId, pageable);
+
+        return buildCommentResponses(commentPage.getContent(), null);
+    }
+
     // ================= GET THREAD (Toàn bộ cây replies theo rootCommentId) =================
     public List<CommentResponse> getThread(String rootCommentId, String currentUserId) {
         List<Comment> all = commentRepository.findByRootCommentIdOrderByCreatedAtAsc(rootCommentId);
-        return buildCommentResponses(all, currentUserId);
+        List<Comment> filtered =
+                all.stream().filter(c -> !Boolean.TRUE.equals(c.getIsHidden())).collect(Collectors.toList());
+        return buildCommentResponses(filtered, currentUserId);
     }
 
     // ================= HELPER  =================

@@ -60,12 +60,6 @@ const AdminLayout = () => {
           <h2 className="text-xl font-semibold">
             {navItems.find(item => item.path === location.pathname)?.name || 'Admin'}
           </h2>
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
-              A
-            </div>
-            <span className="font-medium">System Admin</span>
-          </div>
         </header>
 
         <main className="p-6">

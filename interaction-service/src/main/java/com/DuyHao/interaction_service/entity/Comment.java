@@ -42,6 +42,9 @@ public class Comment {
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
+    @Column(name = "is_hidden")
+    Boolean isHidden;
+
     @PrePersist
     public void prePersist() {
         if (id == null || id.isBlank()) {

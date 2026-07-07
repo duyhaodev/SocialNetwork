@@ -19,10 +19,11 @@ public class AdminController {
 
     @GetMapping
     ApiResponse<Page<UserResponse>> getAllUsers(
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ApiResponse.<Page<UserResponse>>builder()
-                .result(userService.getAllUsers(PageRequest.of(page, size)))
+                .result(userService.getAllUsers(keyword, PageRequest.of(page, size)))
                 .build();
     }
 

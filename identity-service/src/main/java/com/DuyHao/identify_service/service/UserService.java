@@ -146,7 +146,10 @@ public class UserService {
 
     // --- ADMIN METHODS ---
     @PreAuthorize("hasRole('ADMIN')")
-    public org.springframework.data.domain.Page<UserResponse> getAllUsers(org.springframework.data.domain.Pageable pageable) {
+    public org.springframework.data.domain.Page<UserResponse> getAllUsers(String keyword, org.springframework.data.domain.Pageable pageable) {
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return userRepository.searchUsers(keyword, pageable).map(userMapper::toUserResponse);
+        }
         return userRepository.findAll(pageable).map(userMapper::toUserResponse);
     }
 
