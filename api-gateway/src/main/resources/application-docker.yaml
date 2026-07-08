@@ -32,7 +32,7 @@ spring:
         - id: post-service
           uri: http://post-service:8085
           predicates:
-            - Path=/post/posts/**,/post/feed/**
+            - Path=/post/posts/**,/post/feed/**,/post/admin/**,/post/reports/**
         - id: follow-service
           uri: http://follow-service:8084
           predicates:
