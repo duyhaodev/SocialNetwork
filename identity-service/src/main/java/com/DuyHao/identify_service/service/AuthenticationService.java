@@ -61,7 +61,13 @@ public class AuthenticationService {
         boolean isValid = true;
 
         try {
-            verifyToken(token, false);
+            SignedJWT signedJWT = verifyToken(token, false);
+            // Nếu token hợp lệ về mặt chữ ký & hạn, kiểm tra thêm user có bị ban không
+            String userId = signedJWT.getJWTClaimsSet().getSubject();
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null || !user.isEnabled()) {
+                isValid = false;
+            }
         } catch (AppException e) {
             isValid = false;
         }

@@ -17,7 +17,7 @@ public enum ErrorCode {
     INVALID_DOB(1008, "You must be {min} or older", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_BLANK(1009, "Email must not be blank", HttpStatus.BAD_REQUEST),
     EMAIL_INVALID(1010, "Email not valid", HttpStatus.BAD_REQUEST),
-    USER_BLOCKED(1011, "Không thể gửi tin nhắn vì bạn hoặc người này đã bị chặn", HttpStatus.BAD_REQUEST);
+    USER_BLOCKED(1011, "Cannot send message because you or this user has been blocked", HttpStatus.BAD_REQUEST);
 
     ErrorCode(int code, String message, HttpStatusCode httpStatusCode) {
         this.code = code;

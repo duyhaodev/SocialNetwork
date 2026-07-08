@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import followApi from "../../api/followApi";
 import { toast } from "sonner";
 import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
+import { VerifiedBadge } from "../ui/VerifiedBadge";
 
 
 export function SuggestedUsers({ onDismiss, sidebar = false }) {
@@ -167,16 +168,18 @@ export function SuggestedUsers({ onDismiss, sidebar = false }) {
                     </Avatar>
                     <div className="min-w-0">
                       <UserHoverCard username={s.username}>
-                        <p
-                          className="text-xs font-semibold truncate cursor-pointer hover:text-violet-400 transition-colors"
-                          onClick={() => navigate(`/profile/@${s.username}`)}
-                        >
-                          {s.fullName}
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <p
+                            className="text-xs font-semibold truncate cursor-pointer hover:text-violet-400 transition-colors"
+                            onClick={() => navigate(`/profile/@${s.username}`)}
+                          >
+                            {s.fullName}
+                          </p>
+                          {s.verified && <VerifiedBadge className="w-3.5 h-3.5 shrink-0" />}
+                        </div>
                       </UserHoverCard>
                       <p className="text-[10px] text-muted-foreground truncate">@{s.username}</p>
-                    </div>
-                  </div>
+                    </div>                  </div>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -268,12 +271,15 @@ export function SuggestedUsers({ onDismiss, sidebar = false }) {
                 {/* Name */}
                 <div className="text-center w-full min-w-0">
                   <UserHoverCard username={s.username}>
-                    <span
-                      className="text-sm font-semibold truncate block cursor-pointer hover:text-violet-400 transition-colors"
-                      onClick={() => navigate(`/profile/@${s.username}`)}
-                    >
-                      {s.fullName}
-                    </span>
+                    <div className="flex items-center justify-center gap-1">
+                      <span
+                        className="text-sm font-semibold truncate block cursor-pointer hover:text-violet-400 transition-colors"
+                        onClick={() => navigate(`/profile/@${s.username}`)}
+                      >
+                        {s.fullName}
+                      </span>
+                      {s.verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
+                    </div>
                   </UserHoverCard>
                   <p className="text-xs text-muted-foreground truncate">@{s.username}</p>
                 </div>

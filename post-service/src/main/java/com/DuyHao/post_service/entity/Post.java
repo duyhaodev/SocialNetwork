@@ -71,6 +71,9 @@ public class Post {
     @Column(name = "is_sensitive_content")
     Boolean isSensitiveContent; // true nếu user chọn "Post anyway" khi bị cảnh báo nội dung nhạy cảm mức mild
 
+    @Column(name = "hidden_at")
+    LocalDateTime hiddenAt; // thời điểm bị platform admin ẩn (lưu theo Asia/Ho_Chi_Minh), tự xóa sau 30 ngày
+
     // Repost
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "repost_of_id")

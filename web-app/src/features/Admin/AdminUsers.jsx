@@ -65,7 +65,10 @@ const AdminUsers = () => {
         await adminApi.unbanUser(userId);
         toast.success('User has been unbanned');
       }
-      fetchUsers();
+      // Optimistic update — chỉ đổi trạng thái của user đó, không fetch lại cả list
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, enabled: !isCurrentlyEnabled } : u
+      ));
     } catch (error) {
       toast.error('Failed to update user status');
     }
@@ -75,7 +78,10 @@ const AdminUsers = () => {
     try {
       await adminApi.verifyUser(userId);
       toast.success('Verification status updated');
-      fetchUsers();
+      // Optimistic update
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, verified: !u.verified } : u
+      ));
     } catch (error) {
       toast.error('Failed to verify user');
     }

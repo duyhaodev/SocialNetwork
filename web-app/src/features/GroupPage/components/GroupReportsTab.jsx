@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { formatTimeAgo } from "@/utils/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Check, Trash2, ShieldAlert } from "lucide-react";
+import { Check, EyeOff, ShieldAlert, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import groupApi from "@/api/groupApi";
 import postApi from "@/api/postApi";
 import { PostCard } from "@/components/PostCard/PostCard";
@@ -11,7 +12,12 @@ import { PostCard } from "@/components/PostCard/PostCard";
 export function GroupReportsTab({ groupId }) {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [reportPosts, setReportPosts] = useState({}); // mapped by targetId
+  const [reportPosts, setReportPosts] = useState({});
+
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // { reportId, postId, userId, reason }
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchReports = async () => {
     try {
@@ -22,7 +28,7 @@ export function GroupReportsTab({ groupId }) {
         fetchReportedPosts(res.result);
       }
     } catch (error) {
-      toast.error("Lỗi khi tải danh sách báo cáo");
+      toast.error("Failed to load reports");
     } finally {
       setLoading(false);
     }
@@ -40,7 +46,7 @@ export function GroupReportsTab({ groupId }) {
             newReportPosts[postId] = postRes.result;
           }
         } catch (error) {
-          console.error("Lỗi tải chi tiết bài viết bị báo cáo", postId);
+          console.error("Failed to load reported post", postId);
         }
       }
     }
@@ -54,26 +60,32 @@ export function GroupReportsTab({ groupId }) {
   const handleDismissReport = async (reportId) => {
     try {
       await groupApi.updateReportStatus(groupId, reportId, "DISMISSED");
-      toast.success("Đã bỏ qua báo cáo");
+      toast.success("Report dismissed");
       fetchReports();
     } catch (error) {
-      toast.error("Lỗi khi cập nhật báo cáo");
+      toast.error("Failed to dismiss report");
     }
   };
 
-  const handleHidePostAndResolve = async (reportId, postId, notifyUserId, reason) => {
-    if (!confirm("Bạn có chắc chắn muốn ẩn bài viết này không? Bài viết sẽ chuyển sang trạng thái bị ẩn do vi phạm.")) return;
+  const openHideConfirm = (reportId, postId, userId, reason) => {
+    setPendingAction({ reportId, postId, userId, reason });
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmHide = async () => {
+    if (!pendingAction) return;
+    const { reportId, postId, userId, reason } = pendingAction;
+    setSubmitting(true);
     try {
-      // Thay vì xóa cứng, cập nhật trạng thái bài viết thành HIDDEN
       await postApi.updatePostStatus(postId, "HIDDEN", reason);
-      
-      // Update report status = RESOLVED and send notification via group-service
-      await groupApi.updateReportStatus(groupId, reportId, "RESOLVED", notifyUserId, reason);
-      
-      toast.success("Đã ẩn bài viết và xử lý báo cáo");
+      await groupApi.updateReportStatus(groupId, reportId, "RESOLVED", userId, reason);
+      toast.success("Post hidden and report resolved");
+      setConfirmOpen(false);
       fetchReports();
     } catch (error) {
-      toast.error("Lỗi khi xử lý báo cáo hoặc ẩn bài viết");
+      toast.error("Failed to process report");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -85,9 +97,9 @@ export function GroupReportsTab({ groupId }) {
         <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
           <Check className="w-8 h-8 text-green-500" />
         </div>
-        <h3 className="text-xl font-bold mb-2">Không có báo cáo nào</h3>
+        <h3 className="text-xl font-bold mb-2">No reports</h3>
         <p className="text-muted-foreground text-sm max-w-sm">
-          Nhóm của bạn đang hoạt động rất tốt và tuân thủ các quy định.
+          Your group is doing great and following all community guidelines.
         </p>
       </div>
     );
@@ -97,9 +109,9 @@ export function GroupReportsTab({ groupId }) {
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
         <ShieldAlert className="w-5 h-5 text-orange-500" />
-        <h3 className="font-semibold text-lg">Báo cáo đang chờ xử lý</h3>
+        <h3 className="font-semibold text-lg">Pending Reports</h3>
       </div>
-      
+
       <div className="space-y-6">
         {reports.map((report) => {
           const post = reportPosts[report.targetId];
@@ -109,49 +121,76 @@ export function GroupReportsTab({ groupId }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded uppercase">
-                      Vi phạm
+                      Violation
                     </span>
                     <span className="font-semibold text-sm">
                       {report.reason}
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Báo cáo lúc: {formatTimeAgo(report.createdAt)}
+                    Reported {formatTimeAgo(report.createdAt)}
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-0 opacity-80 pointer-events-none">
                 {post ? (
                   <PostCard post={post} />
                 ) : (
                   <div className="p-4 text-center text-muted-foreground italic text-sm">
-                    (Bài viết không tồn tại hoặc đã bị xóa)
+                    (Post no longer exists or has been deleted)
                   </div>
                 )}
               </div>
-              
+
               <div className="p-3 border-t border-border/40 bg-muted/20 flex items-center justify-end gap-3 pointer-events-auto">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => handleDismissReport(report.id)}
                 >
-                  Bỏ qua
+                  Dismiss
                 </Button>
-                <Button 
-                  size="sm" 
-                  className="bg-red-500 hover:bg-red-600 text-white gap-2"
+                <Button
+                  size="sm"
+                  className="bg-orange-500 hover:bg-orange-600 text-white gap-2"
                   disabled={!post}
-                  onClick={() => handleHidePostAndResolve(report.id, report.targetId, post?.userId, report.reason)}
+                  onClick={() => openHideConfirm(report.id, report.targetId, post?.userId, report.reason)}
                 >
-                  <Trash2 className="w-4 h-4" /> Ẩn bài viết
+                  <EyeOff className="w-4 h-4" /> Hide Post
                 </Button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Confirm Hide Dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-500">
+              <AlertCircle className="w-5 h-5" />
+              Hide Post
+            </DialogTitle>
+            <DialogDescription>
+              The post will be hidden due to the reported violation: <strong>{pendingAction?.reason}</strong>. The author will be notified.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={handleConfirmHide}
+              disabled={submitting}
+            >
+              {submitting ? "Processing..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

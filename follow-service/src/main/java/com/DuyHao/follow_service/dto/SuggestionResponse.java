@@ -25,4 +25,6 @@ public class SuggestionResponse {
 
     // avatar của bạn chung
     List<String> mutualFriendAvatars;
+
+    boolean verified;
 }

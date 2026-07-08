@@ -205,7 +205,7 @@ public class NotificationService {
 
         String baseMessage = NotificationMapper.buildMessage("group_post_report_deleted");
         final String message =
-                (reason != null && !reason.trim().isEmpty()) ? baseMessage + ". Lỗi vi phạm: " + reason : baseMessage;
+                (reason != null && !reason.trim().isEmpty()) ? baseMessage + ". Reason: " + reason : baseMessage;
 
         Notification notification = notificationRepo
                 .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, fromUserId, "group_post_report_deleted", null)
@@ -223,9 +223,9 @@ public class NotificationService {
     }
 
     public Notification createPostHiddenByAdminNotification(String toUserId, String postId, String reason) {
-        String baseMessage = "Bài viết của bạn đã bị Quản trị viên ẩn đi";
+        String baseMessage = "Your post has been hidden by an Administrator";
         final String message =
-                (reason != null && !reason.trim().isEmpty()) ? baseMessage + ". Lý do: " + reason : baseMessage;
+                (reason != null && !reason.trim().isEmpty()) ? baseMessage + ". Reason: " + reason : baseMessage;
 
         Notification notification = notificationRepo
                 .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, "admin", "post_hidden_admin", postId)
@@ -240,6 +240,15 @@ public class NotificationService {
 
         pushRealtime(notification, "new_notification");
         return notification;
+    }
+
+    public void deletePostHiddenByAdminNotification(String toUserId, String postId) {
+        notificationRepo
+                .findByUserIdAndFromUserIdAndTypeAndPostId(toUserId, "admin", "post_hidden_admin", postId)
+                .ifPresent(n -> {
+                    notificationRepo.delete(n);
+                    pushRemoveRealtime(toUserId, n.getId());
+                });
     }
 
     private Notification buildNotification(

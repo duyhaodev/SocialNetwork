@@ -54,4 +54,9 @@ public class PostResponse {
 
     // tags
     private List<String> tags;
+
+    // verified badge of post author
+    private Boolean verified;
+    // verified badge of original author (for reposts)
+    private Boolean originalVerified;
 }

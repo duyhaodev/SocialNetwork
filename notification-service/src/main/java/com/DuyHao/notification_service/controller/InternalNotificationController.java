@@ -159,4 +159,12 @@ public class InternalNotificationController {
         notificationService.createPostHiddenByAdminNotification(receiverId, postId, reason);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/post-hidden-admin")
+    public ResponseEntity<?> deletePostHiddenByAdmin(
+            @RequestParam String receiverId,
+            @RequestParam String postId) {
+        notificationService.deletePostHiddenByAdminNotification(receiverId, postId);
+        return ResponseEntity.ok().build();
+    }
 }

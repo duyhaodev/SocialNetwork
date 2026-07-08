@@ -22,6 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ public class UserService {
     ProfileMapper profileMapper;
     EmailService emailService;
     ApplicationEventPublisher eventPublisher;
+    RealtimeEventPublisher realtimeEventPublisher;
 
     public UserResponse createUser(UserCreationRequest request) {
         String email = request.getEmail();
@@ -154,11 +156,14 @@ public class UserService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     public void banUser(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         user.setEnabled(false);
         userRepository.save(user);
+        // Notify realtime-service to force logout this user immediately
+        realtimeEventPublisher.publishForceLogout(userId);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

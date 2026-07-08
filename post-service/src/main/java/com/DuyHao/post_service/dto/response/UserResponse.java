@@ -14,4 +14,5 @@ public class UserResponse {
     String username;
     String fullName;
     String avatarUrl;
+    boolean verified;
 }

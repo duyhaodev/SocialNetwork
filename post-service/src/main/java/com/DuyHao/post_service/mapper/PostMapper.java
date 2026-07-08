@@ -34,6 +34,7 @@ public class PostMapper {
                 .username(user.getUsername())
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
+                .verified(user.isVerified())
 
                 // Media và Interaction
                 .mediaUrls(mediaUrls)

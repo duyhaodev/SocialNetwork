@@ -6,7 +6,7 @@ import { Label } from "../../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
-import { login, fetchMyInfo } from "../../store/userSlice";
+import { login } from "../../store/userSlice";
 import { isAdmin } from "../../api/localStorageService";
 
 
@@ -24,9 +24,7 @@ export function LoginPage() {
     
     try {
       setIsLoading(true);
-      // dispatch login thunk
       await dispatch(login(values)).unwrap();
-      // login thành công -> fetchMyInfo is now dispatched inside the login thunk.
       toast.success("Login successful!");
       
       if (isAdmin()) {

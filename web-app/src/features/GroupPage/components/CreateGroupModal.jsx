@@ -14,6 +14,8 @@ import groupApi from "@/api/groupApi";
 import mediaApi from "@/api/mediaApi";
 import { CoverCropDialog } from "@/components/CoverCropDialog/CoverCropDialog";
 
+const DEFAULT_GROUP_COVER = "https://res.cloudinary.com/dfscz2c2l/image/upload/v1783525944/anh-bia-den-14_iripyk.webp";
+
 const schema = yup.object({
   name: yup.string().required("Vui lòng nhập tên nhóm").max(100, "Tên nhóm quá dài"),
   description: yup.string(),
@@ -58,7 +60,7 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }) {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      let finalCoverUrl = "";
+      let finalCoverUrl = DEFAULT_GROUP_COVER;
       if (coverFile) {
         const formData = new FormData();
         formData.append("files", coverFile);
@@ -69,7 +71,7 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }) {
         else if (Array.isArray(uploadRes.data)) mediaObj = uploadRes.data[0];
         else if (Array.isArray(uploadRes.data?.result)) mediaObj = uploadRes.data.result[0];
         
-        finalCoverUrl = mediaObj?.mediaUrl || mediaObj?.url || "";
+        finalCoverUrl = mediaObj?.mediaUrl || mediaObj?.url || DEFAULT_GROUP_COVER;
       }
 
       const payload = {
@@ -114,11 +116,14 @@ export function CreateGroupModal({ isOpen, onClose, onSuccess }) {
           <div className="space-y-2">
             <Label>Ảnh Bìa Nhóm</Label>
             <div className="relative w-full h-32 bg-muted/50 rounded-xl overflow-hidden border-2 border-dashed border-border flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer group">
-              {coverPreview ? (
-                <img src={coverPreview} alt="Cover Preview" className="w-full h-full object-cover" />
-              ) : (
-                <div className="text-muted-foreground flex flex-col items-center">
-                  <Camera className="w-8 h-8 mb-2 opacity-50" />
+              <img
+                src={coverPreview || DEFAULT_GROUP_COVER}
+                alt="Cover Preview"
+                className="w-full h-full object-cover"
+              />
+              {!coverPreview && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 text-white">
+                  <Camera className="w-8 h-8 mb-2 opacity-80" />
                   <span className="text-sm font-medium">Tải ảnh lên</span>
                 </div>
               )}

@@ -23,4 +23,6 @@ public class UserProfileResponse {
     String city;
     String avatarUrl;
     String bio;
+    boolean verified;
+    long followerCount;
 }

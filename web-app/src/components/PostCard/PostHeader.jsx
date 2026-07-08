@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { UserHoverCard } from "../UserHoverCard/UserHoverCard";
+import { VerifiedBadge } from "../ui/VerifiedBadge";
 import { formatTimeAgo } from "../../utils/dateUtils.js";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -109,6 +110,7 @@ export function PostHeader({
                   </span>
                 </UserHoverCard>
               </button>
+              {post.verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
               {post.groupId && post.groupName ? (
                 <>
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
@@ -231,7 +233,7 @@ export function PostHeader({
                   <div className="flex items-center gap-2 w-full text-orange-500">
                     <AlertCircle className="w-4 h-4 text-orange-500" />
                     <span className="font-medium">
-                      {post.groupId ? "Báo cáo với quản trị nhóm" : "Báo cáo với Admin hệ thống"}
+                      {post.groupId ? "Report Post" : "Report Post"}
                     </span>
                   </div>
                 </DropdownMenuItem>

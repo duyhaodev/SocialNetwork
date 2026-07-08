@@ -12,16 +12,21 @@ import com.DuyHao.post_service.mapper.PostMapper;
 import com.DuyHao.post_service.repository.PostRepository;
 import com.DuyHao.post_service.util.TextNormalizer;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostService {
@@ -929,7 +934,8 @@ public class PostService {
     @PreAuthorize("hasRole('ADMIN')")
     public org.springframework.data.domain.Page<PostResponse> getAllPosts(
             org.springframework.data.domain.Pageable pageable) {
-        Page<Post> page = postRepository.findAll(pageable);
+        // Chỉ lấy bài gốc có isSensitiveContent = true (user nhấn "Post anyway")
+        Page<Post> page = postRepository.findSensitiveContentPosts(pageable);
         List<Post> posts = page.getContent();
 
         if (posts.isEmpty()) {
@@ -957,11 +963,87 @@ public class PostService {
         return new PageImpl<>(responses, pageable, page.getTotalElements());
     }
 
+    /**
+     * Platform admin ẩn bài vi phạm (không xóa ngay).
+     * Bài sẽ bị xóa tự động sau 30 ngày bởi scheduled job.
+     * Chỉ áp dụng cho bài ngoài group (groupId IS NULL).
+     */
     @PreAuthorize("hasRole('ADMIN')")
-    public void deletePostByAdmin(String postId) {
-        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
-        // Additional cleanup: media, interactions, etc. could be placed here.
-        postRepository.delete(post);
+    @Transactional
+    public void hidePostByAdmin(String postId, String reason) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        if (post.getGroupId() != null && !post.getGroupId().isBlank()) {
+            throw new RuntimeException("Platform admin không thể ẩn bài trong group");
+        }
+
+        // Lưu thời điểm ẩn theo giờ Việt Nam (Asia/Ho_Chi_Minh)
+        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        post.setStatus("HIDDEN");
+        post.setStatusReason(reason);
+        post.setHiddenAt(ZonedDateTime.now(vnZone).toLocalDateTime());
+        postRepository.save(post);
+
+        // Gửi thông báo cho user
+        try {
+            notificationClient.postHiddenByAdmin(post.getUserId(), postId, reason);
+        } catch (Exception e) {
+            System.err.println("Lỗi gửi thông báo admin ẩn bài: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Scheduled job: chạy lúc 2:00 sáng mỗi ngày (giờ VN).
+     * Xóa vĩnh viễn các bài đã bị ẩn quá 30 ngày.
+     */
+    @Scheduled(cron = "0 0 2 * * *", zone = "Asia/Ho_Chi_Minh")
+    @Transactional
+    public void deleteExpiredHiddenPosts() {
+        ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDateTime cutoff = ZonedDateTime.now(vnZone).minusDays(30).toLocalDateTime();
+
+        List<Post> expired = postRepository.findExpiredHiddenPosts(cutoff);
+        if (expired.isEmpty()) return;
+
+        log.info("Scheduled cleanup: xóa {} bài HIDDEN quá 30 ngày", expired.size());
+        for (Post post : expired) {
+            try {
+                postRepository.deleteByRepostOfId(post.getId());
+                postRepository.delete(post);
+                localFeedCacheService.removePost(post.getCity(), post.getId());
+                CompletableFuture.runAsync(() -> mediaClient.deleteMediaByPostId(post.getId()));
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        interactionClient.deleteCommentsByPost(post.getId());
+                    } catch (Exception e) {
+                        System.err.println("Lỗi xóa comments khi cleanup: " + e.getMessage());
+                    }
+                });
+            } catch (Exception e) {
+                log.error("Lỗi xóa bài {} trong scheduled cleanup: {}", post.getId(), e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Platform admin bỏ ẩn bài — restore về APPROVED.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void unhidePostByAdmin(String postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        post.setStatus("APPROVED");
+        post.setStatusReason(null);
+        post.setHiddenAt(null);
+        postRepository.save(post);
+        // Xóa notification "post hidden" nếu user chưa đọc
+        try {
+            notificationClient.deletePostHiddenNotification(post.getUserId(), postId);
+        } catch (Exception e) {
+            System.err.println("Lỗi xóa notification khi unhide: " + e.getMessage());
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")

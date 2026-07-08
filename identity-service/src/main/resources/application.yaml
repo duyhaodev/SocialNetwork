@@ -24,6 +24,10 @@ spring:
           auth: true
           starttls:
             enable: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 jwt:
   signerKey: "+s9LmnZRkJF7IYL9A2sorvokBzMgL0HvYJly5aU+C9qFNKxpNM7cmj1KzSSdAmZ7"
@@ -33,3 +37,7 @@ jwt:
 app:
   service:
     profile: http://localhost:8081/profile
+
+realtime:
+  redis:
+    channel: realtime-topic

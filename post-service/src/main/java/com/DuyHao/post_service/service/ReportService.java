@@ -5,6 +5,8 @@ import com.DuyHao.post_service.dto.response.ReportResponse;
 import com.DuyHao.post_service.entity.Report;
 import com.DuyHao.post_service.mapper.ReportMapper;
 import com.DuyHao.post_service.repository.ReportRepository;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -71,8 +73,10 @@ public class ReportService {
             com.DuyHao.post_service.entity.Post post =
                     postRepository.findById(report.getTargetId()).orElse(null);
             if (post != null) {
+                ZoneId vnZone = ZoneId.of("Asia/Ho_Chi_Minh");
                 post.setStatus("HIDDEN");
                 post.setStatusReason(actionReason);
+                post.setHiddenAt(ZonedDateTime.now(vnZone).toLocalDateTime());
                 postRepository.save(post);
 
                 // Notify post author

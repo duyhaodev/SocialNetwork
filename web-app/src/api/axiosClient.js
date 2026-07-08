@@ -25,6 +25,8 @@ const processQueue = (error, token = null) => {
 
 const handleUnauthorized = async () => {
   removeToken();
+  // Không làm gì thêm nếu đã ở trang login rồi
+  if (window.location.pathname === '/login') return;
   try {
     const { logout } = await import("../store/userSlice");
     const { default: store } = await import("../app/store");

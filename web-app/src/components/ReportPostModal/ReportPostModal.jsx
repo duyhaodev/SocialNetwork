@@ -9,11 +9,11 @@ import groupApi from "@/api/groupApi";
 import { AlertCircle } from "lucide-react";
 
 const REPORT_REASONS = [
-  "Spam hoặc quảng cáo trái phép",
-  "Nội dung thù địch, quấy rối",
-  "Thông tin sai lệch",
-  "Vi phạm tiêu chuẩn cộng đồng",
-  "Khác"
+  "Spam or unauthorized advertising",
+  "Hate speech or harassment",
+  "Misinformation",
+  "Violates community standards",
+  "Other"
 ];
 
 export function ReportPostModal({ isOpen, onClose, post }) {
@@ -23,12 +23,12 @@ export function ReportPostModal({ isOpen, onClose, post }) {
 
   const handleSubmit = async () => {
     let finalReason = selectedReason;
-    if (selectedReason === "Khác") {
+    if (selectedReason === "Other") {
       finalReason = customReason.trim();
     }
 
     if (!finalReason) {
-      toast.error("Vui lòng chọn hoặc nhập lý do báo cáo");
+      toast.error("Please select or enter a reason");
       return;
     }
 
@@ -41,28 +41,28 @@ export function ReportPostModal({ isOpen, onClose, post }) {
       };
       
       let res;
-      let adminText = "Quản trị viên";
+      let adminText = "Administrator";
       if (post.groupId) {
         res = await groupApi.createReport(post.groupId, payload);
-        adminText = "Quản trị nhóm";
+        adminText = "Group Admin";
       } else {
         const postApi = (await import("@/api/postApi")).default;
         res = await postApi.reportPost(payload);
-        adminText = "Admin hệ thống";
+        adminText = "System Admin";
       }
       if (res.code === 1000) {
-        toast.success(`Đã gửi báo cáo cho ${adminText}`);
+        toast.success(`Report submitted to ${adminText}`);
         onClose();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi gửi báo cáo");
+      toast.error(error.response?.data?.message || "Failed to submit report");
     } finally {
       setSubmitting(false);
     }
   };
 
   const isAdminReport = !post.groupId;
-  const adminText = isAdminReport ? "Admin hệ thống" : "Quản trị nhóm";
+  const adminText = isAdminReport ? "System Admin" : "Group Admin";
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -70,15 +70,15 @@ export function ReportPostModal({ isOpen, onClose, post }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-orange-500">
             <AlertCircle className="w-5 h-5" />
-            Báo cáo bài viết
+            Report Post
           </DialogTitle>
           <DialogDescription>
-            Báo cáo này sẽ được gửi đến {adminText} để xem xét xử lý.
+            This report will be sent to {adminText} for review.
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          <Label className="font-semibold text-sm">Chọn lý do:</Label>
+          <Label className="font-semibold text-sm">Select a reason:</Label>
           <RadioGroup value={selectedReason} onValueChange={setSelectedReason} className="space-y-2">
             {REPORT_REASONS.map((reason) => (
               <div key={reason} className="flex items-center space-x-2">
@@ -90,10 +90,10 @@ export function ReportPostModal({ isOpen, onClose, post }) {
             ))}
           </RadioGroup>
 
-          {selectedReason === "Khác" && (
+          {selectedReason === "Other" && (
             <div className="mt-3">
               <Textarea
-                placeholder="Nhập lý do cụ thể..."
+                placeholder="Enter specific reason..."
                 value={customReason}
                 onChange={(e) => setCustomReason(e.target.value)}
                 className="resize-none"
@@ -105,14 +105,14 @@ export function ReportPostModal({ isOpen, onClose, post }) {
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={submitting}>
-            Hủy
+            Cancel
           </Button>
           <Button 
             className="bg-orange-500 hover:bg-orange-600 text-white" 
             onClick={handleSubmit} 
             disabled={submitting}
           >
-            {submitting ? "Đang gửi..." : "Gửi báo cáo"}
+            {submitting ? "Submitting..." : "Submit Report"}
           </Button>
         </DialogFooter>
       </DialogContent>

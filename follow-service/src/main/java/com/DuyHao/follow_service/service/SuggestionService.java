@@ -176,6 +176,7 @@ public class SuggestionService {
                             .followerCount(profile.getFollowerCount())
                             .mutualCount(mutual)
                             .mutualFriendAvatars(mutualAvatars)
+                            .verified(profile.isVerified())
                             .build();
 
                     return new Object[] {suggestion, score};

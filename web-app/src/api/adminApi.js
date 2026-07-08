@@ -13,7 +13,8 @@ const adminApi = {
   verifyUser: (userId) => axiosClient.put(`/profile/admin/profiles/${userId}/verify`),
 
   getAllPosts: (page = 0, size = 10) => axiosClient.get(`/post/admin/posts?page=${page}&size=${size}`),
-  deletePost: (postId) => axiosClient.delete(`/post/admin/posts/${postId}`),
+  hidePost: (postId, reason) => axiosClient.put(`/post/admin/posts/${postId}/hide`, null, { params: { reason } }),
+  unhidePost: (postId) => axiosClient.put(`/post/admin/posts/${postId}/unhide`),
   getPostStats: () => axiosClient.get("/post/admin/posts/stats"),
 
   createReport: (data) => axiosClient.post("/post/reports", data),

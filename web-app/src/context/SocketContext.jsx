@@ -10,7 +10,6 @@ import messageSound from '../assets/sounds/message-sound.wav';
 import notificationSound from '../assets/sounds/notification-sound.mp3';
 import { toast } from 'sonner';
 import store from '../app/store';
-
 const SocketContext = createContext(null);
 
 export const useSocket = () => useContext(SocketContext);
@@ -71,6 +70,21 @@ export const SocketProvider = ({ children }) => {
     }
   }, [socket, conversations]);
 
+  const handleForceLogout = async () => {
+    try {
+      const { removeToken } = await import('../api/localStorageService');
+      const { logout } = await import('../store/userSlice');
+      const { default: store } = await import('../app/store');
+      removeToken();
+      store.dispatch(logout());
+      // Dispatch custom event để App.jsx xử lý navigation (tránh full page reload)
+      window.dispatchEvent(new CustomEvent('force_logout'));
+    } catch (err) {
+      console.error('Error during force logout:', err);
+      window.location.replace('/login');
+    }
+  };
+
   useEffect(() => {
     const token = getAccessToken();
 
@@ -81,9 +95,7 @@ export const SocketProvider = ({ children }) => {
         setSocket(null);
       }
       return;
-    }
-
-    // If socket already exists and connected, don't recreate
+    }    // If socket already exists and connected, don't recreate
     if (socket && socket.connected) return;
 
     // Initialize Socket
@@ -214,17 +226,21 @@ export const SocketProvider = ({ children }) => {
         // Dispatch to Redux
         dispatch(receiveNotification(notification));
 
-        // Display toast notification dạng "A và n người khác ..."
-        const firstName = notification.user?.displayName || notification.user?.username || "Someone";
-        const others = (notification.count || 1) - 1;
-        const headline = others > 0
-          ? `${firstName} and ${others} other${others > 1 ? "s" : ""} ${notification.message}`
-          : `${firstName} ${notification.message}`;
+        // Display toast notification
+        // Với system notifications (post_hidden_admin), đã có trong Activity tab — không cần toast
+        const isSystemNotification = notification.type === 'post_hidden_admin';
+        if (!isSystemNotification) {
+          const firstName = notification.user?.displayName || notification.user?.username || "Someone";
+          const others = (notification.count || 1) - 1;
+          const headline = others > 0
+            ? `${firstName} and ${others} other${others > 1 ? "s" : ""} ${notification.message}`
+            : `${firstName} ${notification.message}`;
 
-        toast.info(headline, {
-          description: notification.user ? `@${notification.user.username}` : '',
-          duration: 3000,
-        });
+          toast.info(headline, {
+            description: notification.user ? `@${notification.user.username}` : '',
+            duration: 3000,
+          });
+        }
 
       } catch (error) {
         console.error("Socket notification handling error:", error);
@@ -279,6 +295,12 @@ export const SocketProvider = ({ children }) => {
     newSocket.on("call_ended", (data) => {
       console.log("Call ended:", data);
       dispatch(endCallAction(data));
+    });
+
+    // Force logout when admin bans this user
+    newSocket.on("force_logout", (data) => {
+      console.warn("force_logout received:", data);
+      handleForceLogout();
     });
 
     // Save socket instance

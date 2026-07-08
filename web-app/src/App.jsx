@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { toast, Toaster } from "sonner";
 import { LoginPage } from "./features/LoginPage/LoginPage.jsx";
 import { FeedPage } from "./features/FeedPage/FeedPage.jsx";
 import { ProfilePage } from "./features/ProfilePage/ProfilePage.jsx";
@@ -9,7 +10,6 @@ import SearchPage from "./features/SearchPage/SearchPage.jsx";
 import AllResultsPage from "./features/SearchPage/AllResultsPage.jsx";
 import ActivityPage from "./features/ActivityPage/ActivityPage.jsx";
 import { MessagesPage } from "./features/MessagePage/MessagePage.jsx";
-import { Toaster } from "sonner";
 import { verifyToken } from "./store/userSlice.js";
 import { useDispatch, useSelector } from "react-redux";
 import { Spinner } from "@/components/ui/spinner"
@@ -35,14 +35,76 @@ import AdminUsers from "./features/Admin/AdminUsers.jsx";
 import AdminPosts from "./features/Admin/AdminPosts.jsx";
 import AdminReports from "./features/Admin/AdminReports.jsx";
 
+// Component con nằm trong BrowserRouter để có access useNavigate
+function AppRoutes() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleForceLogout = () => {
+      toast.error("Your account has been suspended by an administrator.", { duration: 5000 });
+      navigate("/login", { replace: true });
+    };
+
+    window.addEventListener('force_logout', handleForceLogout);
+    return () => window.removeEventListener('force_logout', handleForceLogout);
+  }, [navigate]);
+
+  return (
+    <Routes>
+      {/* Public routes (Login, Register) - Redirect if authenticated */}
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify" element={<VerifyAccountPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      </Route>
+
+      {/* Protected Routes - Redirect to login if not authenticated */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/message" element={<Navigate to="/messages" replace />} />
+        <Route path="/story/create/image" element={<CreateStoryPage mode="image" />} />
+        <Route path="/story/create/text" element={<CreateStoryPage mode="text" />} />
+        <Route path="/onboarding/interests" element={<OnboardingInterestsPage />} />
+
+        <Route path="/" element={<ThreadsLayout />}>
+          <Route index element={<Navigate to="/feed" replace />} />
+          <Route path="feed" element={<FeedPage />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route path="search/all-results" element={<AllResultsPage />} />
+          <Route path="activity" element={<ActivityPage />} />
+          <Route path="profile/:username" element={<ProfilePage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="connections/:username" element={<ConnectionsPage />} />
+          <Route path="post/:postId" element={<PostDetailPage />} />
+          <Route path="tag/:tagName" element={<TagFeedPage />} />
+          <Route path="story/archive" element={<StoryArchivePage />} />
+          <Route path="groups" element={<GroupListPage />} />
+          <Route path="groups/:groupId" element={<GroupDetailPage />} />
+        </Route>
+      </Route>
+
+      {/* Admin Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="posts" element={<AdminPosts />} />
+          <Route path="reports" element={<AdminReports />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={isAdmin() ? <Navigate to="/admin" replace /> : <Navigate to="/feed" replace />} />
+    </Routes>
+  );
+}
+
 export default function App() {
   const dispatch = useDispatch();
-  const { loading, isAuthenticated } = useSelector((state) => state.user);
+  const { isAuthenticated } = useSelector((state) => state.user);
 
-  // Set dark mode by default and verify token on initial load
   useEffect(() => {
     document.documentElement.classList.add('dark');
-    // Tắt browser scroll restoration để React Router tự quản lý
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
@@ -52,8 +114,6 @@ export default function App() {
     }
   }, [dispatch]);
 
-  // While verifying token, show a loader to prevent route flashing
-  // We only want to show this initial loading screen if a token exists and we are verifying it.
   const isVerifyingToken = !isAuthenticated && getAccessToken();
   if (isVerifyingToken) {
     return (
@@ -72,59 +132,7 @@ export default function App() {
       <Toaster richColors position="top-right" />
       <CallOverlay />
       <BrowserRouter>
-        <Routes>
-          {/* Public routes (Login, Register) - Redirect if authenticated */}
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify" element={<VerifyAccountPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          </Route>
-
-          {/* Protected Routes - Redirect to login if not authenticated */}
-          <Route element={<ProtectedRoute />}>
-            {/* Messages route rendered full-screen (outside ThreadsLayout) */}
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/message" element={<Navigate to="/messages" replace />} />
-
-            {/* Story create — fullscreen, outside ThreadsLayout */}
-            <Route path="/story/create/image" element={<CreateStoryPage mode="image" />} />
-            <Route path="/story/create/text" element={<CreateStoryPage mode="text" />} />
-
-            {/* Onboarding Interests page — fullscreen, outside ThreadsLayout */}
-            <Route path="/onboarding/interests" element={<OnboardingInterestsPage />} />
-
-            {/* Main app routes with Layout */}
-            <Route path="/" element={<ThreadsLayout />}>
-              <Route index element={<Navigate to="/feed" replace />} />
-              <Route path="feed" element={<FeedPage />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route path="search/all-results" element={<AllResultsPage />} />
-              <Route path="activity" element={<ActivityPage />} />
-              <Route path="profile/:username" element={<ProfilePage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="connections/:username" element={<ConnectionsPage />} />
-              <Route path="post/:postId" element={<PostDetailPage />} />
-              <Route path="tag/:tagName" element={<TagFeedPage />} />
-              <Route path="story/archive" element={<StoryArchivePage />} />
-              <Route path="groups" element={<GroupListPage />} />
-              <Route path="groups/:groupId" element={<GroupDetailPage />} />
-            </Route>
-          </Route>
-
-          {/* Admin Routes - Also protected */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="posts" element={<AdminPosts />} />
-              <Route path="reports" element={<AdminReports />} />
-            </Route>
-          </Route>
-
-          {/* Catch-all for logged-in users - redirect to feed. For non-logged in, ProtectedRoute handles redirect to login. */}
-          <Route path="*" element={isAdmin() ? <Navigate to="/admin" replace /> : <Navigate to="/feed" replace />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </>
   );

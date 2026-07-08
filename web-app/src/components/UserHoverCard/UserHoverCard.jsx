@@ -6,6 +6,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card"
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
+import { VerifiedBadge } from "../ui/VerifiedBadge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -141,12 +142,15 @@ export function UserHoverCard({ username, children }) {
           <>
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex-1 min-w-0">
-                <p
-                  className="font-bold text-base leading-tight cursor-pointer hover:underline truncate"
-                  onClick={goToProfile}
-                >
-                  {profile?.fullName ?? username}
-                </p>
+                <div className="flex items-center gap-1 mb-0.5">
+                  <p
+                    className="font-bold text-base leading-tight cursor-pointer hover:underline truncate"
+                    onClick={goToProfile}
+                  >
+                    {profile?.fullName ?? username}
+                  </p>
+                  {profile?.verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
+                </div>
                 <p className="text-sm text-muted-foreground truncate">@{username}</p>
               </div>
               <Avatar className="w-14 h-14 shrink-0 cursor-pointer" onClick={goToProfile}>

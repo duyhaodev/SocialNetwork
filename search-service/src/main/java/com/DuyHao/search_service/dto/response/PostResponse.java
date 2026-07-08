@@ -37,4 +37,13 @@ public class PostResponse {
     String originalUsername;
     String originalFullName;
     String originalAvatarUrl;
+
+    Boolean verified;
+    Boolean originalVerified;
+    Boolean isAiGenerated;
+    Boolean isSensitiveContent;
+    Boolean isPinned;
+    List<String> tags;
+    String groupId;
+    String groupName;
 }

@@ -3,7 +3,10 @@ package com.DuyHao.post_service.FeignClient;
 import com.DuyHao.post_service.configuration.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
@@ -31,4 +34,9 @@ public interface NotificationClient {
             @RequestParam("receiverId") String receiverId,
             @RequestParam("postId") String postId,
             @RequestParam("reason") String reason);
+
+    @RequestMapping(method = RequestMethod.DELETE, value = "/post-hidden-admin")
+    ResponseEntity<?> deletePostHiddenNotification(
+            @RequestParam("receiverId") String receiverId,
+            @RequestParam("postId") String postId);
 }

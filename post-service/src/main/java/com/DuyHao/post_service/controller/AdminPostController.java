@@ -59,10 +59,18 @@ public class AdminPostController {
                 .build();
     }
 
-    @DeleteMapping("/admin/posts/{postId}")
-    ApiResponse<String> deletePostByAdmin(@PathVariable String postId) {
-        postService.deletePostByAdmin(postId);
-        return ApiResponse.<String>builder().result("Post deleted by Admin").build();
+    @PutMapping("/admin/posts/{postId}/hide")
+    ApiResponse<String> hidePostByAdmin(
+            @PathVariable String postId,
+            @RequestParam(required = false, defaultValue = "Violates community standards") String reason) {
+        postService.hidePostByAdmin(postId, reason);
+        return ApiResponse.<String>builder().result("Post hidden by Admin").build();
+    }
+
+    @PutMapping("/admin/posts/{postId}/unhide")
+    ApiResponse<String> unhidePostByAdmin(@PathVariable String postId) {
+        postService.unhidePostByAdmin(postId);
+        return ApiResponse.<String>builder().result("Post restored by Admin").build();
     }
 
     @GetMapping("/admin/posts/stats")

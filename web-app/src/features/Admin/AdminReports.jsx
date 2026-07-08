@@ -15,16 +15,16 @@ const AdminReports = () => {
   
   const [resolveModalOpen, setResolveModalOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState(null);
-  const [resolveReason, setResolveReason] = useState("Vi phạm tiêu chuẩn cộng đồng");
+  const [resolveReason, setResolveReason] = useState("Violates community standards");
   const [customReason, setCustomReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const REASONS = [
-    "Spam hoặc quảng cáo trái phép",
-    "Nội dung thù địch, quấy rối",
-    "Thông tin sai lệch",
-    "Vi phạm tiêu chuẩn cộng đồng",
-    "Khác"
+    "Spam or unauthorized advertising",
+    "Hate speech or harassment",
+    "Misinformation",
+    "Violates community standards",
+    "Other"
   ];
 
   const fetchReports = async () => {
@@ -47,30 +47,30 @@ const AdminReports = () => {
 
   const openResolveModal = (reportId) => {
     setSelectedReportId(reportId);
-    setResolveReason("Vi phạm tiêu chuẩn cộng đồng");
+    setResolveReason("Violates community standards");
     setCustomReason("");
     setResolveModalOpen(true);
   };
 
   const handleResolve = async () => {
     let finalReason = resolveReason;
-    if (resolveReason === "Khác") {
+    if (resolveReason === "Other") {
       finalReason = customReason.trim();
     }
 
     if (!finalReason) {
-      toast.error("Vui lòng chọn hoặc nhập lý do");
+      toast.error("Please select or enter a reason");
       return;
     }
 
     setSubmitting(true);
     try {
       await adminApi.resolveReport(selectedReportId, { actionReason: finalReason });
-      toast.success("Đã duyệt report và ẩn bài viết");
+      toast.success("Report resolved and post hidden");
       setResolveModalOpen(false);
       fetchReports();
     } catch (error) {
-      toast.error("Lỗi khi duyệt report");
+      toast.error("Failed to resolve report");
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +89,7 @@ const AdminReports = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-10">Đang tải báo cáo...</div>;
+    return <div className="text-center py-10">Loading reports...</div>;
   }
 
   return (
@@ -110,7 +110,7 @@ const AdminReports = () => {
                 <div>
                   <div className="font-semibold">{report.reporterName}</div>
                   <div className="text-xs text-muted-foreground">
-                    Đã báo cáo vào {new Date(report.createdAt).toLocaleString()}
+                    Reported at {new Date(report.createdAt).toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -121,7 +121,7 @@ const AdminReports = () => {
 
             {/* Post Content */}
             <div className="bg-muted/30 rounded-lg p-4 text-sm whitespace-pre-wrap">
-              {report.postContent ? report.postContent : <span className="italic text-muted-foreground">Không có nội dung văn bản</span>}
+              {report.postContent ? report.postContent : <span className="italic text-muted-foreground">No text content</span>}
             </div>
 
             {/* Post Media */}
@@ -137,11 +137,11 @@ const AdminReports = () => {
             <div className="flex justify-end gap-3 mt-2">
               <Button variant="outline" onClick={() => handleDismiss(report.id)}>
                 <X className="w-4 h-4 mr-1.5" />
-                Bỏ qua
+                Dismiss
               </Button>
               <Button onClick={() => openResolveModal(report.id)} className="bg-red-500 hover:bg-red-600 text-white">
                 <Check className="w-4 h-4 mr-1.5" />
-                Duyệt & Ẩn bài
+                Resolve & Hide
               </Button>
             </div>
           </div>
@@ -149,7 +149,7 @@ const AdminReports = () => {
         
         {reports.length === 0 && (
           <div className="text-center p-12 bg-card border border-border rounded-xl shadow-sm text-muted-foreground">
-            Không có báo cáo nào đang chờ xử lý
+            No pending reports
           </div>
         )}
       </div>
@@ -160,15 +160,15 @@ const AdminReports = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-500">
               <AlertCircle className="w-5 h-5" />
-              Xác nhận duyệt báo cáo
+              Confirm Report Resolution
             </DialogTitle>
             <DialogDescription>
-              Bài viết sẽ bị ẩn và tác giả sẽ nhận được thông báo với lý do sau.
+              The post will be hidden and the author will be notified with the reason below.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4 space-y-4">
-            <Label className="font-semibold text-sm">Chọn lý do thông báo cho tác giả:</Label>
+            <Label className="font-semibold text-sm">Select reason to notify the author:</Label>
             <RadioGroup value={resolveReason} onValueChange={setResolveReason} className="space-y-2">
               {REASONS.map((reason) => (
                 <div key={reason} className="flex items-center space-x-2">
@@ -180,10 +180,10 @@ const AdminReports = () => {
               ))}
             </RadioGroup>
 
-            {resolveReason === "Khác" && (
+            {resolveReason === "Other" && (
               <div className="mt-3">
                 <Textarea
-                  placeholder="Nhập lý do cụ thể..."
+                  placeholder="Enter specific reason..."
                   value={customReason}
                   onChange={(e) => setCustomReason(e.target.value)}
                   className="resize-none"
@@ -195,14 +195,14 @@ const AdminReports = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setResolveModalOpen(false)} disabled={submitting}>
-              Hủy
+              Cancel
             </Button>
             <Button 
               className="bg-red-500 hover:bg-red-600 text-white" 
               onClick={handleResolve} 
               disabled={submitting}
             >
-              {submitting ? "Đang xử lý..." : "Xác nhận"}
+              {submitting ? "Processing..." : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>

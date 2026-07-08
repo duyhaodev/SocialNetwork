@@ -253,8 +253,9 @@ export function GroupDetailPage() {
       const res = await groupApi.disbandGroup(groupId);
       if (res.code === 1000) {
         toast.success("Đã giải tán nhóm thành công!");
-        window.dispatchEvent(new Event('groupListChanged'));
-        navigate("/activity"); // Or wherever makes sense
+        navigate("/activity");
+        // Dispatch sau khi navigate để tránh fetchGroupDetails bị trigger lại trên group đã bị xóa
+        setTimeout(() => window.dispatchEvent(new Event('groupListChanged')), 100);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Lỗi khi giải tán nhóm");
@@ -279,10 +280,31 @@ export function GroupDetailPage() {
   return (
     <div className="w-full max-w-4xl mx-auto pb-16">
       {/* Cover Image */}
-      <div className="w-full h-48 md:h-64 bg-gradient-to-r from-primary/20 to-primary/10 relative">
+      <div className="w-full h-48 md:h-64 relative overflow-hidden bg-gradient-to-r from-primary/20 to-primary/10">
         {group.coverImageUrl && (
-          <img src={group.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+          <motion.div
+            className="w-full h-full"
+            initial={{ scale: 1.08, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+          >
+            <img
+              src={group.coverImageUrl}
+              alt="Cover"
+              className="w-full h-full object-cover transition-transform duration-300 ease-out hover:scale-105"
+            />
+          </motion.div>
         )}
+        {/* Gradient overlay bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
+        {/* Shimmer line */}
+        <motion.div
+          className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent w-full"
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{ duration: 1.4, delay: 0.3, ease: "easeOut" }}
+          style={{ transformOrigin: "left" }}
+        />
       </div>
 
       {/* Group Header Info */}

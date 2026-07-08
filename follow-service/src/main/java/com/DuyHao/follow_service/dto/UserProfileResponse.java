@@ -12,4 +12,5 @@ public class UserProfileResponse {
     long followerCount;
     long followingCount;
     String connectionsPrivacy;
+    boolean verified;
 }

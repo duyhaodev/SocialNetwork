@@ -10,6 +10,7 @@ import { CreatePost } from "../CreatePost/CreatePost.jsx";
 import { Skeleton } from "../ui/skeleton.js";
 import { logoutUser } from "../../store/userSlice";
 import { fetchNotifications, selectUnreadCount } from "../../store/notificationsSlice";
+import { VerifiedBadge } from "../ui/VerifiedBadge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,7 +113,10 @@ export function Sidebar({ currentPage }) {
                 )}
               </Avatar>
               <div className="flex-1 text-left">
-                <div className="font-medium">{currentUser.displayName}</div>
+                <div className="flex items-center gap-1 font-medium">
+                  {currentUser.displayName}
+                  {profile?.verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
+                </div>
                 <div className="text-sm text-muted-foreground">@{currentUser.username}</div>
               </div>
               <Menu className="w-5 h-5" />
