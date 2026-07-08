@@ -273,6 +273,22 @@ services:
     ports:
       - "8092:8092"
 
+  group-service:
+    build: ./group-service
+    container_name: group-service
+    restart: unless-stopped
+    ports:
+      - "8093:8093"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/GROUP_DB
+      SPRING_DATASOURCE_USERNAME: admin123
+      SPRING_DATASOURCE_PASSWORD: admin123
+      APP_SERVICE_PROFILE: http://profile-service:8081/profile
+      APP_SERVICE_NOTIFICATION: http://notification-service:8082/notification
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api-gateway:
     build: ./api-gateway
     container_name: api-gateway
@@ -292,6 +308,7 @@ services:
       - search-service
       - story-service
       - ai-service
+      - group-service
       - group-service
 
 # ─────────────────────────────────────────────

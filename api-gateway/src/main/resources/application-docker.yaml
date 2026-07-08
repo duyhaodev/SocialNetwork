@@ -53,6 +53,10 @@ spring:
           uri: http://story-service:8091
           predicates:
             - Path=/story/**
+        - id: group-service
+          uri: http://group-service:8093
+          predicates:
+            - Path=/group/**
 
 app:
   identity:

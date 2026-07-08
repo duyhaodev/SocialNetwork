@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/GROUP_DB
+
+app:
+  service:
+    profile: http://profile-service:8081/profile
+    notification: http://notification-service:8082/notification
