@@ -9,3 +9,7 @@ app:
     profile: http://profile-service:8081/profile
     media: http://media-service:8086
     interaction: http://interaction-service:8087/interaction
+    follow: http://follow-service:8084/follow
+    group: http://group-service:8093/group
+    notification: http://notification-service:8082/notification
+    ai: http://ai-service:8092
