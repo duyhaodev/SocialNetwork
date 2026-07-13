@@ -10,4 +10,7 @@ public interface FollowClient {
 
     @GetMapping("/internal/follow/following/{userId}")
     List<String> getFollowingIds(@PathVariable("userId") String userId);
+
+    @GetMapping("/internal/follow/friends/{userId}")
+    List<String> getFriendIds(@PathVariable("userId") String userId);
 }

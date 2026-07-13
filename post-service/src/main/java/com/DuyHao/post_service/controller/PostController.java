@@ -5,6 +5,7 @@ import com.DuyHao.post_service.dto.request.PostCreateRequest;
 import com.DuyHao.post_service.dto.request.TranslateRequest;
 import com.DuyHao.post_service.dto.response.LocalFeedResponse;
 import com.DuyHao.post_service.dto.response.PostResponse;
+import com.DuyHao.post_service.dto.response.RecommendedFeedResponse;
 import com.DuyHao.post_service.dto.response.TranslateResponse;
 import com.DuyHao.post_service.service.PostService;
 import com.DuyHao.post_service.service.TranslateService;
@@ -67,13 +68,15 @@ public class PostController {
     }
 
     @GetMapping("/feed/recommended")
-    public ApiResponse<List<PostResponse>> recommendedFeed(
+    public ApiResponse<RecommendedFeedResponse> recommendedFeed(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         String userId = jwt.getSubject();
-        List<PostResponse> feed = postService.getRecommendedFeed(userId, page, size);
-        return ApiResponse.<List<PostResponse>>builder().result(feed).build();
+        PostService.RecommendedFeedResult result = postService.getRecommendedFeed(userId, page, size);
+        return ApiResponse.<RecommendedFeedResponse>builder()
+                .result(new RecommendedFeedResponse(result.posts(), result.refreshed()))
+                .build();
     }
 
     // ==================== LOCAL FEED ====================
@@ -87,6 +90,30 @@ public class PostController {
         PostService.LocalFeedResult result = postService.getLocalFeed(city, userId, page, size);
         return ApiResponse.<LocalFeedResponse>builder()
                 .result(new LocalFeedResponse(result.posts(), result.isFallback(), city))
+                .build();
+    }
+
+    // ==================== FOLLOWING FEED ====================
+    @GetMapping("/feed/following")
+    public ApiResponse<List<PostResponse>> followingFeed(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        return ApiResponse.<List<PostResponse>>builder()
+                .result(postService.getFollowingFeed(userId, page, size))
+                .build();
+    }
+
+    // ==================== FRIENDS FEED ====================
+    @GetMapping("/feed/friends")
+    public ApiResponse<List<PostResponse>> friendsFeed(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String userId = jwt.getSubject();
+        return ApiResponse.<List<PostResponse>>builder()
+                .result(postService.getFriendsFeed(userId, page, size))
                 .build();
     }
 

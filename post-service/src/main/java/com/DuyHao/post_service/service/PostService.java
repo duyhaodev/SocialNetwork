@@ -38,6 +38,7 @@ public class PostService {
     private final InteractionClient interactionClient;
     private final GeoIpService geoIpService;
     private final LocalFeedCacheService localFeedCacheService;
+    private final RecommendedFeedCacheService recommendedFeedCacheService;
     private final AiClient aiClient;
     private final FollowClient followClient;
     private final com.DuyHao.post_service.FeignClient.GroupClient groupClient;
@@ -333,7 +334,70 @@ public class PostService {
     // Load feed Local
     public record LocalFeedResult(List<PostResponse> posts, boolean isFallback) {}
 
-    public List<PostResponse> getRecommendedFeed(String currentUserId, int page, int size) {
+    // ==================== RECOMMENDED FEED RESULT ====================
+    public record RecommendedFeedResult(List<PostResponse> posts, boolean refreshed) {}
+
+    public RecommendedFeedResult getRecommendedFeed(String currentUserId, int page, int size) {
+
+        // page=0 → xóa key Redis cũ, tính lại feed mới
+        if (page == 0) {
+            recommendedFeedCacheService.deleteKey(currentUserId);
+        }
+
+        // Kiểm tra Redis đã có data chưa
+        boolean cacheHit = recommendedFeedCacheService.hasKey(currentUserId);
+        if (cacheHit) {
+            // ── Cache hit: đọc từ Redis theo offset ──
+            List<String> postIds = recommendedFeedCacheService.getPostIds(currentUserId, page, size);
+            if (!postIds.isEmpty()) {
+                // Lấy chi tiết bài từ DB theo danh sách ID
+                List<Post> posts = postRepository.findAllById(postIds);
+                // Giữ đúng thứ tự từ Redis
+                Map<String, Post> postMap = posts.stream().collect(Collectors.toMap(Post::getId, p -> p));
+                List<Post> orderedPosts = postIds.stream()
+                        .map(postMap::get)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                // Fetch user info và map response
+                Map<String, String> userGroups = groupClient.getUserGroupMap(currentUserId);
+                Set<String> userIds = orderedPosts.stream()
+                        .flatMap(p -> {
+                            Set<String> ids = new HashSet<>();
+                            ids.add(p.getUserId());
+                            if (p.getRepostOf() != null) ids.add(p.getRepostOf().getUserId());
+                            return ids.stream();
+                        })
+                        .collect(Collectors.toSet());
+                Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                        .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+                List<PostResponse> result = orderedPosts.stream()
+                        .map(post -> buildPostResponse(
+                                post,
+                                currentUserId,
+                                userMap,
+                                post.getGroupId() != null ? userGroups.get(post.getGroupId()) : null))
+                        .collect(Collectors.toList());
+
+                return new RecommendedFeedResult(result, false);
+            }
+
+            // Redis có key nhưng đọc rỗng (đã lướt hết 100 bài)
+            // → Xóa key → tính lại → refreshed=true để FE hiện divider "Bài mới cho bạn"
+            recommendedFeedCacheService.deleteKey(currentUserId);
+            return new RecommendedFeedResult(computeAndCacheFeed(currentUserId, size), true);
+        }
+
+        // ── Cache miss (page=0 vừa xóa key): tính điểm từ đầu, không hiện divider ──
+        return new RecommendedFeedResult(computeAndCacheFeed(currentUserId, size), false);
+    }
+
+    /**
+     * Tính điểm 100 bài, lưu vào Redis, trả về trang đầu tiên (20 bài đầu).
+     * Được gọi khi: (1) vào trang lần đầu, (2) quay lại trang, (3) lướt hết 100 bài.
+     */
+    private List<PostResponse> computeAndCacheFeed(String currentUserId, int size) {
         // Fetch Block List
         List<String> blockList = new ArrayList<>();
         try {
@@ -364,14 +428,12 @@ public class PostService {
         List<String> groupIds = new ArrayList<>(userGroups.keySet());
 
         List<Post> candidates = new ArrayList<>();
-        // Lấy bài Global
         candidates.addAll(postRepository.findRecentGlobalPosts(PageRequest.of(0, 50)));
-        // Lấy bài Group mà user đã join
         if (!groupIds.isEmpty()) {
             candidates.addAll(postRepository.findRecentGroupPosts(groupIds, PageRequest.of(0, 50)));
         }
 
-        // Loại bỏ các bài viết từ những người bị block hoặc block mình
+        // Loại bỏ bài từ người bị block
         final List<String> finalBlockList = blockList;
         candidates.removeIf(p -> finalBlockList.contains(p.getUserId()));
 
@@ -385,11 +447,11 @@ public class PostService {
         }
 
         // 4. Scoring (Hybrid Fusion)
-        double W_CONTENT = 0.2; // Trọng số sở thích/tag
-        double W_SOCIAL = 0.3; // Trọng số quan hệ bạn bè
-        double W_GROUP = 0.15; // Trọng số nhóm
-        double W_RECENCY = 0.1; // Trọng số độ mới của bài viết
-        double W_ENGAGEMENT = 0.25; // Trọng số độ phổ biến
+        double W_CONTENT = 0.2;
+        double W_SOCIAL = 0.3;
+        double W_GROUP = 0.15;
+        double W_RECENCY = 0.1;
+        double W_ENGAGEMENT = 0.25;
 
         final Map<String, Double> finalWeights = userWeights;
         final List<String> finalFollowingIds = followingIds;
@@ -399,7 +461,6 @@ public class PostService {
 
         List<PostScorePair> scoredPosts = candidates.stream()
                 .map(post -> {
-                    // a. Tính điểm khớp sở thích/tag (Content Score)
                     double contentScore = 0.0;
                     List<String> tags = post.getTags();
                     if (tags != null && !tags.isEmpty()) {
@@ -408,7 +469,6 @@ public class PostService {
                         }
                     }
 
-                    // b. Tính điểm quan hệ xã hội (Social Score)
                     double socialScore = 0.0;
                     if (post.getUserId().equals(currentUserId)) {
                         socialScore = 1.0;
@@ -416,18 +476,15 @@ public class PostService {
                         socialScore = 1.0;
                     }
 
-                    // c. Tính điểm nhóm (Group Score)
                     double groupScore = 0.0;
                     if (post.getGroupId() != null && groupIds.contains(post.getGroupId())) {
                         groupScore = 1.0;
                     }
 
-                    // d. Tính điểm độ mới (Recency Score)
                     long hours = ChronoUnit.HOURS.between(post.getCreatedAt(), now);
                     if (hours < 0) hours = 0;
-                    double recencyScore = Math.exp(-0.01 * hours); // Phân rã theo thời gian
+                    double recencyScore = Math.exp(-0.01 * hours);
 
-                    // e. Tính điểm mức độ phổ biến (Engagement Score)
                     double engagementScore = 0.0;
                     InteractionResponse interaction = finalInteractions.get(post.getId());
                     if (interaction != null) {
@@ -438,35 +495,36 @@ public class PostService {
                         engagementScore = rawEngagement / (hours + 1.0);
                     }
 
-                    // f. Tổng hợp điểm số theo trọng số
                     double finalScore = W_CONTENT * contentScore
                             + W_SOCIAL * socialScore
                             + W_GROUP * groupScore
                             + W_RECENCY * recencyScore
                             + W_ENGAGEMENT * engagementScore;
 
-                    // g. Yếu tố tình cờ (Serendipity)
-                    // Bốc ngẫu nhiên khoảng 10% số bài viết để boost điểm lên một chút
+                    // Serendipity: 10% bài được boost ngẫu nhiên
                     if (random.nextDouble() < 0.10) {
-                        finalScore += 0.5 + random.nextDouble(); // Boost ngẫu nhiên từ 0.5 đến 1.5
+                        finalScore += 0.5 + random.nextDouble();
                     }
 
                     return new PostScorePair(post, finalScore);
                 })
                 .collect(Collectors.toList());
 
-        // 5. Ranking (Sort by Score descending)
+        // 5. Ranking
         scoredPosts.sort((p1, p2) -> Double.compare(p2.score, p1.score));
 
-        // 6. Pagination
-        int start = Math.min(page * size, scoredPosts.size());
-        int end = Math.min((page + 1) * size, scoredPosts.size());
-        if (start > end) return Collections.emptyList();
+        // 6. Lưu toàn bộ 100 postId vào Redis (thứ tự đã sort)
+        List<String> sortedPostIds =
+                scoredPosts.stream().map(pair -> pair.post.getId()).collect(Collectors.toList());
+        recommendedFeedCacheService.savePostIds(currentUserId, sortedPostIds);
 
+        // 7. Trả về trang đầu tiên (20 bài đầu)
+        int end = Math.min(size, scoredPosts.size());
         List<Post> pagedPosts =
-                scoredPosts.subList(start, end).stream().map(pair -> pair.post).toList();
+                scoredPosts.subList(0, end).stream().map(pair -> pair.post).collect(Collectors.toList());
 
-        // 7. Mapping to Response
+        if (pagedPosts.isEmpty()) return Collections.emptyList();
+
         Set<String> userIds = pagedPosts.stream()
                 .flatMap(p -> {
                     Set<String> ids = new HashSet<>();
@@ -485,6 +543,82 @@ public class PostService {
                         currentUserId,
                         userMap,
                         post.getGroupId() != null ? userGroups.get(post.getGroupId()) : null))
+                .collect(Collectors.toList());
+    }
+
+    // ==================== FOLLOWING FEED ====================
+    // Bài của những người mình đang follow, sort theo thời gian mới nhất
+    public List<PostResponse> getFollowingFeed(String currentUserId, int page, int size) {
+        List<String> followingIds = new ArrayList<>();
+        try {
+            List<String> ids = followClient.getFollowingIds(currentUserId);
+            if (ids != null) followingIds = ids;
+        } catch (Exception e) {
+            System.err.println("Lỗi lấy following ids: " + e.getMessage());
+        }
+
+        if (followingIds.isEmpty()) return List.of();
+
+        // Lọc block list
+        List<String> blockList = new ArrayList<>();
+        try {
+            blockList = userClient.getBlockList(currentUserId);
+        } catch (Exception e) {}
+        final List<String> finalBlockList = blockList;
+        followingIds = followingIds.stream()
+                .filter(id -> !finalBlockList.contains(id))
+                .collect(Collectors.toList());
+
+        if (followingIds.isEmpty()) return List.of();
+
+        List<Post> posts = postRepository.findByUserIdInOrderByCreatedAtDesc(
+                followingIds, PageRequest.of(page, size));
+        if (posts.isEmpty()) return List.of();
+
+        Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
+        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        return posts.stream()
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
+                .collect(Collectors.toList());
+    }
+
+    // ==================== FRIENDS FEED ====================
+    // Bài của bạn bè (follow 2 chiều), sort theo thời gian mới nhất
+    public List<PostResponse> getFriendsFeed(String currentUserId, int page, int size) {
+        List<String> friendIds = new ArrayList<>();
+        try {
+            List<String> ids = followClient.getFriendIds(currentUserId);
+            if (ids != null) friendIds = ids;
+        } catch (Exception e) {
+            System.err.println("Lỗi lấy friend ids: " + e.getMessage());
+        }
+
+        if (friendIds.isEmpty()) return List.of();
+
+        // Lọc block list
+        List<String> blockList = new ArrayList<>();
+        try {
+            blockList = userClient.getBlockList(currentUserId);
+        } catch (Exception e) {}
+        final List<String> finalBlockList = blockList;
+        friendIds = friendIds.stream()
+                .filter(id -> !finalBlockList.contains(id))
+                .collect(Collectors.toList());
+
+        if (friendIds.isEmpty()) return List.of();
+
+        List<Post> posts = postRepository.findByUserIdInOrderByCreatedAtDesc(
+                friendIds, PageRequest.of(page, size));
+        if (posts.isEmpty()) return List.of();
+
+        Set<String> userIds = posts.stream().map(Post::getUserId).collect(Collectors.toSet());
+        Map<String, UserResponse> userMap = userClient.getUsers(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(UserResponse::getUserId, u -> u));
+
+        return posts.stream()
+                .map(post -> buildPostResponse(post, currentUserId, userMap, null))
                 .collect(Collectors.toList());
     }
 
@@ -971,8 +1105,7 @@ public class PostService {
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void hidePostByAdmin(String postId, String reason) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
 
         if (post.getGroupId() != null && !post.getGroupId().isBlank()) {
             throw new RuntimeException("Platform admin không thể ẩn bài trong group");
@@ -1032,8 +1165,7 @@ public class PostService {
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public void unhidePostByAdmin(String postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
         post.setStatus("APPROVED");
         post.setStatusReason(null);
         post.setHiddenAt(null);

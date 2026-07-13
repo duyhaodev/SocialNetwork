@@ -18,6 +18,12 @@ public class InternalFollowController {
         return followService.getFollowingIds(userId);
     }
 
+    // Lấy danh sách bạn bè (follow 2 chiều) — dùng bởi post-service cho Friends feed
+    @GetMapping("/internal/follow/friends/{userId}")
+    public List<String> getFriendIds(@PathVariable String userId) {
+        return followService.getFriendIds(userId);
+    }
+
     // Kiểm tra userId có follow targetId không
     @GetMapping("/internal/follow/is-following")
     public boolean isFollowing(@RequestParam String followerId, @RequestParam String followingId) {

@@ -4,66 +4,57 @@ import { useSelector } from "react-redux";
 import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import postApi from "../../api/postApi";
 import { toast } from "sonner";
-import { MapPin } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { selectLastMutatedAt } from "../../store/postsSlice";
 
-export function LocalFeedTab({ city }) {
+export function FriendsFeedTab() {
   const navigate = useNavigate();
   const lastMutatedAt = useSelector(selectLastMutatedAt);
 
-  // State riêng, không dùng chung Redux với global feed
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [isFallback, setIsFallback] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   const SIZE = 20;
   const loadMoreRef = useRef(null);
   const loadDelayRef = useRef(null);
 
-  // Fetch bài theo city
-  const fetchLocalFeed = useCallback(
+  const fetchFriendsFeed = useCallback(
     async (pageNum, { force = false } = {}) => {
-      if (!city || city === "Unknown") return;
       if (!force && loading) return;
       setLoading(true);
       try {
-        const res = await postApi.getLocalFeed({ city, page: pageNum, size: SIZE });
-        const data = res?.result;
-        if (!data) return;
-
-        const newPosts = data.posts ?? [];
+        const res = await postApi.getFriendsFeed({ page: pageNum, size: SIZE });
+        const newPosts = res?.result || [];
         setPosts((prev) => (pageNum === 0 ? newPosts : [...prev, ...newPosts]));
         setPage(pageNum + 1);
-        // Luôn hasMore=true trừ khi backend trả rỗng (thực sự hết bài)
-        setHasMore(newPosts.length > 0);
-        setIsFallback(data.fallback ?? false);
+        setHasMore(newPosts.length === SIZE);
       } catch (err) {
-        toast.error("Không thể tải bài viết khu vực này");
+        toast.error("Không thể tải bài viết");
       } finally {
         setLoading(false);
       }
     },
-    [city]
+    []
   );
 
-  // Load lần đầu khi tab được mở
+  // Load lần đầu
   useEffect(() => {
-    if (!initialized && city) {
+    if (!initialized) {
       setInitialized(true);
-      fetchLocalFeed(0);
+      fetchFriendsFeed(0);
     }
-  }, [city, initialized, fetchLocalFeed]);
+  }, [initialized, fetchFriendsFeed]);
 
-  // Refresh khi có bài mới được đăng hoặc xóa
+  // Refresh khi có bài mới đăng hoặc xóa
   useEffect(() => {
     if (!initialized || !lastMutatedAt) return;
     setPosts([]);
     setPage(0);
     setHasMore(true);
-    fetchLocalFeed(0, { force: true });
+    fetchFriendsFeed(0, { force: true });
   }, [lastMutatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Infinite scroll
@@ -77,7 +68,7 @@ export function LocalFeedTab({ city }) {
         if (!entries[0].isIntersecting || loading || !hasMore) return;
         if (loadDelayRef.current) return;
         loadDelayRef.current = setTimeout(() => {
-          fetchLocalFeed(page);
+          fetchFriendsFeed(page);
           loadDelayRef.current = null;
         }, 300);
       },
@@ -92,29 +83,10 @@ export function LocalFeedTab({ city }) {
         loadDelayRef.current = null;
       }
     };
-  }, [hasMore, loading, page, fetchLocalFeed]);
-
-  // City chưa xác định
-  if (!city || city === "Unknown") {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-        <MapPin className="w-8 h-8" />
-        <p className="text-sm">Không xác định được vị trí của bạn</p>
-      </div>
-    );
-  }
+  }, [hasMore, loading, page, fetchFriendsFeed]);
 
   return (
     <div>
-      {/* Banner fallback khi tỉnh chưa có bài */}
-      {isFallback && (
-        <div className="px-4 py-2 text-sm text-muted-foreground bg-muted/40 border-b border-border flex items-center gap-2">
-          <MapPin className="w-4 h-4 flex-shrink-0" />
-          <span>Chưa có bài viết từ <strong>{city}</strong>, hiển thị bài mới nhất toàn quốc</span>
-        </div>
-      )}
-
-      {/* Danh sách bài */}
       {posts.map((post) => {
         const username = post.username ?? post.user?.username ?? "unknown";
         const fullName = post.fullName ?? post.user?.fullName ?? "User";
@@ -132,15 +104,17 @@ export function LocalFeedTab({ city }) {
         );
       })}
 
-      {/* Trạng thái loading / hết bài */}
       <div className="p-4 text-center">
-        {loading && <span className="text-muted-foreground text-sm">Đang tải...</span>}
+        {loading && <span className="text-muted-foreground text-sm">Loading...</span>}
         {hasMore && !loading && <div ref={loadMoreRef} className="h-1" />}
         {!hasMore && !loading && posts.length > 0 && (
           <span className="text-muted-foreground text-sm">No more posts</span>
         )}
         {!loading && posts.length === 0 && (
-          <span className="text-muted-foreground text-sm">Chưa có bài viết nào</span>
+          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+            <UserRound className="w-8 h-8" />
+            <p className="text-sm">No posts from friends yet</p>
+          </div>
         )}
       </div>
     </div>

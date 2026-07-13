@@ -11,6 +11,8 @@ import { PostCard } from "../../components/PostCard/PostCard.jsx";
 import { SuggestedUsers } from "../../components/SuggestedUsers/SuggestedUsers.jsx";
 import StoryBar from "../../components/Story/StoryBar.jsx";
 import { LocalFeedTab } from "./LocalFeedTab.jsx";
+import { FollowingFeedTab } from "./FollowingFeedTab.jsx";
+import { FriendsFeedTab } from "./FriendsFeedTab.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchRecommendedFeed,
@@ -20,6 +22,8 @@ import {
   selectPostsLoading,
   selectPostsCreating,
   selectPostsPage,
+  selectCaughtUp,
+  loadMoreAfterCaughtUp,
 } from "../../store/postsSlice";
 import { selectCity } from "../../store/userSlice";
 import { toast } from "sonner";
@@ -43,6 +47,7 @@ export function FeedPage() {
   const loading = useSelector(selectPostsLoading);
   const creating = useSelector(selectPostsCreating);
   const page = useSelector(selectPostsPage);
+  const caughtUp = useSelector(selectCaughtUp);
 
   // Tab: "forYou" | "local"
   const [activeTab, setActiveTab] = useState("forYou");
@@ -513,27 +518,42 @@ export function FeedPage() {
 
       {/* Tabs — nằm dưới Story, giống ProfilePage */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex justify-center w-full border-b border-border/40 py-3 bg-background/50 backdrop-blur-sm sticky top-14 md:top-0 z-10">
-          <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-auto max-w-[420px] grid grid-cols-2 relative overflow-hidden">
+        <div className="flex justify-center w-full border-b border-border/40 py-3 bg-background/50 backdrop-blur-sm sticky top-14 md:top-0 z-10 overflow-x-auto">
+          <TabsList className="bg-muted/40 border border-border/40 rounded-full p-1 h-10 w-auto grid grid-cols-4 relative overflow-hidden min-w-max">
             <TabsTrigger
               value="forYou"
-              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4"
             >
               For You
             </TabsTrigger>
             <TabsTrigger
-              value="local"
-              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              value="following"
+              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4"
             >
-              {city && city !== "Unknown" ? `Local Feed · ${city}` : "Local Feed"}
+              Following
+            </TabsTrigger>
+            <TabsTrigger
+              value="friends"
+              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4"
+            >
+              Friends
+            </TabsTrigger>
+            <TabsTrigger
+              value="local"
+              className="relative z-10 rounded-full text-xs font-semibold h-full transition-colors duration-300 select-none bg-transparent border-none data-[state=active]:text-background dark:data-[state=active]:text-background text-muted-foreground data-[state=active]:bg-transparent dark:data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4"
+            >
+              {city && city !== "Unknown" ? `Local · ${city}` : "Local"}
             </TabsTrigger>
 
             {/* Sliding indicator background pill */}
-            <div className="absolute inset-1 w-[calc(50%-4px)] h-[calc(100%-8px)] pointer-events-none z-0">
+            <div className="absolute inset-1 w-[calc(25%-4px)] h-[calc(100%-8px)] pointer-events-none z-0">
               <motion.div
                 className="w-full h-full bg-foreground rounded-full shadow-sm"
                 animate={{
-                  x: activeTab === "forYou" ? 0 : "100%",
+                  x: activeTab === "forYou" ? 0
+                    : activeTab === "following" ? "100%"
+                    : activeTab === "friends" ? "200%"
+                    : "300%",
                 }}
                 transition={{ type: "spring", stiffness: 350, damping: 28 }}
               />
@@ -541,7 +561,7 @@ export function FeedPage() {
           </TabsList>
         </div>
 
-        {/* Tab For You — ẩn bằng CSS thay vì unmount */}
+        {/* Tab For You */}
         <div className={activeTab === "forYou" ? "" : "hidden"}>
           <div>
             {posts.map((post, index) => {
@@ -568,11 +588,32 @@ export function FeedPage() {
           <div className="p-4 text-center">
             {loading && hasMore && <span className="text-muted-foreground text-sm">Loading...</span>}
             {hasMore && <div ref={loadMoreRef} className="h-1" />}
-            {!hasMore && !loading && <span className="text-muted-foreground text-sm">No more posts</span>}
+            {caughtUp && !loading && (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <p className="text-muted-foreground text-sm">You're all caught up</p>
+                <button
+                  onClick={() => dispatch(loadMoreAfterCaughtUp())}
+                  className="text-sm font-medium px-4 py-2 rounded-full border border-border hover:bg-muted transition-colors"
+                >
+                  See more posts
+                </button>
+              </div>
+            )}
+            {!hasMore && !loading && !caughtUp && <span className="text-muted-foreground text-sm">No more posts</span>}
           </div>
         </div>
 
-        {/* Tab Local Feed — ẩn bằng CSS thay vì unmount */}
+        {/* Tab Following */}
+        <div className={activeTab === "following" ? "" : "hidden"}>
+          <FollowingFeedTab />
+        </div>
+
+        {/* Tab Friends */}
+        <div className={activeTab === "friends" ? "" : "hidden"}>
+          <FriendsFeedTab />
+        </div>
+
+        {/* Tab Local Feed */}
         <div className={activeTab === "local" ? "" : "hidden"}>
           <LocalFeedTab city={city} />
         </div>

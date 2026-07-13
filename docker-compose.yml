@@ -89,6 +89,9 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: "123456"
       APP_SERVICE_PROFILE: http://profile-service:8081/profile
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY}
     depends_on:
       mysql:
         condition: service_healthy

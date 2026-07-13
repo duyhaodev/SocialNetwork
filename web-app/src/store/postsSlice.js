@@ -13,8 +13,10 @@ export const fetchRecommendedFeed = createAsyncThunk(
   async ({ page = 0, size = 20 }, { rejectWithValue }) => {
     try {
       const res = await postApi.getRecommendedFeed({ page, size });
-      const data = res?.result || [];
-      return { page, size, data };
+      // Backend giờ trả { posts: [...], refreshed: bool }
+      const posts = res?.result?.posts || [];
+      const refreshed = res?.result?.refreshed ?? false;
+      return { page, size, data: posts, refreshed };
     } catch (err) {
       return rejectWithValue(err?.message || "Không thể tải bảng tin");
     }
@@ -156,6 +158,8 @@ const initialState = postsAdapter.getInitialState({
   reposting: false,
   unreposting: false,
   error: null,
+  caughtUp: false,         // true khi lướt hết 100 bài → hiện "You're all caught up"
+  pendingRefreshedIds: [], // lưu tạm batch mới chờ user nhấn "See more posts"
 
   myPostsIds: [],
   loadingMyPosts: false,
@@ -200,6 +204,15 @@ const postsSlice = createSlice({
       state.page = 0;
       state.hasMore = true;
       state.error = null;
+      state.caughtUp = false;
+      state.pendingRefreshedIds = [];
+    },
+    // User nhấn "See more posts" → append batch mới đã lưu tạm
+    loadMoreAfterCaughtUp(state) {
+      state.feedIds = [...state.feedIds, ...state.pendingRefreshedIds];
+      state.pendingRefreshedIds = [];
+      state.caughtUp = false;
+      state.hasMore = true;
     },
     resetTagFeed(state) {
       state.tagPostsIds = [];
@@ -254,18 +267,38 @@ const postsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchRecommendedFeed.fulfilled, (state, action) => {
-        const { page, size, data } = action.payload;
+        const { page, size, data, refreshed } = action.payload;
         postsAdapter.upsertMany(state, data);
 
         const ids = data.map((p) => p.id || p.postId);
+
         if (page === 0) {
+          // Vào trang lần đầu hoặc quay lại → reset feed
           state.feedIds = ids;
+          state.caughtUp = false;
+        } else if (refreshed) {
+          // Lướt hết 100 bài → hiện "You're all caught up", user tự nhấn để load thêm
+          // Không append bài mới ngay — chờ user nhấn nút
+          state.caughtUp = true;
+          state.pendingRefreshedIds = ids; // lưu tạm để append khi user nhấn
+          state.hasMore = false;           // dừng infinite scroll
         } else {
           state.feedIds = [...state.feedIds, ...ids];
+          state.caughtUp = false;
         }
+
         state.page = page + 1;
         state.loading = false;
-        state.hasMore = data.length === size;
+        if (refreshed) {
+          // Backend tính lại batch mới → dừng scroll, chờ user nhấn "See more posts"
+          // hasMore đã set false ở trên
+        } else if (page === 0) {
+          // Vào trang lần đầu hoặc quay lại → luôn cho scroll tiếp để kiểm tra Redis
+          state.hasMore = true;
+        } else {
+          // Scroll bình thường → hết khi Redis trả ít hơn size
+          state.hasMore = data.length === size;
+        }
       })
       .addCase(fetchRecommendedFeed.rejected, (state, action) => {
         state.loading = false;
@@ -450,7 +483,7 @@ const postsSlice = createSlice({
   },
 });
 
-export const { resetFeed, resetTagFeed, syncLikeByOriginalId, setSearchPosts, syncCommentCount } = postsSlice.actions;
+export const { resetFeed, resetTagFeed, syncLikeByOriginalId, setSearchPosts, syncCommentCount, loadMoreAfterCaughtUp } = postsSlice.actions;
 export default postsSlice.reducer;
 
 // 5. SELECTORS
@@ -468,6 +501,7 @@ export const selectPostsHasMore = (state) => state.posts.hasMore;
 export const selectPostsPage = (state) => state.posts.page;
 export const selectPostsError = (state) => state.posts.error;
 export const selectLastMutatedAt = (state) => state.posts.lastMutatedAt;
+export const selectCaughtUp = (state) => state.posts.caughtUp;
 
 export const selectTrendingTags = (state) => state.posts.trendingTags;
 export const selectTrendingLoading = (state) => state.posts.loadingTrending;

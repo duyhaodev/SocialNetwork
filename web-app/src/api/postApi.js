@@ -99,6 +99,20 @@ const postApi = {
     });
   },
 
+  // Lấy feed bài viết của những người mình đang follow
+  getFollowingFeed({ page = 0, size = 20 } = {}) {
+    return axiosClient.get("/post/feed/following", {
+      params: { page, size },
+    });
+  },
+
+  // Lấy feed bài viết của bạn bè (follow 2 chiều)
+  getFriendsFeed({ page = 0, size = 20 } = {}) {
+    return axiosClient.get("/post/feed/friends", {
+      params: { page, size },
+    });
+  },
+
   // Dịch nội dung bài viết sang tiếng Việt qua DeepL
   translate(text) {
     return axiosClient.post("/post/posts/translate", { text });
