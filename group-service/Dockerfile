@@ -5,6 +5,8 @@ COPY src ./src
 RUN mvn package -DskipTests -Dmaven.test.skip=true -Dspotless.skip=true
 
 FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Ho_Chi_Minh
 WORKDIR /app
 COPY --from=build /app/target/group-service-0.0.1-SNAPSHOT.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=docker"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Ho_Chi_Minh", "-jar", "app.jar", "--spring.profiles.active=docker"]
