@@ -37,7 +37,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private String[] publicEndpoints = {
             "/identity/auth/.*",
             "/identity/users/registration",
-            "/identity/users/verify"
+            "/identity/users/verify",
+            "/identity/users/resend-otp"
     };
 
     @Override

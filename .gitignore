@@ -68,7 +68,7 @@ Thumbs.db
 help.md
 
 # Environment Variables
-.env
+identity-service/.env
 
 # Custom ignores
 GEMINI.md
