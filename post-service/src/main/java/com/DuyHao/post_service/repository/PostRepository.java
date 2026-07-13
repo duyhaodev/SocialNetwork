@@ -43,7 +43,7 @@ public interface PostRepository extends JpaRepository<Post, String> {
 
     // Lấy post theo city (khi redis miss)
     @Query(
-            "SELECT p FROM Post p WHERE p.city = :city AND p.repostOf IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
+            "SELECT p FROM Post p WHERE p.city = :city AND p.groupId IS NULL AND p.repostOf IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
     List<Post> findByCityOrderByCreatedAtDesc(@Param("city") String city, Pageable pageable);
 
     // Lấy bài mới nhất khi local chưa có bài nào
@@ -96,6 +96,6 @@ public interface PostRepository extends JpaRepository<Post, String> {
     List<Post> findExpiredHiddenPosts(@Param("cutoff") LocalDateTime cutoff);
 
     // Lấy bài của danh sách userId (following feed hoặc friends feed) — sort theo thời gian mới nhất
-    @Query("SELECT p FROM Post p WHERE p.userId IN :userIds AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Post p WHERE p.userId IN :userIds AND p.groupId IS NULL AND (p.status IS NULL OR p.status != 'HIDDEN') ORDER BY p.createdAt DESC")
     List<Post> findByUserIdInOrderByCreatedAtDesc(@Param("userIds") List<String> userIds, Pageable pageable);
 }
