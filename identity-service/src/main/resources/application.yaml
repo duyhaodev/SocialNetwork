@@ -14,8 +14,8 @@ spring:
       ddl-auto: update
     show-sql: true
   mail:
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:thuctran200411@gmail.com}
+    password: ${MAIL_PASSWORD:jtnd mflt xudd nllr}
     host: "smtp.gmail.com"
     port: 587
     properties:
@@ -30,7 +30,7 @@ spring:
       port: 6379
 
 jwt:
-  signerKey: ${JWT_SIGNER_KEY}
+  signerKey: ${JWT_SIGNER_KEY:+s9LmnZRkJF7IYL9A2sorvokBzMgL0HvYJly5aU+C9qFNKxpNM7cmj1KzSSdAmZ7}
   valid-duration: 86400 # in second
   refreshable-duration: 1296000 # in second (15 days)
 
